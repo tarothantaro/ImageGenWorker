@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://growstory.example/schemas/completion.json",
+  "title": "ImageGenCompletion",
+  "description": "Message published to Pub/Sub topic job-completed. See ImageGenWorker/DESIGN.md §5.2.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "story_id",
+    "user_id",
+    "request_id",
+    "status",
+    "completed_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "event_id": { "type": "string", "minLength": 1 },
+    "story_id": { "type": "string", "minLength": 1 },
+    "user_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["completed", "failed"] },
+    "output_images": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": ["index", "gcs_uri", "width", "height", "bytes"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "gcs_uri": { "type": "string", "pattern": "^gs://[^/]+/.+" },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 },
+          "bytes": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "model_version": { "type": "string", "minLength": 1 },
+    "processing_seconds": { "type": "number", "minimum": 0 },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "failure_reason": { "type": "string", "minLength": 1, "maxLength": 64 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "completed" } } },
+      "then": {
+        "required": ["output_images", "model_version", "processing_seconds"]
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "failed" } } },
+      "then": { "required": ["failure_reason"] }
+    }
+  ]
+}

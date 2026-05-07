@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://growstory.example/schemas/job.json",
+  "title": "ImageGenJob",
+  "description": "Message published to Pub/Sub topic image-gen-jobs. See ImageGenWorker/DESIGN.md §5.1.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "story_id",
+    "user_id",
+    "request_id",
+    "template_id",
+    "configurable_options",
+    "input_photos",
+    "output_count",
+    "output_prefix",
+    "callback_topic",
+    "enqueued_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "story_id": { "type": "string", "minLength": 1 },
+    "user_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": "string", "minLength": 1 },
+    "template_id": { "type": "string", "minLength": 1 },
+    "configurable_options": { "type": "object" },
+    "input_photos": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["photo_id", "position", "gcs_uri"],
+        "additionalProperties": false,
+        "properties": {
+          "photo_id": { "type": "string", "minLength": 1 },
+          "position": { "type": "integer", "minimum": 0 },
+          "gcs_uri": { "type": "string", "pattern": "^gs://[^/]+/.+" }
+        }
+      }
+    },
+    "output_count": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "output_prefix": { "type": "string", "pattern": "^gs://[^/]+/.+/$" },
+    "callback_topic": { "type": "string", "pattern": "^projects/[^/]+/topics/[^/]+$" },
+    "enqueued_at": { "type": "string", "format": "date-time" }
+  }
+}
