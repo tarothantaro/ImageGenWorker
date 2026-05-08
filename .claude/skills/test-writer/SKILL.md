@@ -157,7 +157,29 @@ Always cover the four cases: valid signature accepted; invalid signature rejecte
 - Don't reach into the DB to inspect state — call a `GET` endpoint or read the user-facing artifact.
 - Keep the count low. One golden-path e2e per user-visible flow is usually enough.
 
-## Step 5 — Hygiene checklist before commit
+## Step 5 — Create or update `run_tests.sh`
+
+Every package root must have a `run_tests.sh` that runs the unit suite with full coverage output. Create it if it doesn't exist; keep it in sync when the package name or test path changes.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+PYTHON=~/python_env/torch-env/bin/python
+cd "$(dirname "$0")"
+exec "$PYTHON" -m pytest tests/unit/ --cov=<pkg> --cov-report=term-missing "$@"
+```
+
+Rules:
+- Replace `<pkg>` with the importable package name (e.g. `app`, `imagegen`).
+- `set -euo pipefail` — fail fast on any error.
+- `cd "$(dirname "$0")"` — script works from any working directory.
+- `"$@"` — forwards extra args (`-x`, `-k foo`, `-vv`) without modification.
+- Must be executable (`chmod +x run_tests.sh`).
+- `--cov-report=term-missing` is mandatory — uncovered lines must be visible in the output.
+
+**100% coverage is the gate.** `pyproject.toml` must set `[tool.coverage.report] fail_under = 100`. If it doesn't, add it before writing tests. Every new module you add must be fully covered before the PR is done — check `term-missing` output and add cases for every `Missing` line shown.
+
+## Step 6 — Hygiene checklist before commit
 
 - [ ] Test name reads like a sentence about behavior.
 - [ ] Arrange / Act / Assert visually separated.
@@ -167,8 +189,9 @@ Always cover the four cases: valid signature accepted; invalid signature rejecte
 - [ ] Parametrized rather than copy-pasted when 2+ near-identical cases exist.
 - [ ] Cleanup is via fixture teardown (`yield` + cleanup), not test code.
 - [ ] No commented-out asserts or `print()` left behind.
+- [ ] `run_tests.sh` exists, is executable, and passes with 100% coverage.
 
-## Step 6 — Run before declaring done
+## Step 7 — Run before declaring done
 
 ```bash
 # Fast: just the file you touched
@@ -177,13 +200,16 @@ pytest tests/<layer>/test_<file>.py -x -vv
 # Then the layer
 pytest tests/<layer>/ -x
 
+# Then via the convenience script (shows full coverage table)
+./run_tests.sh
+
 # Then the whole gate (whatever the project uses — Makefile target, tox, nox)
 make test    # or: tox / nox / pytest
 ```
 
 If unrelated tests fail, that's a real bug — investigate, don't ignore. CI will run the same gate.
 
-For coverage-gated projects: `pytest --cov=<pkg> --cov-report=term-missing` and check the new code is exercised.
+`./run_tests.sh` output must show `Total coverage: 100%` and no `Missing` lines before you commit.
 
 ## Anti-patterns (do not do)
 
