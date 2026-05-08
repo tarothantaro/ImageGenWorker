@@ -173,11 +173,11 @@ A JSON key for this service account is provisioned via `gcloud iam service-accou
     {
       "photo_id": "ph_...",
       "position": 0,
-      "gcs_uri": "gs://growstory-prod-uploads/uid_abc/photos/ph_xyz.jpg"
+      "gcs_uri": "gs://tarostory-prod-uploads/uid_abc/photos/ph_xyz.jpg"
     }
   ],
   "output_count": 4,
-  "output_prefix": "gs://growstory-prod-outputs/uid_abc/01HX.../outputs/",
+  "output_prefix": "gs://tarostory-prod-outputs/uid_abc/01HX.../outputs/",
   "callback_topic": "projects/<project>/topics/job-completed",
   "enqueued_at": "2026-05-05T12:34:56Z"
 }
@@ -203,13 +203,13 @@ Pub/Sub message attributes (used for filtering / observability, not the schema):
   "output_images": [
     {
       "index": 0,
-      "gcs_uri": "gs://growstory-prod-outputs/uid_abc/01HX.../outputs/0.png",
+      "gcs_uri": "gs://tarostory-prod-outputs/uid_abc/01HX.../outputs/0.png",
       "width": 1024,
       "height": 1024,
       "bytes": 873421
     }
   ],
-  "model_version": "growstory-img-2026-04",
+  "model_version": "tarostory-img-2026-04",
   "processing_seconds": 27.4,
   "completed_at": "2026-05-05T12:35:24Z"
 }
@@ -518,9 +518,9 @@ services:
       - gcp_sa_key
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp_sa_key
-      GCP_PROJECT_ID: growstory-prod
-      JOBS_SUBSCRIPTION: projects/growstory-prod/subscriptions/image-gen-jobs-worker-sub
-      COMPLETION_TOPIC: projects/growstory-prod/topics/job-completed
+      GCP_PROJECT_ID: tarostory-prod
+      JOBS_SUBSCRIPTION: projects/tarostory-prod/subscriptions/image-gen-jobs-worker-sub
+      COMPLETION_TOPIC: projects/tarostory-prod/topics/job-completed
       MAX_CONCURRENCY: ${MAX_CONCURRENCY:-4}
       MAX_PROCESSING_SECONDS: 540      # under the 600s ack deadline
       MODEL_DIR: /app/models
@@ -593,7 +593,7 @@ The key is **never** baked into the image and **never** committed to a repo.
 
 | Var | Dev value | Prod value | Notes |
 |---|---|---|---|
-| `GCP_PROJECT_ID` | `dev-project` | `growstory-prod` | Drives all subscription/topic lookups. |
+| `GCP_PROJECT_ID` | `dev-project` | `tarostory-prod` | Drives all subscription/topic lookups. |
 | `PUBSUB_EMULATOR_HOST` | `pubsub-emulator:8085` | (unset) | Setting this routes the client to the emulator. |
 | `STORAGE_EMULATOR_HOST` | `http://fake-gcs-server:4443` | (unset) | Likewise for GCS. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | (unset; emulators are unauthenticated) | `/run/secrets/gcp_sa_key` | Always read-only inside the container. |

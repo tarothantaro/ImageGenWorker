@@ -196,7 +196,7 @@ docker compose -f docker-compose.dev-gcp.yml up -d
 gcloud pubsub topics publish image-gen-jobs-dev \
     --message="$(cat tests/fixtures/jobs/sample.json)" \
     --attribute=story_id=smoke_$(uuidgen),schema_version=1 \
-    --project=growstory-dev
+    --project=tarostory-dev
 docker compose -f docker-compose.dev-gcp.yml logs -f imagegen-worker
 ```
 
