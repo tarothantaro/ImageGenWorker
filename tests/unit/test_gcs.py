@@ -5,7 +5,6 @@ import pytest
 from imagegen.failure_classification import GcsTransientError
 from imagegen.gcs import GcsClient, GcsObjectRef
 
-
 # --- GcsObjectRef -------------------------------------------------------------
 
 
@@ -42,7 +41,10 @@ def test_gcs_object_ref_rejects_empty_object_name() -> None:
 
 class _FakeBlob:
     def __init__(
-        self, *, payload: bytes = b"", upload_raises: BaseException | None = None,
+        self,
+        *,
+        payload: bytes = b"",
+        upload_raises: BaseException | None = None,
         download_raises: BaseException | None = None,
     ) -> None:
         self._payload = payload

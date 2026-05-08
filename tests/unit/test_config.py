@@ -62,7 +62,9 @@ def test_load_config_uses_real_os_environ_when_no_dict_passed(
     assert cfg.gcp_project_id == _VALID_ENV["GCP_PROJECT_ID"]
 
 
-@pytest.mark.parametrize("missing", ["GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC"])
+@pytest.mark.parametrize(
+    "missing", ["GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC"]
+)
 def test_load_config_rejects_missing_required(missing: str) -> None:
     env = _VALID_ENV.copy()
     env.pop(missing)

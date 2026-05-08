@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "/home/rovan/python_env/torch-env/bin/python3",
+    "black-formatter.interpreter": ["/home/rovan/python_env/torch-env/bin/python3"],
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    }
+}

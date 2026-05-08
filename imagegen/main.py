@@ -24,7 +24,9 @@ def _setup_logging(level: str) -> None:
     )
 
 
-def _build_model(cfg: WorkerConfig) -> ImageGenModel:  # pragma: no cover - real model out of scope
+def _build_model(
+    cfg: WorkerConfig,
+) -> ImageGenModel:  # pragma: no cover - real model out of scope
     from .model import load_model  # type: ignore[import-not-found]
 
     return load_model(cfg)

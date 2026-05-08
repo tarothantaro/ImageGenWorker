@@ -22,7 +22,9 @@ def _cfg() -> WorkerConfig:
 
 
 class _StubPubsubPublisherClient:
-    def publish(self, topic: str, data: bytes, **attributes: str) -> Any:  # noqa: ARG002
+    def publish(
+        self, topic: str, data: bytes, **attributes: str
+    ) -> Any:  # noqa: ARG002
         raise NotImplementedError
 
 

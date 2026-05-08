@@ -23,7 +23,9 @@ def test_build_completed_populates_every_field() -> None:
         story_id="s1",
         user_id="u1",
         request_id="r1",
-        result=JobResult(output_images=_outputs(), model_version="m-1", processing_seconds=12.5),
+        result=JobResult(
+            output_images=_outputs(), model_version="m-1", processing_seconds=12.5
+        ),
         now=_now,
         new_event_id=lambda: "evt_fixed",
     )
@@ -63,13 +65,17 @@ def test_build_completed_uses_default_event_id_factory_each_call() -> None:
         story_id="s",
         user_id="u",
         request_id="r",
-        result=JobResult(output_images=_outputs(), model_version="m", processing_seconds=1.0),
+        result=JobResult(
+            output_images=_outputs(), model_version="m", processing_seconds=1.0
+        ),
     )
     msg_b = build_completed(
         story_id="s",
         user_id="u",
         request_id="r",
-        result=JobResult(output_images=_outputs(), model_version="m", processing_seconds=1.0),
+        result=JobResult(
+            output_images=_outputs(), model_version="m", processing_seconds=1.0
+        ),
     )
 
     assert msg_a.event_id != msg_b.event_id
@@ -93,7 +99,9 @@ def test_build_completed_uses_default_now_when_not_overridden() -> None:
         story_id="s",
         user_id="u",
         request_id="r",
-        result=JobResult(output_images=_outputs(), model_version="m", processing_seconds=1.0),
+        result=JobResult(
+            output_images=_outputs(), model_version="m", processing_seconds=1.0
+        ),
     )
     after = datetime.now(tz=timezone.utc)
 
@@ -102,7 +110,9 @@ def test_build_completed_uses_default_now_when_not_overridden() -> None:
 
 def test_build_failed_uses_default_now_when_not_overridden() -> None:
     before = datetime.now(tz=timezone.utc)
-    msg = build_failed(story_id="s", user_id="u", request_id="r", failure_reason="invalid_config")
+    msg = build_failed(
+        story_id="s", user_id="u", request_id="r", failure_reason="invalid_config"
+    )
     after = datetime.now(tz=timezone.utc)
 
     assert before <= msg.completed_at <= after

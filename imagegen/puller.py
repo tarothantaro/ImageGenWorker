@@ -93,7 +93,9 @@ class Puller:
             self._subscription, self._on_message, self._flow_control
         )
         self._future = future
-        logger.info("streaming_pull_started", extra={"subscription": self._subscription})
+        logger.info(
+            "streaming_pull_started", extra={"subscription": self._subscription}
+        )
         try:
             # Block until stop() is called. Wake-ups every second let SIGTERM
             # propagate quickly without busy-spinning.
@@ -103,7 +105,9 @@ class Puller:
             future.cancel()
             try:
                 future.result(timeout=30.0)
-            except Exception as exc:  # noqa: BLE001 — drain errors are expected on cancel
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — drain errors are expected on cancel
                 logger.info("streaming_pull_drained", extra={"error": str(exc)})
 
     def stop(self) -> None:

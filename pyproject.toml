@@ -26,6 +26,10 @@ build-backend = "setuptools.build_meta"
 include = ["imagegen*"]
 exclude = ["tests*"]
 
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

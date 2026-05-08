@@ -24,7 +24,10 @@ class WorkerConfig:
 
     @property
     def is_emulator(self) -> bool:
-        return self.pubsub_emulator_host is not None or self.storage_emulator_host is not None
+        return (
+            self.pubsub_emulator_host is not None
+            or self.storage_emulator_host is not None
+        )
 
 
 _REQUIRED = ("GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC")
@@ -40,12 +43,16 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
         gcp_project_id=src["GCP_PROJECT_ID"],
         jobs_subscription=_validate_subscription(src["JOBS_SUBSCRIPTION"]),
         completion_topic=_validate_topic(src["COMPLETION_TOPIC"]),
-        max_concurrency=_parse_positive_int(src.get("MAX_CONCURRENCY", "4"), "MAX_CONCURRENCY"),
+        max_concurrency=_parse_positive_int(
+            src.get("MAX_CONCURRENCY", "4"), "MAX_CONCURRENCY"
+        ),
         max_processing_seconds=_parse_max_processing_seconds(
             src.get("MAX_PROCESSING_SECONDS", "540")
         ),
         log_level=src.get("LOG_LEVEL", "info").lower(),
-        metrics_port=_parse_positive_int(src.get("METRICS_PORT", "9100"), "METRICS_PORT"),
+        metrics_port=_parse_positive_int(
+            src.get("METRICS_PORT", "9100"), "METRICS_PORT"
+        ),
         pubsub_emulator_host=src.get("PUBSUB_EMULATOR_HOST") or None,
         storage_emulator_host=src.get("STORAGE_EMULATOR_HOST") or None,
     )
@@ -83,5 +90,7 @@ def _parse_max_processing_seconds(value: str) -> int:
     n = _parse_positive_int(value, "MAX_PROCESSING_SECONDS")
     # Pub/Sub max ack deadline is 600s; we must publish completion + ack before then.
     if n >= 600:
-        raise ConfigError(f"MAX_PROCESSING_SECONDS must be < 600 (Pub/Sub ack deadline), got {n}")
+        raise ConfigError(
+            f"MAX_PROCESSING_SECONDS must be < 600 (Pub/Sub ack deadline), got {n}"
+        )
     return n

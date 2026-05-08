@@ -98,7 +98,9 @@ def test_publisher_rejects_invalid_max_attempts() -> None:
 
 def test_publisher_retries_until_success_and_sleeps_with_backoff() -> None:
     sleeps: list[float] = []
-    client = _RecordingClient(future_or_exc_seq=[RuntimeError("flake"), _StaticFuture("mid_2")])
+    client = _RecordingClient(
+        future_or_exc_seq=[RuntimeError("flake"), _StaticFuture("mid_2")]
+    )
     pub = CompletionPublisher(
         client,
         topic="projects/p/topics/x",
@@ -138,7 +140,9 @@ def test_publisher_raises_publish_transient_error_after_exhausting_retries() -> 
     assert sleeps == [0.25, 0.5]
 
 
-def test_publisher_uses_real_time_sleep_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_publisher_uses_real_time_sleep_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     seen: list[float] = []
     monkeypatch.setattr("time.sleep", seen.append)
 

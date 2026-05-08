@@ -19,7 +19,6 @@ from imagegen.gcs import GcsClient
 from imagegen.job_handler import JobHandler
 from imagegen.publisher import CompletionPublisher
 
-
 # --- fakes --------------------------------------------------------------------
 
 
@@ -112,7 +111,9 @@ class _RecordingPublisherClient:
         self.published: list[bytes] = []
         self._raise = raise_on_publish
 
-    def publish(self, topic: str, data: bytes, **attributes: str) -> Any:  # noqa: ARG002
+    def publish(
+        self, topic: str, data: bytes, **attributes: str
+    ) -> Any:  # noqa: ARG002
         self.published.append(data)
 
         class _Future:
@@ -166,7 +167,8 @@ def _build_handler(
         gcs=GcsClient(storage),
         model=model,
         publisher=CompletionPublisher(
-            publisher_client, topic="projects/p/topics/job-completed",
+            publisher_client,
+            topic="projects/p/topics/job-completed",
             max_attempts=1,
         ),
     )
@@ -292,7 +294,9 @@ def test_handle_nacks_when_completion_publish_fails_so_job_redelivers() -> None:
 def test_handle_nacks_when_failed_completion_publish_itself_fails() -> None:
     msg = _FakePubsubMessage(_job_payload())
     model = _StubModel(raise_on_generate=UnsupportedTemplateError("nope"))
-    pub_client = _RecordingPublisherClient(raise_on_publish=PublishTransientError("nope"))
+    pub_client = _RecordingPublisherClient(
+        raise_on_publish=PublishTransientError("nope")
+    )
     handler, _storage = _build_handler(model=model, publisher_client=pub_client)
 
     handler.handle(msg)
