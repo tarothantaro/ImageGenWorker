@@ -175,13 +175,22 @@ Configuration knobs the Application repo can set on the stub:
 
 ## 6. Shared Schema Validation
 
-JSON schemas for the job and completion messages live in this repo at `schemas/`:
-- `schemas/job.json` — DESIGN §5.1
-- `schemas/completion.json` — DESIGN §5.2
+The wire-format contract for the job and completion messages lives in a
+sibling repo, `../ImageGenContract/`:
+- `image_gen_contract/schemas/job.json` — DESIGN §5.1
+- `image_gen_contract/schemas/completion.json` — DESIGN §5.2
+- `image_gen_contract/messages.py` — Pydantic v2 bindings both repos import as `from image_gen_contract import …`
 
-Both repos validate against these schemas. The Application repo pulls them in via a git submodule (or vendored copy with a CI drift check). A nightly CI job in this repo cross-checks the submodule pointer in the Application repo and opens a PR if it's out of date.
+Both repos depend on the `ImageGenContract` package — there is no second
+copy of the schemas or models in this tree. `run_tests.sh` runs
+`pip install -e ../ImageGenContract --quiet` before pytest so the editable
+install always tracks the sibling repo's source.
 
-This is what protects us from a class of bugs where the worker emits a slightly off-spec completion that the API parses leniently in dev but rejects in prod.
+The contract repo's own `tests/test_jsonschema_alignment.py` cross-validates
+that the JSON Schemas and the Pydantic models accept and reject the same
+payloads — that is what protects us from a class of bugs where the worker
+emits a slightly off-spec completion that the API parses leniently in dev
+but rejects in prod.
 
 ## 7. Manual / Smoke Testing
 

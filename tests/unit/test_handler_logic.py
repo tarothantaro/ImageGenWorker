@@ -13,10 +13,11 @@ from imagegen.failure_classification import (
     PublishTransientError,
     UnsupportedTemplateError,
 )
+from image_gen_contract import CompletionMessage
+
 from imagegen.gcs import GcsClient
 from imagegen.job_handler import JobHandler
 from imagegen.publisher import CompletionPublisher
-from imagegen.schema import CompletionMessage
 
 
 # --- fakes --------------------------------------------------------------------

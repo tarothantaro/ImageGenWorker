@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-from .schema import CURRENT_SCHEMA_VERSION, CompletionMessage, OutputImage
+from image_gen_contract import CURRENT_SCHEMA_VERSION, CompletionMessage, OutputImage
 
 
 @dataclass(frozen=True)

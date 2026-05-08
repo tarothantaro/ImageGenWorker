@@ -10,8 +10,9 @@ import logging
 import time
 from typing import Protocol, runtime_checkable
 
+from image_gen_contract import CompletionMessage
+
 from .failure_classification import PublishTransientError
-from .schema import CompletionMessage
 
 logger = logging.getLogger(__name__)
 

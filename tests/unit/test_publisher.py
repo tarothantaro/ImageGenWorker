@@ -6,9 +6,10 @@ from typing import Any
 
 import pytest
 
+from image_gen_contract import CompletionMessage
+
 from imagegen.failure_classification import PublishTransientError
 from imagegen.publisher import CompletionPublisher
-from imagegen.schema import CompletionMessage
 
 
 def _msg() -> CompletionMessage:

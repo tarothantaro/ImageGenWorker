@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from image_gen_contract import OutputImage
+
 from imagegen.completion_builder import JobResult, build_completed, build_failed
-from imagegen.schema import OutputImage
 
 
 def _outputs() -> list[OutputImage]:

@@ -13,6 +13,8 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import ValidationError
 
+from image_gen_contract import JobMessage, OutputImage
+
 from .completion_builder import JobResult, build_completed, build_failed
 from .failure_classification import (
     Disposition,
@@ -22,7 +24,6 @@ from .failure_classification import (
 from .gcs import GcsClient
 from .publisher import CompletionPublisher
 from .puller import PubsubMessage
-from .schema import JobMessage, OutputImage
 
 logger = logging.getLogger(__name__)
 
