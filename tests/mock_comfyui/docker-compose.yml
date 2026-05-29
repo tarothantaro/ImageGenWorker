@@ -1,0 +1,35 @@
+# Mock ComfyUI — a drop-in stand-in for ../../../ImageGenComfyui during dev and
+# integration tests. Mirrors that repo's compose (port 8188, /system_stats
+# healthcheck, the shared imagegen-backend network) minus the GPU reservation,
+# so the worker can point COMFYUI_URL at http://mock-comfyui:8188 unchanged.
+services:
+  mock-comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: imagegen-mock-comfyui:latest
+    container_name: imagegen-mock-comfyui
+    ports:
+      - "8188:8188"
+    environment:
+      - MOCK_PORT=8188
+      - MOCK_STEP_DELAY=2.0   # seconds between node events; raise to simulate slow gen
+      - MOCK_FAIL_MODE=none   # none | bad_prompt | execution_error
+      - MOCK_WIDTH=1024
+      - MOCK_HEIGHT=736
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8188/system_stats').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - imagegen-backend
+
+networks:
+  # Same external network the real ComfyUI uses, so the worker reaches either at
+  # the same hostname. Create it once with: docker network create imagegen-backend
+  imagegen-backend:
+    name: imagegen-backend
+    external: true

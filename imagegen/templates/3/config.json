@@ -1,0 +1,16 @@
+{
+    "id": "3",
+    "name": "custom",
+    "workflow_id": "2",
+    "panels": [
+        [
+            {"image": "character.png"},
+            {"image": "character.png"},
+            {"text": ""},
+            {"value": 6},
+            {"noise_seed": 771062815410683},
+            {"filename_prefix": "USER_ID_STORY_ID_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_V2"}
+        ]
+    ]
+}

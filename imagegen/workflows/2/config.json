@@ -1,0 +1,34 @@
+{
+    "id": "2",
+    "name": "flux2_dev",
+    "nodes": [
+        {
+            "id": 46,
+            "type": "LoadImage"
+        },
+        {
+            "id": 122,
+            "type": "LoadImage"
+        },
+        {
+            "id": "68:6",
+            "type": "CLIPTextEncode"
+        },
+        {
+            "id": "68:90",
+            "type": "PrimitiveInt"
+        },
+        {
+            "id": "68:25",
+            "type": "RandomNoise"
+        },
+        {
+            "id": 123,
+            "type": "SaveImage"
+        },
+        {
+            "id": 119,
+            "type": "SaveImage"
+        }
+    ]
+}

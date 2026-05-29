@@ -10,6 +10,10 @@ class ConfigError(ValueError):
     """Raised when required configuration is missing or invalid."""
 
 
+_DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
+_DEFAULT_MODEL_VERSION = "comfyui-flux2"
+
+
 @dataclass(frozen=True)
 class WorkerConfig:
     gcp_project_id: str
@@ -21,6 +25,11 @@ class WorkerConfig:
     metrics_port: int
     pubsub_emulator_host: str | None
     storage_emulator_host: str | None
+    # The ComfyUI container the model talks to, and the model id stamped onto
+    # completions. Both have sane defaults so existing deployments need no new
+    # env vars (DESIGN.md §"Worker Layout").
+    comfyui_url: str = _DEFAULT_COMFYUI_URL
+    model_version: str = _DEFAULT_MODEL_VERSION
 
     @property
     def is_emulator(self) -> bool:
@@ -55,6 +64,8 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
         ),
         pubsub_emulator_host=src.get("PUBSUB_EMULATOR_HOST") or None,
         storage_emulator_host=src.get("STORAGE_EMULATOR_HOST") or None,
+        comfyui_url=src.get("COMFYUI_URL", _DEFAULT_COMFYUI_URL),
+        model_version=src.get("MODEL_VERSION", _DEFAULT_MODEL_VERSION),
     )
 
 

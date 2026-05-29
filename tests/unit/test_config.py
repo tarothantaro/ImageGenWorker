@@ -26,6 +26,8 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.pubsub_emulator_host is None
     assert cfg.storage_emulator_host is None
     assert cfg.is_emulator is False
+    assert cfg.comfyui_url == "http://host.docker.internal:8188"
+    assert cfg.model_version == "comfyui-flux2"
 
 
 def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:
@@ -47,6 +49,18 @@ def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:
     assert cfg.log_level == "debug"
     assert cfg.metrics_port == 9200
     assert cfg.is_emulator is True
+
+
+def test_load_config_picks_up_comfyui_overrides() -> None:
+    env = _VALID_ENV | {
+        "COMFYUI_URL": "http://gpu-box:8188",
+        "MODEL_VERSION": "flux2-2026-05",
+    }
+
+    cfg = load_config(env)
+
+    assert cfg.comfyui_url == "http://gpu-box:8188"
+    assert cfg.model_version == "flux2-2026-05"
 
 
 def test_load_config_uses_real_os_environ_when_no_dict_passed(

@@ -30,12 +30,14 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class ImageGenModel(Protocol):
-    """The model's wire surface. The real model lives in model.py and is
-    out of scope for this design (../ImageGenWorker/DESIGN.md §7)."""
+    """The model's wire surface. The production implementation is the ComfyUI
+    client in model.py (DESIGN.md §7.2); unit tests substitute a stub."""
 
     def generate(
         self,
         *,
+        story_id: str,
+        user_id: str,
         template_id: str,
         configurable_options: dict[str, object],
         input_images: list[bytes],
@@ -121,6 +123,8 @@ class JobHandler:
         input_bytes = [self._gcs.download(p.gcs_uri) for p in ordered]
 
         result = self._model.generate(
+            story_id=job.story_id,
+            user_id=job.user_id,
             template_id=job.template_id,
             configurable_options=dict(job.configurable_options),
             input_images=input_bytes,

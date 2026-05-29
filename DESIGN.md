@@ -309,11 +309,17 @@ imagegen-worker/
 │   ├── main.py                # entrypoint: starts the streaming pull
 │   ├── puller.py              # google-cloud-pubsub StreamingPull wrapper, ack lease extension
 │   ├── job_handler.py         # download → run model → upload → publish completion
-│   ├── model.py               # the generation model (out of scope for this design)
+│   ├── model.py               # ComfyUIModel: orchestrates ComfyUI, impls ImageGenModel (§7.2)
+│   ├── workflow.py            # pure: render a ComfyUI prompt from template + options
+│   ├── comfyui_client.py      # real httpx + WebSocket transport to ComfyUI
 │   ├── gcs.py                 # tiny wrapper over google-cloud-storage
 │   ├── publisher.py           # google-cloud-pubsub publisher for job-completed
 │   ├── healthz.py             # /healthz + /metrics HTTP server (localhost only)
-│   └── observability.py       # structlog setup, Prometheus counters
+│   ├── observability.py       # structlog setup, Prometheus counters
+│   ├── workflows/             # ComfyUI workflow graphs (API format) + node configs
+│   │   └── 2/                 # workflow.json + config.json (flux2 edit + face-swap)
+│   └── templates/             # per-template node-value presets
+│       └── 3/                 # config.json ("custom" → workflow 2)
 ├── Dockerfile
 ├── docker-compose.yml         # production
 ├── docker-compose.dev.yml     # development (emulators)
@@ -380,6 +386,41 @@ CMD ["python", "-m", "imagegen.main"]
 ```
 
 The image is pushed to a private registry (`ghcr.io/<org>/imagegen-worker:<git-sha>`). Production pulls by digest, never `:latest`.
+
+### 7.2 Image-generation model (ComfyUI)
+
+`model.py` implements the `ImageGenModel` protocol that `job_handler` drives. The model is a **ComfyUI client**: it renders a stored ComfyUI workflow, submits it to a ComfyUI container over HTTP, and returns the produced images. The workflow/template assets and the customization logic are ported from the legacy `ImageGenCp` service, adapted to the worker's *synchronous* model seam — the Pub/Sub callback runs in a thread, so the model uses a blocking `httpx.Client` and a **synchronous WebSocket** (`websocket-client`). A single generation takes minutes, so the model **streams ComfyUI's `/ws` execution events in real time** and returns the instant ComfyUI signals completion — it does not poll on a fixed interval.
+
+Assets bundled with the package (`pyproject.toml` `package-data`):
+
+- `imagegen/workflows/2/workflow.json` — a Flux 2 image-edit + ReActor face-swap graph in ComfyUI **API format**; `workflows/2/config.json` lists, positionally, the nodes a template may customize.
+- `imagegen/templates/3/config.json` — the `custom` template: one panel of `{field: value}` presets parallel to workflow 2's node list (input image, face source, prompt, steps, seed, V1/V2 filename prefixes).
+
+`generate(*, story_id, user_id, template_id, configurable_options, input_images, output_count)` (note `story_id`/`user_id` are passed through from the job so the workflow's `USER_ID_STORY_ID` filename prefixes resolve per-story):
+
+1. Validate the input image bytes (magic-byte sniff → `CorruptInputError`) and the supported `configurable_options` (type/range → `InvalidConfigError`).
+2. Load + validate the template/workflow (missing or malformed asset → `UnsupportedTemplateError`).
+3. Upload each input photo once; workflow 2 points both LoadImage nodes at the same `character.png` slot, so a single photo fills the base image *and* the face-swap source.
+4. Run the workflow **`output_count` times**, varying `noise_seed` per run (`base_seed + index`), and collect the final face-restored image — the SaveImage node whose substituted prefix ends `_V2` — from each. The worker filters ComfyUI's history on that per-story prefix.
+
+`configurable_options` (all optional; each falls back to the template default):
+
+| Key | Type | Workflow target |
+|---|---|---|
+| `prompt` | string | CLIPTextEncode `text` (node `68:6`) |
+| `steps` | int 1–30 | step count (node `68:90`) |
+| `seed` | int ≥ 0 | base `noise_seed` (node `68:25`); run *i* uses `seed + i` |
+
+ComfyUI's surface sits behind the `ComfyUITransport` Protocol, injected the same way the worker injects `google-cloud-*` clients. It exposes HTTP (`upload_image`/`queue_prompt`/`get_history`/`fetch_image`) plus `open_events` — a context manager yielding the live `/ws` message stream. The model opens the socket *before* queuing (so no early event is missed), then blocks in `_await_execution` consuming `executing`/`progress` events until a terminal `executing(node=None)` / `execution_success` for its `prompt_id`. The real transport (`comfyui_client.py`, sync `httpx` + `websocket-client`) is wired by `load_model(cfg)` from `COMFYUI_URL` / `MODEL_VERSION` (§10.4); unit tests inject an in-process mock that replays the same event stream, and an integration test runs the real transport against a runnable mock ComfyUI container (TESTING.md §2.1 / §3). Transport errors map onto the failure taxonomy (§6.2):
+
+| ComfyUI condition | Transport raises | Mapped to | Disposition |
+|---|---|---|---|
+| connection refused / 5xx / WS recv timeout / stream closed before done | `ComfyUIUnavailable` | `ModelTransientError` | nack → redeliver |
+| 4xx (invalid prompt) | `ComfyUIBadRequest` | `InvalidConfigError` | report `invalid_config` → ack |
+| `execution_error` on the WS stream | `ComfyUIExecutionError` | `ModelTransientError` | nack → redeliver |
+| no matching / non-PNG output | — | `ModelTransientError` | nack → redeliver |
+
+Two config knobs are added for this model (defaults keep existing deployments working): `COMFYUI_URL` (default `http://host.docker.internal:8188`) and `MODEL_VERSION` (default `comfyui-flux2`, stamped onto completions).
 
 ## 8. Server-Side Pieces
 
@@ -601,6 +642,8 @@ The key is **never** baked into the image and **never** committed to a repo.
 | `MAX_PROCESSING_SECONDS` | 60 | 540 | Must stay under the 600s ack deadline. |
 | `LOG_LEVEL` | `debug` | `info` | |
 | `MODEL_DIR` | `/app/dev-model` (stub) | `/app/models` (mounted from host) | Read-only in both. |
+| `COMFYUI_URL` | `http://host.docker.internal:8188` | `http://host.docker.internal:8188` | ComfyUI container the model submits to (§7.2). |
+| `MODEL_VERSION` | `comfyui-flux2` | `comfyui-flux2` | Stamped onto every completion. |
 
 ## 11. Operations
 

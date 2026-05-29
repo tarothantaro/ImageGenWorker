@@ -90,12 +90,16 @@ class _StubModel:
     def generate(
         self,
         *,
+        story_id: str,
+        user_id: str,
         template_id: str,
         configurable_options: dict[str, object],
         input_images: list[bytes],
         output_count: int,
     ) -> _StubModelResult:
         self.seen_kwargs = {
+            "story_id": story_id,
+            "user_id": user_id,
             "template_id": template_id,
             "configurable_options": configurable_options,
             "input_images": input_images,
@@ -195,6 +199,8 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
 
     # Inputs were downloaded in declared position order (0 before 1).
     assert model.seen_kwargs["template_id"] == "tpl_v1"
+    assert model.seen_kwargs["story_id"] == "s1"
+    assert model.seen_kwargs["user_id"] == "u1"
     assert len(model.seen_kwargs["input_images"]) == 2
 
     # Outputs were uploaded under output_prefix as 0.png, 1.png.

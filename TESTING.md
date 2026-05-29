@@ -16,9 +16,15 @@ The pyramid is intentional: most bugs are in the failure-classification and sche
 
 ```
 tests/
+├── run_tests.sh           # unit suite + coverage (runs from repo root)
 ├── unit/                  # pure logic, no I/O
-├── integration/           # against pubsub-emulator + fake-gcs-server
+├── integration/           # real comfyui_client ↔ mock ComfyUI (and emulators)
+│   └── test_comfyui_client.py
 ├── e2e/                   # docker-compose.dev.yml + assertions
+├── fakes/                 # reusable in-process fakes
+│   ├── comfyui.py         # in-process WS-replaying ComfyUI fake (see §2.1)
+│   └── worker.py          # Pub/Sub message + GCS client fakes
+├── mock_comfyui/          # runnable mock ComfyUI container (server + Dockerfile)
 ├── fixtures/
 │   ├── jobs/              # canonical job payloads
 │   ├── completions/       # canonical completion payloads
@@ -38,13 +44,50 @@ Located at `tests/unit/`. No I/O, no subprocess, no emulators, no `time.sleep`. 
 | `test_failure_classification.py` | Given a model exception or GCS error, decide: nack-and-redeliver vs. publish-failed-completion vs. let-Pub/Sub-DLQ. This is the heart of §6.2 — exhaustive coverage matters. |
 | `test_completion_builder.py` | Building a `job-completed` payload from a `JobResult`. Asserts that every retry generates a fresh `event_id` (DESIGN §5.2). |
 | `test_handler_logic.py` | The pure-logic part of `job_handler.py` with `gcs` and `publisher` mocked, exercising the decision tree. |
+| `test_workflow.py` | The pure workflow renderer (`workflow.py`): loads `workflows/2` + `templates/3`, applies overrides/placeholders/image-remap, selects the `_V2` output. Malformed assets → `UnsupportedTemplateError`. |
+| `test_model.py` | `ComfyUIModel` (`model.py`) against the mock ComfyUI container: the exact workflow + params sent, per-output seed variation, V2 selection, and every worker-side (`CorruptInput`/`InvalidConfig`/`UnsupportedTemplate`) and ComfyUI-side error mapping. |
+| `test_comfyui_worker.py` | Full `JobHandler` + real `ComfyUIModel` + mock ComfyUI, driven by job messages: asserts GCS outputs, the published completion, and ack/nack per outcome. |
 
 Run:
 ```bash
 pytest tests/unit/ -q
+# or, with the coverage gate + sibling-contract install:
+./tests/run_tests.sh
 ```
 
 CI target: < 30s.
+
+### 2.1 Mocking ComfyUI
+
+`model.py` reaches ComfyUI through the `ComfyUITransport` Protocol, so unit
+tests inject `tests/fakes/comfyui.py:FakeComfyUI` — an in-process stand-in. It
+implements the transport surface (`upload_image`, `open_events`,
+`queue_prompt`, `get_history`, `fetch_image`), and:
+
+- **replays a real-time WebSocket stream** from `open_events`: `status` →
+  `execution_start` → per-node `executing` + `progress` → terminal
+  `executing(node=None)` / `execution_success`. The model rides that stream
+  exactly as in production (a generation takes minutes — we block on the
+  socket, we don't poll);
+- records every uploaded image and submitted workflow, so tests assert exactly
+  what the model sent (the rendered `workflow.json` and each node's params);
+- synthesizes `/history` outputs **from the submitted workflow's SaveImage
+  prefixes**, so the model's V1/V2 filename filtering runs against realistic
+  data;
+- returns a real minimal PNG carrying configurable dimensions;
+- can fail like a real container — refuse upload/queue, 4xx a bad prompt, raise
+  an `execution_error` mid-stream, time out the socket, close the stream early,
+  or emit no/garbled output — driving every error path without a GPU.
+
+For a **runnable** mock (real HTTP + WebSocket, Dockerized), see
+`tests/mock_comfyui/` — an aiohttp server that streams the same events and
+serves generated PNGs, mirroring `../ImageGenComfyui`'s container conventions
+(port 8188, `/system_stats` healthcheck, the `imagegen-backend` network). Point
+the worker at it with `COMFYUI_URL=http://mock-comfyui:8188`.
+
+The real transport (`comfyui_client.py`, `httpx` + `websocket-client`) is
+**not** unit-tested (excluded from coverage like `main.py`); it is pinned by
+the §3 integration test against the mock container.
 
 ## 3. Integration Tests
 
@@ -57,12 +100,14 @@ tests/integration/
 ├── test_puller.py
 ├── test_publisher.py
 ├── test_gcs.py
+├── test_comfyui_client.py
 ├── test_handler_e2e_in_proc.py
 └── test_exactly_once.py
 ```
 
 | Test | What it pins down |
 |---|---|
+| `test_comfyui_client.py` | The real `HttpComfyUIClient` (HTTP + WebSocket) driven end-to-end against the in-process mock ComfyUI (`tests/mock_comfyui/server.py`, started on a random port): streams a 2-image job to completion over the WS, maps a `/prompt` 400 to `InvalidConfigError`, and a WS `execution_error` to `ModelTransientError`. No GPU; the only place `comfyui_client.py` runs for real. Auto-skips if `aiohttp`/`websocket-client` are absent. |
 | `test_puller.py` | Publish to `image-gen-jobs`, the `Puller` calls `on_message` exactly once, ack→no redelivery. Then nack→redelivery within `retry_policy.minimum_backoff`. Lease-extension path: simulate a 30s processing window with `max_lease_duration=60` and verify the message stays leased. |
 | `test_publisher.py` | Publish a completion, subscribe with a fresh test-only subscription, verify the message body and attributes match what was sent. |
 | `test_gcs.py` | Round-trip a JPEG through fake-gcs-server: upload → download → bytes match. Object is written under the configured `output_prefix`. |
@@ -182,7 +227,7 @@ sibling repo, `../ImageGenContract/`:
 - `image_gen_contract/messages.py` — Pydantic v2 bindings both repos import as `from image_gen_contract import …`
 
 Both repos depend on the `ImageGenContract` package — there is no second
-copy of the schemas or models in this tree. `run_tests.sh` runs
+copy of the schemas or models in this tree. `tests/run_tests.sh` runs
 `pip install -e ../ImageGenContract --quiet` before pytest so the editable
 install always tracks the sibling repo's source.
 
@@ -233,7 +278,11 @@ GPU tests are not run in CI (GitHub-hosted runners have no GPUs). Instead, a sel
 
 ## 9. Coverage Targets
 
-- Unit: > 90% line coverage on `imagegen/` excluding `model.py` (out of scope; covered by model team's own tests).
+- Unit: 100% line coverage on `imagegen/` (`fail_under = 100`), excluding the
+  thin I/O glue that has no logic to unit-test: `main.py` (production wiring) and
+  `comfyui_client.py` (real ComfyUI HTTP+WebSocket transport — pinned by the §3
+  integration test). `model.py` and `workflow.py` are fully unit-tested via the
+  in-process mock ComfyUI (§2.1).
 - Integration: every public method on `Puller`, `CompletionPublisher`, and `GcsClient` exercised at least once.
 - E2E: every row of the failure modes table (DESIGN §11.5) exercised by at least one named test.
 
