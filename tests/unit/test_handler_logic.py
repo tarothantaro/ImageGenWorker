@@ -73,8 +73,8 @@ class _FakeStorageClient:
 
 
 @dataclass
-class _StubModelResult:
-    images: list[bytes]
+class _StubPanel:
+    image: bytes
     width: int = 64
     height: int = 64
     model_version: str = "stub-1"
@@ -95,25 +95,30 @@ class _StubModel:
         template_id: str,
         configurable_options: dict[str, object],
         input_images: list[bytes],
-        output_count: int,
-    ) -> _StubModelResult:
+    ) -> Any:
+        # Mirrors the real model: validate eagerly (raise here), then return an
+        # iterator of one panel per output image.
         self.seen_kwargs = {
             "story_id": story_id,
             "user_id": user_id,
             "template_id": template_id,
             "configurable_options": configurable_options,
             "input_images": input_images,
-            "output_count": output_count,
         }
         if self.raise_on_generate is not None:
             raise self.raise_on_generate
-        return _StubModelResult(images=list(self.images))
+        return iter([_StubPanel(image=img) for img in self.images])
 
 
 class _RecordingPublisherClient:
-    def __init__(self, raise_on_publish: BaseException | None = None) -> None:
+    def __init__(
+        self,
+        raise_on_publish: BaseException | None = None,
+        raise_on_status: str | None = None,
+    ) -> None:
         self.published: list[bytes] = []
         self._raise = raise_on_publish
+        self._raise_on_status = raise_on_status
 
     def publish(
         self, topic: str, data: bytes, **attributes: str
@@ -127,6 +132,11 @@ class _RecordingPublisherClient:
 
         if self._raise is not None:
             raise self._raise
+        if (
+            self._raise_on_status is not None
+            and attributes.get("status") == self._raise_on_status
+        ):
+            raise RuntimeError(f"pubsub down on {self._raise_on_status}")
         return _Future()
 
 
@@ -184,6 +194,10 @@ def _last_completion(client: _RecordingPublisherClient) -> CompletionMessage:
     return CompletionMessage.model_validate_json(client.published[-1])
 
 
+def _all_completions(client: _RecordingPublisherClient) -> list[CompletionMessage]:
+    return [CompletionMessage.model_validate_json(b) for b in client.published]
+
+
 # --- tests --------------------------------------------------------------------
 
 
@@ -210,10 +224,25 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
         del name
         assert blob.uploaded[0][1] == "image/png"
 
-    # A 'completed' completion was published.
-    completion = _last_completion(pub_client)
+    # Published: one panel_completed per image, then a terminal completed.
+    published = _all_completions(pub_client)
+    assert [c.status for c in published] == [
+        "panel_completed",
+        "panel_completed",
+        "completed",
+    ]
+    assert [c.panel_index for c in published[:2]] == [0, 1]
+    assert all(c.total_panels == 2 for c in published[:2])
+    # Each panel_completed carries only its own image.
+    assert published[0].output_images is not None
+    assert published[0].output_images[0].gcs_uri == "gs://outputs/u1/s1/outputs/0.png"
+    assert published[1].output_images[0].gcs_uri == "gs://outputs/u1/s1/outputs/1.png"
+
+    # The terminal completed carries every image.
+    completion = published[-1]
     assert completion.status == "completed"
     assert completion.story_id == "s1"
+    assert completion.panel_index is None
     assert completion.output_images is not None
     assert {o.gcs_uri for o in completion.output_images} == {
         "gs://outputs/u1/s1/outputs/0.png",
@@ -295,6 +324,21 @@ def test_handle_nacks_when_completion_publish_fails_so_job_redelivers() -> None:
     handler.handle(msg)
 
     assert msg.nacks == 1 and msg.acks == 0
+
+
+def test_handle_nacks_when_final_completion_publish_fails() -> None:
+    # Panels publish fine, but the terminal 'completed' publish fails → nack,
+    # so Pub/Sub redelivers and the whole job re-runs (DESIGN §6.2).
+    msg = _FakePubsubMessage(_job_payload(output_count=2))
+    model = _StubModel(images=[b"out0", b"out1"])
+    pub_client = _RecordingPublisherClient(raise_on_status="completed")
+    handler, _storage = _build_handler(model=model, publisher_client=pub_client)
+
+    handler.handle(msg)
+
+    assert msg.nacks == 1 and msg.acks == 0
+    statuses = [c.status for c in _all_completions(pub_client)]
+    assert statuses == ["panel_completed", "panel_completed", "completed"]
 
 
 def test_handle_nacks_when_failed_completion_publish_itself_fails() -> None:

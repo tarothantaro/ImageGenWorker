@@ -28,6 +28,7 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.is_emulator is False
     assert cfg.comfyui_url == "http://host.docker.internal:8188"
     assert cfg.model_version == "comfyui-flux2"
+    assert cfg.comfyui_request_timeout_seconds == 180
 
 
 def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:
@@ -55,12 +56,21 @@ def test_load_config_picks_up_comfyui_overrides() -> None:
     env = _VALID_ENV | {
         "COMFYUI_URL": "http://gpu-box:8188",
         "MODEL_VERSION": "flux2-2026-05",
+        "COMFYUI_REQUEST_TIMEOUT_SECONDS": "300",
     }
 
     cfg = load_config(env)
 
     assert cfg.comfyui_url == "http://gpu-box:8188"
     assert cfg.model_version == "flux2-2026-05"
+    assert cfg.comfyui_request_timeout_seconds == 300
+
+
+def test_comfyui_request_timeout_rejects_non_positive() -> None:
+    env = _VALID_ENV | {"COMFYUI_REQUEST_TIMEOUT_SECONDS": "0"}
+
+    with pytest.raises(ConfigError, match="COMFYUI_REQUEST_TIMEOUT_SECONDS"):
+        load_config(env)
 
 
 def test_load_config_uses_real_os_environ_when_no_dict_passed(

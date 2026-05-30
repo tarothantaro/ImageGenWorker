@@ -217,7 +217,36 @@ Pub/Sub message attributes (used for filtering / observability, not the schema):
 
 For failures the worker emits a completion with `status: "failed"` and `failure_reason: "<short code>"` instead of `output_images`. The result processor flips the story to `failed` and refunds credits.
 
-`event_id` is the dedup key on the API side (`../Application/DESIGN.md` §11.3.5 — webhook dedup, 24h TTL in Redis: `seen:event:{event_id}`). The worker generates a fresh `event_id` (ULID) for **every** completion publish, including retries — this lets the API side detect "same completion redelivered" (cheap dedup) versus "different model run produced a second completion for the same story" (defensive dedup, §6.4).
+**Incremental `panel_completed` events.** A story is made of **panels** (§7.2: one panel == one ComfyUI run == one output image). Rather than make the user wait for the whole multi-minute job, the worker publishes a non-terminal `panel_completed` event the instant each panel lands, then sends the next panel's request. Each carries just that panel's image plus `panel_index` / `total_panels`:
+
+```json
+{
+  "schema_version": 1,
+  "event_id": "evt_01HX...",
+  "story_id": "01HX...ULID",
+  "user_id": "uid_abc...",
+  "request_id": "req_...",
+  "status": "panel_completed",
+  "output_images": [
+    {
+      "index": 1,
+      "gcs_uri": "gs://tarostory-prod-outputs/uid_abc/01HX.../outputs/1.png",
+      "width": 1024,
+      "height": 736,
+      "bytes": 1055791
+    }
+  ],
+  "model_version": "tarostory-img-2026-04",
+  "processing_seconds": 14.2,
+  "completed_at": "2026-05-05T12:35:10Z",
+  "panel_index": 1,
+  "total_panels": 4
+}
+```
+
+After the **last** panel the worker publishes the terminal `status: "completed"` carrying **all** `output_images`, and only then acks the job. So a successful N-panel story produces N `panel_completed` events followed by one `completed`. The schema lives in `../ImageGenContract` (`completion.json` + `messages.py`); the API-side handling of `panel_completed` is described in §6.4.
+
+`event_id` is the dedup key on the API side (`../Application/DESIGN.md` §11.3.5 — webhook dedup, 24h TTL in Redis: `seen:event:{event_id}`). The worker generates a fresh `event_id` (ULID) for **every** publish — `panel_completed`, `completed`, and `failed`, including retries — this lets the API side detect "same event redelivered" (cheap dedup) versus "different model run produced a second completion for the same story" (defensive dedup, §6.4).
 
 ## 6. Idempotency and Retries
 
@@ -270,7 +299,9 @@ The result processor uses **two-tier idempotency** (../Application/DESIGN.md §6
 1. **Event-id dedup (cheap path).** `SET seen:event:{event_id} 1 NX EX 86400` against Redis. On duplicate (e.g., Pub/Sub redelivered the completion message itself before the API side acked), return 200 immediately.
 2. **Story-status dedup (defensive path).** Even if the `event_id` is fresh, read `stories/{story_id}.status`. If it is already in a terminal state (`pending_selection`, `completed`, `failed`), the work was already finalized — most likely a duplicate model run produced a *different* completion message for the same story (worker crashed after publishing once, Pub/Sub redelivered the original job, a fresh model run produced a second completion with a new `event_id`). Log `orphaned_completion`, best-effort delete the duplicate's output GCS objects under `output_prefix` so we don't keep two copies, write an `audit_log` row, ack, and return.
 
-Otherwise, open one Firestore transaction matching the completion's `status` field:
+**`status: 'panel_completed'` (incremental, non-terminal) is handled *before* the story-status dedup and does not go through the terminal transaction below.** After the event-id dedup (step 1), the processor writes the single panel image into `stories/{story_id}/output_images/{panel_index}` (idempotent on `panel_index` — a job that nacks and re-runs republishes the same panels, which must overwrite, not duplicate), publishes `notify:{story_id}` so the SSE stream surfaces the new panel, and returns 200. It must **not** flip the story status, debit credits, or run the story-status dedup — a `panel_completed` arriving after the story is already terminal is a stale redelivery and is safely ignored (the slot write is idempotent). Finalization happens only on the terminal `completed`/`failed` below. **This `panel_completed` branch is the one piece of §6.4 that lives in `../Application` and is not yet implemented there — see the note at the end of this section.**
+
+Otherwise (`completed` / `failed`), open one Firestore transaction matching the completion's `status` field:
 
 **`status: 'completed'` (image gen success):**
 
@@ -294,7 +325,9 @@ After commit, run the queued GCS deletes (best-effort; a daily reconciler sweeps
 
 **Same code path is used by the `image-gen-jobs-dlq` push handler** (../Application/DESIGN.md §6.4.3): it synthesizes a `failed` completion with `failure_reason='undeliverable'` and runs the failure transaction above.
 
-Net effect: regardless of how many times Pub/Sub redelivers, regardless of whether the worker crashes mid-run, the user is **charged at most once per story** and any **photo that never made it to a successful completion is deleted** — so the user never sees a phantom upload they didn't get a story for.
+Net effect: regardless of how many times Pub/Sub redelivers, regardless of whether the worker crashes mid-run, the user is **charged at most once per story** and any **photo that never made it to a successful completion is deleted** — so the user never sees a phantom upload they didn't get a story for. The incremental `panel_completed` events never touch credits or status, so they can't change this invariant.
+
+> **Cross-repo work item (not in this repo).** The worker side of incremental delivery is implemented here; the API side is not. `../Application`'s `result_processor` must add the `panel_completed` branch above (write the panel image into `output_images/{panel_index}`, publish `notify:{story_id}`, no finalization) and the SSE/FCM layer must relay a per-panel event to the client. Until that lands, the API server will receive `panel_completed` messages it doesn't understand — keep the worker's incremental publishing behind the same release as the API change, or have the API ignore unknown statuses, to avoid `orphaned_completion` churn. The contract change (`status` enum + `panel_index`/`total_panels`) is already in `../ImageGenContract`.
 
 ## 7. Worker Layout
 
@@ -394,33 +427,36 @@ The image is pushed to a private registry (`ghcr.io/<org>/imagegen-worker:<git-s
 Assets bundled with the package (`pyproject.toml` `package-data`):
 
 - `imagegen/workflows/2/workflow.json` — a Flux 2 image-edit + ReActor face-swap graph in ComfyUI **API format**; `workflows/2/config.json` lists, positionally, the nodes a template may customize.
-- `imagegen/templates/3/config.json` — the `custom` template: one panel of `{field: value}` presets parallel to workflow 2's node list (input image, face source, prompt, steps, seed, V1/V2 filename prefixes).
+- `imagegen/templates/3/config.json` — the `custom` template. Each **panel** is a list of `{field: value}` presets parallel to workflow 2's node list (input image, face source, prompt, steps, seed, V1/V2 filename prefixes). Template 3 ships **one** panel; a multi-scene story is a template with multiple panels. Image filenames carry `USER_ID` / `STORY_ID` placeholders (e.g. `USER_ID_STORY_ID_INPUT_1.png`) that resolve to the per-story name the worker uploads the photo under — so the rendered `LoadImage` node references exactly what ComfyUI stored.
 
-`generate(*, story_id, user_id, template_id, configurable_options, input_images, output_count)` (note `story_id`/`user_id` are passed through from the job so the workflow's `USER_ID_STORY_ID` filename prefixes resolve per-story):
+`generate(*, story_id, user_id, template_id, configurable_options, input_images)` returns an **iterator of one result per template panel** — *one panel == one ComfyUI run == one output image* — consumed lazily by the handler so each panel is uploaded + published before the next request is sent. `story_id`/`user_id` thread through so the `USER_ID_STORY_ID` placeholders resolve per-story. Steps:
 
-1. Validate the input image bytes (magic-byte sniff → `CorruptInputError`) and the supported `configurable_options` (type/range → `InvalidConfigError`).
-2. Load + validate the template/workflow (missing or malformed asset → `UnsupportedTemplateError`).
-3. Upload each input photo once; workflow 2 points both LoadImage nodes at the same `character.png` slot, so a single photo fills the base image *and* the face-swap source.
-4. Run the workflow **`output_count` times**, varying `noise_seed` per run (`base_seed + index`), and collect the final face-restored image — the SaveImage node whose substituted prefix ends `_V2` — from each. The worker filters ComfyUI's history on that per-story prefix.
+1. Validate the input image bytes (magic-byte sniff → `CorruptInputError`) and the supported `configurable_options` (type/range → `InvalidConfigError`). *(eager — before any ComfyUI call)*
+2. Load + validate the template/workflow (missing or malformed asset → `UnsupportedTemplateError`); every panel must line up positionally with the workflow config's node list. *(eager)*
+3. Upload each distinct input slot once, **under its substituted per-story filename**. Workflow 2 points both LoadImage nodes at the same input slot, so a single photo fills the base image *and* the face-swap source. *(eager)*
+4. For each panel: render the API-format workflow with that panel's values, submit it, and **block on the live `/ws` stream until that run completes** (subject to the per-request timeout below). Collect the final face-restored image — the SaveImage node whose substituted prefix ends `_V2` — by filtering ComfyUI's history on that per-story prefix, and yield it. Then move to the next panel.
 
-`configurable_options` (all optional; each falls back to the template default):
+The number of panels is the number of ComfyUI calls; the handler expects it to equal the job's `output_count` and reports `invalid_config` if it doesn't (§6.2). Each panel run is bounded by a **configurable per-request timeout** (`COMFYUI_REQUEST_TIMEOUT_SECONDS`, default 180s; §10.4): if ComfyUI doesn't finish a panel within it, the run is treated as transient (nack → redeliver). It is per-request, not per-job — an N-panel job can take up to N × the timeout, so keep N × timeout under `MAX_PROCESSING_SECONDS`.
+
+`configurable_options` (all optional; applied to **every** panel, each field falling back to that panel's template default):
 
 | Key | Type | Workflow target |
 |---|---|---|
-| `prompt` | string | CLIPTextEncode `text` (node `68:6`) |
-| `steps` | int 1–30 | step count (node `68:90`) |
-| `seed` | int ≥ 0 | base `noise_seed` (node `68:25`); run *i* uses `seed + i` |
+| `prompt` | string | CLIPTextEncode `text` (node `68:6`) — replaces every panel's prompt |
+| `steps` | int 1–30 | step count (node `68:90`) — replaces every panel's step count |
+| `seed` | int ≥ 0 | `noise_seed` (node `68:25`); panel *i* uses `seed + i`. Absent → each panel keeps its own template `noise_seed`. |
 
-ComfyUI's surface sits behind the `ComfyUITransport` Protocol, injected the same way the worker injects `google-cloud-*` clients. It exposes HTTP (`upload_image`/`queue_prompt`/`get_history`/`fetch_image`) plus `open_events` — a context manager yielding the live `/ws` message stream. The model opens the socket *before* queuing (so no early event is missed), then blocks in `_await_execution` consuming `executing`/`progress` events until a terminal `executing(node=None)` / `execution_success` for its `prompt_id`. The real transport (`comfyui_client.py`, sync `httpx` + `websocket-client`) is wired by `load_model(cfg)` from `COMFYUI_URL` / `MODEL_VERSION` (§10.4); unit tests inject an in-process mock that replays the same event stream, and an integration test runs the real transport against a runnable mock ComfyUI container (TESTING.md §2.1 / §3). Transport errors map onto the failure taxonomy (§6.2):
+ComfyUI's surface sits behind the `ComfyUITransport` Protocol, injected the same way the worker injects `google-cloud-*` clients. It exposes HTTP (`upload_image`/`queue_prompt`/`get_history`/`fetch_image`) plus `open_events` — a context manager yielding the live `/ws` message stream. Per panel, the model opens the socket *before* queuing (so no early event is missed), then blocks in `_await_execution` consuming `executing`/`progress` events until a terminal `executing(node=None)` / `execution_success` for its `prompt_id`, or the per-request deadline elapses. The real transport (`comfyui_client.py`, sync `httpx` + `websocket-client`) is wired by `load_model(cfg)` from `COMFYUI_URL` / `MODEL_VERSION` / `COMFYUI_REQUEST_TIMEOUT_SECONDS` (§10.4); unit tests inject an in-process mock that replays the same event stream, and an integration test runs the real transport against a runnable mock ComfyUI container (TESTING.md §2.1 / §3). A manual smoke script (`scripts/smoke_real_comfyui.py`) drives the real model against a live ComfyUI container with a real photo (TESTING.md §7). Transport errors map onto the failure taxonomy (§6.2):
 
 | ComfyUI condition | Transport raises | Mapped to | Disposition |
 |---|---|---|---|
 | connection refused / 5xx / WS recv timeout / stream closed before done | `ComfyUIUnavailable` | `ModelTransientError` | nack → redeliver |
 | 4xx (invalid prompt) | `ComfyUIBadRequest` | `InvalidConfigError` | report `invalid_config` → ack |
 | `execution_error` on the WS stream | `ComfyUIExecutionError` | `ModelTransientError` | nack → redeliver |
+| panel not finished within `COMFYUI_REQUEST_TIMEOUT_SECONDS` | `ComfyUIUnavailable` | `ModelTransientError` | nack → redeliver |
 | no matching / non-PNG output | — | `ModelTransientError` | nack → redeliver |
 
-Two config knobs are added for this model (defaults keep existing deployments working): `COMFYUI_URL` (default `http://host.docker.internal:8188`) and `MODEL_VERSION` (default `comfyui-flux2`, stamped onto completions).
+Three config knobs are added for this model (defaults keep existing deployments working): `COMFYUI_URL` (default `http://host.docker.internal:8188`), `MODEL_VERSION` (default `comfyui-flux2`, stamped onto completions), and `COMFYUI_REQUEST_TIMEOUT_SECONDS` (default `180` — the per-panel wait before a run is treated as transient).
 
 ## 8. Server-Side Pieces
 
@@ -644,6 +680,7 @@ The key is **never** baked into the image and **never** committed to a repo.
 | `MODEL_DIR` | `/app/dev-model` (stub) | `/app/models` (mounted from host) | Read-only in both. |
 | `COMFYUI_URL` | `http://host.docker.internal:8188` | `http://host.docker.internal:8188` | ComfyUI container the model submits to (§7.2). |
 | `MODEL_VERSION` | `comfyui-flux2` | `comfyui-flux2` | Stamped onto every completion. |
+| `COMFYUI_REQUEST_TIMEOUT_SECONDS` | 180 | 180 | Per-panel ComfyUI wait before transient failure (§7.2). Keep `panels × this` < `MAX_PROCESSING_SECONDS`. |
 
 ## 11. Operations
 

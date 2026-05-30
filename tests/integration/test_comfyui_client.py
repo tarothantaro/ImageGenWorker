@@ -16,6 +16,7 @@ import asyncio
 import socket
 import threading
 from collections.abc import Iterator
+from typing import Any
 
 import pytest
 
@@ -91,7 +92,7 @@ def mock_comfyui_execution_error() -> Iterator[str]:
     yield from _serve(fail_mode="execution_error")
 
 
-def _generate(base_url: str, **overrides: object) -> object:
+def _generate(base_url: str, **overrides: object) -> list[Any]:
     transport = HttpComfyUIClient(base_url=base_url, timeout=15.0)
     try:
         model = ComfyUIModel(transport, model_version="it-test")
@@ -101,29 +102,29 @@ def _generate(base_url: str, **overrides: object) -> object:
             "template_id": "3",
             "configurable_options": {"prompt": "hello", "steps": 6, "seed": 1},
             "input_images": [INPUT_PNG],
-            "output_count": 2,
         }
         kwargs.update(overrides)
-        return model.generate(**kwargs)  # type: ignore[arg-type]
+        # Consume the panel iterator here, while the transport is still open.
+        return list(model.generate(**kwargs))  # type: ignore[arg-type]
     finally:
         transport.close()
 
 
 def test_real_transport_streams_to_completion(mock_comfyui: str) -> None:
-    result = _generate(mock_comfyui)
+    panels = _generate(mock_comfyui)
 
-    assert len(result.images) == 2  # type: ignore[attr-defined]
-    assert result.width == 1024 and result.height == 736  # type: ignore[attr-defined]
-    assert all(img[:8] == b"\x89PNG\r\n\x1a\n" for img in result.images)  # type: ignore[attr-defined]
+    assert len(panels) == 1  # template 3 is a single-panel template
+    assert panels[0].width == 1024 and panels[0].height == 736
+    assert panels[0].image[:8] == b"\x89PNG\r\n\x1a\n"
 
 
 def test_real_transport_maps_bad_prompt(mock_comfyui_bad_prompt: str) -> None:
     with pytest.raises(InvalidConfigError):
-        _generate(mock_comfyui_bad_prompt, output_count=1)
+        _generate(mock_comfyui_bad_prompt)
 
 
 def test_real_transport_maps_execution_error(
     mock_comfyui_execution_error: str,
 ) -> None:
     with pytest.raises(ModelTransientError):
-        _generate(mock_comfyui_execution_error, output_count=1)
+        _generate(mock_comfyui_execution_error)

@@ -45,8 +45,8 @@ Located at `tests/unit/`. No I/O, no subprocess, no emulators, no `time.sleep`. 
 | `test_completion_builder.py` | Building a `job-completed` payload from a `JobResult`. Asserts that every retry generates a fresh `event_id` (DESIGN §5.2). |
 | `test_handler_logic.py` | The pure-logic part of `job_handler.py` with `gcs` and `publisher` mocked, exercising the decision tree. |
 | `test_workflow.py` | The pure workflow renderer (`workflow.py`): loads `workflows/2` + `templates/3`, applies overrides/placeholders/image-remap, selects the `_V2` output. Malformed assets → `UnsupportedTemplateError`. |
-| `test_model.py` | `ComfyUIModel` (`model.py`) against the mock ComfyUI container: the exact workflow + params sent, per-output seed variation, V2 selection, and every worker-side (`CorruptInput`/`InvalidConfig`/`UnsupportedTemplate`) and ComfyUI-side error mapping. |
-| `test_comfyui_worker.py` | Full `JobHandler` + real `ComfyUIModel` + mock ComfyUI, driven by job messages: asserts GCS outputs, the published completion, and ack/nack per outcome. |
+| `test_model.py` | `ComfyUIModel` (`model.py`) against the mock ComfyUI container: the exact workflow + params sent, **one image per template panel** (incl. multi-panel: per-panel values, and `seed + i` per-panel variation under a global seed override), V2 selection, the per-request timeout, and every worker-side (`CorruptInput`/`InvalidConfig`/`UnsupportedTemplate`) and ComfyUI-side error mapping. |
+| `test_comfyui_worker.py` | Full `JobHandler` + real `ComfyUIModel` + mock ComfyUI, driven by job messages: asserts GCS outputs, the incremental `panel_completed` events + terminal `completed`, and ack/nack per outcome. |
 
 Run:
 ```bash
@@ -240,6 +240,20 @@ but rejects in prod.
 ## 7. Manual / Smoke Testing
 
 For changes to GPU / model integration that emulators can't catch:
+
+### 7.0 Against a live ComfyUI container
+
+`scripts/smoke_real_comfyui.py` drives the real `ComfyUIModel` + `HttpComfyUIClient` (httpx + websocket-client) through template 3 / workflow 2 against a running ComfyUI container, with a real input photo — the GPU/model path the in-process mock and emulators can't cover. No Pub/Sub or GCS involved; it exercises upload → render → submit → live WS stream → fetch the `_V2` image.
+
+```bash
+# ComfyUI container up on :8188 (see ../ImageGenComfyui/docker-compose.yml)
+PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
+    --url http://localhost:8188 \
+    --input tests/assets/test.jpg \
+    --out /tmp/smoke_out --timeout 300
+```
+
+It exits non-zero on any failure and writes each produced panel to `--out`. The workflow assets must match the container's installed custom nodes — e.g. the bundled `ReActorOptions` node carries `restore_swapped_only`, required by current `comfyui-reactor`; a missing required input makes ComfyUI silently drop that output branch (`Failed to validate prompt for output …` in the container log) and the worker then reports "no output image matching `…_V2`".
 
 ### 7.1 Against a dev GCP project
 

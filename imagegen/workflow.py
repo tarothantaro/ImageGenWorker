@@ -15,9 +15,15 @@ Vocabulary (unchanged from the legacy service):
 * A **template** (``templates/<id>/config.json``) carries one or more
   **panels**. Each panel is a list parallel to the workflow config's node list;
   every entry is a ``{field_name: value}`` dict written into that node's
-  ``inputs``. We only use the *first* panel: in the new worker a single job maps
-  to one template panel, and ``output_count`` variations are produced by varying
-  the seed (DESIGN.md §"Job→workflow"), not by walking template panels.
+  ``inputs``. **One panel == one ComfyUI run == one output image** (DESIGN.md
+  §7.2). A story with N scenes is N panels; the worker renders + submits each
+  panel in turn.
+
+Image filenames in a panel carry ``USER_ID`` / ``STORY_ID`` placeholders
+(e.g. ``USER_ID_STORY_ID_INPUT_1.png``). After substitution they become the
+*per-story* filenames the worker uploads the input photos under — so the
+rendered ``LoadImage`` node references exactly the name ComfyUI stored, with no
+separate remap step (the model uploads under the substituted slot name).
 
 A missing or malformed workflow/template is treated as
 :class:`~imagegen.failure_classification.UnsupportedTemplateError` — a corrupt
@@ -44,26 +50,24 @@ FINAL_OUTPUT_SUFFIX = "_V2"
 class PreparedTemplate:
     """Everything needed to render a template's workflow, loaded once.
 
-    Reused across the per-output runs of a single job so the JSON files are
-    read (and validated) exactly once per job, not once per output image.
+    Reused across the per-panel runs of a single job so the JSON files are
+    read (and validated) exactly once per job, not once per panel.
     """
 
     template_id: str
     workflow_id: str
     config_nodes: list[dict[str, Any]]
-    panel: list[dict[str, Any]]
+    panels: list[list[dict[str, Any]]]
     base_workflow: dict[str, Any]
     image_slots: list[str]
-    """Distinct default ``image`` filenames in the panel, in node order. Each is
-    a slot the caller fills with one uploaded input image (see
-    :meth:`WorkflowBuilder.render`)."""
+    """Distinct ``image`` placeholder filenames across all panels, in first-seen
+    order. Each is one input slot the caller fills with an uploaded photo (the
+    filename is the *pre-substitution* template value, e.g.
+    ``USER_ID_STORY_ID_INPUT_1.png``)."""
 
-    def panel_default(self, field: str) -> Any | None:
-        """Return the template's default value for ``field`` (first match) or None."""
-        for fields in self.panel:
-            if field in fields:
-                return fields[field]
-        return None
+    @property
+    def panel_count(self) -> int:
+        return len(self.panels)
 
 
 def _substitute(value: Any, placeholders: dict[str, str]) -> Any:
@@ -96,8 +100,8 @@ class WorkflowBuilder:
         """Load + validate a template and its workflow, ready for :meth:`render`.
 
         Raises :class:`UnsupportedTemplateError` if any asset is missing, if the
-        template names no workflow, has no panel, or its panel doesn't line up
-        positionally with the workflow config's node list.
+        template names no workflow, has no panels, or *any* panel doesn't line
+        up positionally with the workflow config's node list.
         """
         template = self._load_json(self._template_root / template_id / "config.json")
         workflow_id = template.get("workflow_id")
@@ -112,30 +116,32 @@ class WorkflowBuilder:
         panels = template.get("panels", [])
         if not panels:
             raise UnsupportedTemplateError(f"template {template_id!r} has no panels")
-        panel = panels[0]
 
-        if len(panel) != len(config_nodes):
-            raise UnsupportedTemplateError(
-                f"template {template_id!r} panel has {len(panel)} entries but "
-                f"workflow {workflow_id!r} config declares {len(config_nodes)} nodes"
-            )
+        for panel_index, panel in enumerate(panels):
+            if len(panel) != len(config_nodes):
+                raise UnsupportedTemplateError(
+                    f"template {template_id!r} panel {panel_index} has {len(panel)} "
+                    f"entries but workflow {workflow_id!r} config declares "
+                    f"{len(config_nodes)} nodes"
+                )
 
         base_workflow = self._load_json(
             self._workflow_root / workflow_id / "workflow.json"
         )
 
         image_slots: list[str] = []
-        for fields in panel:
-            if "image" in fields:
-                name = fields["image"]
-                if name not in image_slots:
-                    image_slots.append(name)
+        for panel in panels:
+            for fields in panel:
+                if "image" in fields:
+                    name = fields["image"]
+                    if name not in image_slots:
+                        image_slots.append(name)
 
         return PreparedTemplate(
             template_id=template_id,
             workflow_id=str(workflow_id),
             config_nodes=config_nodes,
-            panel=panel,
+            panels=panels,
             base_workflow=base_workflow,
             image_slots=image_slots,
         )
@@ -145,27 +151,26 @@ class WorkflowBuilder:
     def render(
         self,
         prepared: PreparedTemplate,
+        panel: list[dict[str, Any]],
         *,
         placeholders: dict[str, str],
-        image_remap: dict[str, str],
         prompt: str | None,
         steps: int | None,
         seed: int | None,
     ) -> dict[str, Any]:
-        """Return a fresh API-format workflow with this run's values applied.
+        """Return a fresh API-format workflow with ``panel``'s values applied.
 
         Order of operations per node field (mirrors the legacy service):
 
-        1. start from the template panel default,
+        1. start from the panel default,
         2. apply the request override if one targets that field name
            (``text``→prompt, ``value``/``steps``→steps, ``noise_seed``→seed),
-        3. substitute ``USER_ID`` / ``STORY_ID`` placeholders in string values,
-        4. for an ``image`` field, remap the (substituted) filename to the
-           uploaded input name.
+        3. substitute ``USER_ID`` / ``STORY_ID`` placeholders in string values.
 
-        ``None`` overrides are skipped so the template default stands. The base
-        workflow is deep-copied, so callers may render many times (one per
-        output image) without runs bleeding into each other.
+        ``None`` overrides are skipped so the panel default stands — in
+        particular a ``None`` ``seed`` keeps each panel's own ``noise_seed``.
+        The base workflow is deep-copied, so callers may render every panel
+        without runs bleeding into each other.
         """
         overrides: dict[str, Any] = {}
         if prompt is not None:
@@ -177,7 +182,7 @@ class WorkflowBuilder:
             overrides["noise_seed"] = seed
 
         workflow = copy.deepcopy(prepared.base_workflow)
-        for node_config, fields in zip(prepared.config_nodes, prepared.panel):
+        for node_config, fields in zip(prepared.config_nodes, panel):
             node_id = str(node_config["id"])
             node = workflow.get(node_id)
             if node is None:
@@ -192,10 +197,7 @@ class WorkflowBuilder:
                         f"input {field!r}"
                     )
                 value = overrides.get(field, default)
-                value = _substitute(value, placeholders)
-                if field == "image":
-                    value = image_remap.get(value, value)
-                inputs[field] = value
+                inputs[field] = _substitute(value, placeholders)
 
         return workflow
 

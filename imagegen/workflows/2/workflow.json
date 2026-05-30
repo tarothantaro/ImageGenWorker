@@ -31,7 +31,8 @@
       "source_faces_order": "large-small",
       "source_faces_index": "0",
       "detect_gender_source": "no",
-      "console_log_level": 1
+      "console_log_level": 1,
+      "restore_swapped_only": true
     },
     "class_type": "ReActorOptions",
     "_meta": {

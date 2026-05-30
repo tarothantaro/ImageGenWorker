@@ -3,21 +3,32 @@
 DESIGN.md §6.2 + §7. The model is injected via Protocol so unit tests can
 substitute a deterministic stub. Failure classification routes exceptions
 to either a 'failed' completion + ack, or a NACK and Pub/Sub redelivery.
+
+The model yields one panel at a time (DESIGN.md §7.2). For each panel the
+handler uploads the image to GCS and publishes a ``panel_completed`` event, so
+the API can stream images to the user as they land; only after every panel does
+it publish the terminal ``completed`` and ack the job.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Protocol, runtime_checkable
+from typing import Iterable, Protocol, runtime_checkable
 
 from pydantic import ValidationError
 
 from image_gen_contract import JobMessage, OutputImage
 
-from .completion_builder import JobResult, build_completed, build_failed
+from .completion_builder import (
+    JobResult,
+    build_completed,
+    build_failed,
+    build_panel_completed,
+)
 from .failure_classification import (
     Disposition,
+    InvalidConfigError,
     PublishTransientError,
     classify,
 )
@@ -28,10 +39,29 @@ from .puller import PubsubMessage
 logger = logging.getLogger(__name__)
 
 
+class PanelResult(Protocol):
+    """One generated panel, as the model yields it."""
+
+    @property
+    def image(self) -> bytes: ...
+    @property
+    def width(self) -> int: ...
+    @property
+    def height(self) -> int: ...
+    @property
+    def model_version(self) -> str: ...
+    @property
+    def processing_seconds(self) -> float: ...
+
+
 @runtime_checkable
 class ImageGenModel(Protocol):
     """The model's wire surface. The production implementation is the ComfyUI
-    client in model.py (DESIGN.md §7.2); unit tests substitute a stub."""
+    client in model.py (DESIGN.md §7.2); unit tests substitute a stub.
+
+    ``generate`` returns an iterable of one :class:`PanelResult` per template
+    panel — consumed lazily so the handler can publish each panel as it lands.
+    """
 
     def generate(
         self,
@@ -41,21 +71,7 @@ class ImageGenModel(Protocol):
         template_id: str,
         configurable_options: dict[str, object],
         input_images: list[bytes],
-        output_count: int,
-    ) -> "ModelResult": ...
-
-
-class ModelResult(Protocol):
-    @property
-    def images(self) -> list[bytes]: ...
-    @property
-    def width(self) -> int: ...
-    @property
-    def height(self) -> int: ...
-    @property
-    def model_version(self) -> str: ...
-    @property
-    def processing_seconds(self) -> float: ...
+    ) -> Iterable[PanelResult]: ...
 
 
 class JobHandler:
@@ -122,41 +138,57 @@ class JobHandler:
         ordered = sorted(job.input_photos, key=lambda p: p.position)
         input_bytes = [self._gcs.download(p.gcs_uri) for p in ordered]
 
-        result = self._model.generate(
+        panels = self._model.generate(
             story_id=job.story_id,
             user_id=job.user_id,
             template_id=job.template_id,
             configurable_options=dict(job.configurable_options),
             input_images=input_bytes,
-            output_count=job.output_count,
         )
 
-        if len(result.images) != job.output_count:
-            # Treat as a reported failure — model produced wrong shape.
-            from .failure_classification import InvalidConfigError
-
-            raise InvalidConfigError(
-                f"model produced {len(result.images)} images, expected {job.output_count}"
+        # One ComfyUI run per panel. Upload + publish each as it lands, then let
+        # the model produce the next — the worker never fires all panels at once.
+        outputs: list[OutputImage] = []
+        total_seconds = 0.0
+        model_version = ""
+        for index, panel in enumerate(panels):
+            uri = GcsClient.output_uri(job.output_prefix, index, ext="png")
+            self._gcs.upload(uri, panel.image, content_type="image/png")
+            output = OutputImage(
+                index=index,
+                gcs_uri=uri,
+                width=panel.width,
+                height=panel.height,
+                bytes=len(panel.image),
+            )
+            outputs.append(output)
+            total_seconds += panel.processing_seconds
+            model_version = panel.model_version
+            # Incremental, non-terminal: surfaces this panel to the user now.
+            # A failed publish here raises PublishTransientError → nack/redeliver.
+            self._publisher.publish(
+                build_panel_completed(
+                    story_id=job.story_id,
+                    user_id=job.user_id,
+                    request_id=job.request_id,
+                    panel_index=index,
+                    total_panels=job.output_count,
+                    output_image=output,
+                    model_version=panel.model_version,
+                    processing_seconds=panel.processing_seconds,
+                )
             )
 
-        outputs: list[OutputImage] = []
-        for idx, img in enumerate(result.images):
-            uri = GcsClient.output_uri(job.output_prefix, idx, ext="png")
-            self._gcs.upload(uri, img, content_type="image/png")
-            outputs.append(
-                OutputImage(
-                    index=idx,
-                    gcs_uri=uri,
-                    width=result.width,
-                    height=result.height,
-                    bytes=len(img),
-                )
+        if len(outputs) != job.output_count:
+            # Model produced the wrong number of panels for this job.
+            raise InvalidConfigError(
+                f"model produced {len(outputs)} images, expected {job.output_count}"
             )
 
         return JobResult(
             output_images=outputs,
-            model_version=result.model_version,
-            processing_seconds=result.processing_seconds,
+            model_version=model_version,
+            processing_seconds=total_seconds,
         )
 
     def _handle_failure(

@@ -12,6 +12,10 @@ class ConfigError(ValueError):
 
 _DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
+# How long the worker waits for ComfyUI to finish ONE panel (one /prompt run)
+# before treating it as a transient failure. Per-request, not per-job: a job
+# with N panels can take up to N × this. DESIGN.md §7.2.
+_DEFAULT_REQUEST_TIMEOUT_SECONDS = 180
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,7 @@ class WorkerConfig:
     # env vars (DESIGN.md §"Worker Layout").
     comfyui_url: str = _DEFAULT_COMFYUI_URL
     model_version: str = _DEFAULT_MODEL_VERSION
+    comfyui_request_timeout_seconds: int = _DEFAULT_REQUEST_TIMEOUT_SECONDS
 
     @property
     def is_emulator(self) -> bool:
@@ -66,6 +71,13 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
         storage_emulator_host=src.get("STORAGE_EMULATOR_HOST") or None,
         comfyui_url=src.get("COMFYUI_URL", _DEFAULT_COMFYUI_URL),
         model_version=src.get("MODEL_VERSION", _DEFAULT_MODEL_VERSION),
+        comfyui_request_timeout_seconds=_parse_positive_int(
+            src.get(
+                "COMFYUI_REQUEST_TIMEOUT_SECONDS",
+                str(_DEFAULT_REQUEST_TIMEOUT_SECONDS),
+            ),
+            "COMFYUI_REQUEST_TIMEOUT_SECONDS",
+        ),
     )
 
 

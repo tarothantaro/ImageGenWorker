@@ -78,6 +78,10 @@ class CompletionPublisher:
             "event_id": msg.event_id,
             "status": msg.status,
         }
+        if msg.panel_index is not None:
+            # Lets DLQ / observability tooling group panel events without
+            # parsing the JSON body (mirrors the story_id attribute).
+            attrs["panel_index"] = str(msg.panel_index)
         last_exc: BaseException | None = None
         for attempt in range(1, self._max_attempts + 1):
             try:

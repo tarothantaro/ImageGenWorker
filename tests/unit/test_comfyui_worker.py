@@ -30,7 +30,7 @@ from tests.fakes.worker import (
 PNG = make_png(1024, 736)
 
 
-def _job_payload(*, output_count: int = 2, template_id: str = "3") -> dict[str, Any]:
+def _job_payload(*, output_count: int = 1, template_id: str = "3") -> dict[str, Any]:
     return {
         "schema_version": 1,
         "story_id": "s1",
@@ -83,11 +83,16 @@ def _last_completion(client: RecordingPublisherClient) -> CompletionMessage:
     return CompletionMessage.model_validate_json(client.published[-1])
 
 
+def _all_completions(client: RecordingPublisherClient) -> list[CompletionMessage]:
+    return [CompletionMessage.model_validate_json(b) for b in client.published]
+
+
 # --- happy path --------------------------------------------------------------
 
 
 def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
-    msg = FakePubsubMessage(_job_payload(output_count=2))
+    # Template 3 is a single-panel template → output_count == 1.
+    msg = FakePubsubMessage(_job_payload(output_count=1))
     storage = FakeStorageClient()
     _seed_inputs(storage)
     pub_client = RecordingPublisherClient()
@@ -98,20 +103,20 @@ def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
     assert msg.acks == 1 and msg.nacks == 0
 
     bucket = storage.bucket("outputs")
-    assert sorted(bucket.blobs) == [
-        "u1/s1/outputs/0.png",
-        "u1/s1/outputs/1.png",
-    ]
-    for blob in bucket.blobs.values():
-        assert blob.uploaded[0] == (PNG, "image/png")
+    assert sorted(bucket.blobs) == ["u1/s1/outputs/0.png"]
+    assert bucket.blobs["u1/s1/outputs/0.png"].uploaded[0] == (PNG, "image/png")
 
-    completion = _last_completion(pub_client)
+    # One incremental panel event, then the terminal completion.
+    published = _all_completions(pub_client)
+    assert [c.status for c in published] == ["panel_completed", "completed"]
+    assert published[0].panel_index == 0 and published[0].total_panels == 1
+
+    completion = published[-1]
     assert completion.status == "completed"
     assert completion.model_version == "mv-test"
     assert completion.output_images is not None
     assert {o.gcs_uri for o in completion.output_images} == {
-        "gs://outputs/u1/s1/outputs/0.png",
-        "gs://outputs/u1/s1/outputs/1.png",
+        "gs://outputs/u1/s1/outputs/0.png"
     }
     assert all(o.width == 1024 and o.height == 736 for o in completion.output_images)
 

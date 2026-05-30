@@ -57,6 +57,41 @@ def build_completed(
     )
 
 
+def build_panel_completed(
+    *,
+    story_id: str,
+    user_id: str,
+    request_id: str,
+    panel_index: int,
+    total_panels: int,
+    output_image: OutputImage,
+    model_version: str,
+    processing_seconds: float,
+    now: Callable[[], datetime] = _default_now,
+    new_event_id: Callable[[], str] = _default_event_id,
+) -> CompletionMessage:
+    """Incremental, non-terminal event for one finished panel (DESIGN.md §5.2).
+
+    Carries just this panel's image so the API can surface it to the user
+    immediately, without finalizing the story. Like every publish, it gets a
+    fresh event_id (the API dedupes on it).
+    """
+    return CompletionMessage(
+        schema_version=CURRENT_SCHEMA_VERSION,
+        event_id=new_event_id(),
+        story_id=story_id,
+        user_id=user_id,
+        request_id=request_id,
+        status="panel_completed",
+        output_images=[output_image],
+        model_version=model_version,
+        processing_seconds=processing_seconds,
+        completed_at=now(),
+        panel_index=panel_index,
+        total_panels=total_panels,
+    )
+
+
 def build_failed(
     *,
     story_id: str,
