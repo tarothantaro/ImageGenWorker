@@ -1,55 +1,51 @@
 # deploy/
 
 Stage coordinator for the image-gen worker, modeled on
-`../Application/client/deploy/`. The worker is a single surface (one Docker
-container), so unlike the client coordinator this dispatches to one compose
-stack per stage rather than to multiple per-surface scripts.
+`../Application`'s "everything per-stage" convention. The worker is a single
+surface (one Docker container), so each stage is a self-contained directory
+under `stages/<stage>/` with its own env + compose + entry scripts.
 
-Two files do the work:
+```
+deploy/
+├── deploy.sh              # thin dispatcher: ./deploy.sh <dev|prod> [args]
+└── stages/
+    ├── dev/               # emulator-backed, no GPU/creds (DESIGN.md §9)
+    │   ├── env.sh             # stage config (overridable inline)
+    │   ├── docker-compose.yml # fake-gcs + mock-comfyui + worker
+    │   ├── up.sh / down.sh    # start (build + --wait) / stop
+    │   ├── smoke.py / smoke.sh # seed GCS → publish job → read completion
+    │   └── README.md
+    └── prod/              # real GCP, pinned image, SA-key secret (DESIGN.md §10)
+        ├── env.sh
+        ├── docker-compose.yml
+        ├── deploy.sh          # pull + recreate (graceful drain)
+        └── README.md
+```
 
-1. **`env.sh`** — STAGE-aware environment, sourced first by `deploy.sh`.
-   Everything that varies by stage but is shared by the worker and the compose
-   files lives here: `GCP_PROJECT_ID`, `JOBS_SUBSCRIPTION`, `COMPLETION_TOPIC`,
-   `MAX_CONCURRENCY`, `MAX_PROCESSING_SECONDS`, `LOG_LEVEL`, `COMFYUI_URL`,
-   `MODEL_VERSION`, the emulator hosts (dev only), and which `COMPOSE_FILE` to
-   use. Every value is overridable from the caller's environment.
-2. **`deploy.sh`** — one entry point that sources `env.sh` and brings up the
-   right compose stack for the stage.
-
-## Stages
-
-| Stage  | Compose file              | Transport            | Notes |
-|--------|---------------------------|----------------------|-------|
-| `dev`  | `docker-compose.dev.yml`  | pubsub + GCS emulators | No GCP creds. Foreground `up --build`; Ctrl-C tears down. (DESIGN.md §9) |
-| `prod` | `docker-compose.yml`      | real GCP             | SA key via Docker secret. `pull` then detached recreate so the old container drains. (DESIGN.md §10) |
-
-"One image, two environments" (DESIGN.md §1): the same container image runs in
-both stages — only the env injected here differs.
+"One image, two environments" (DESIGN.md §1): the same `Dockerfile` (repo root)
+builds the image both stages run — only the env injected per stage differs.
 
 ## Usage
 
 ```bash
-# Dev: emulator stack, logs in the foreground.
-./deploy/deploy.sh dev
+# Dev: emulator stack wired to the Application local stack's Pub/Sub.
+./deploy/deploy.sh dev          # == deploy/stages/dev/up.sh
+deploy/stages/dev/smoke.sh      # verify end-to-end
 
 # Prod: pull the pinned image and recreate gracefully.
-./deploy/deploy.sh prod
-
-# Extra args pass straight through to docker compose:
-./deploy/deploy.sh dev --no-build
-./deploy/deploy.sh prod --remove-orphans
+IMAGE=ghcr.io/<org>/imagegen-worker@sha256:<digest> ./deploy/deploy.sh prod
 ```
 
-Override any stage default inline:
+Each stage's `env.sh` documents its knobs; every value is overridable from the
+caller's environment, e.g.:
 
 ```bash
+COMFYUI_URL=http://host.docker.internal:8188 ./deploy/deploy.sh dev
 GCP_PROJECT_ID=tarostory-staging MAX_CONCURRENCY=8 ./deploy/deploy.sh prod
 ```
 
-## Compose files
-
-`deploy.sh` expects `docker-compose.dev.yml` and `docker-compose.yml` at the
-repo root. Their specifications (services, GPU reservation, secrets, hardening)
-live in **DESIGN.md §9 (dev)** and **§10 (prod)**. If the file is missing,
-`deploy.sh` fails fast and points you there rather than running a half-wired
-stack.
+See `stages/dev/README.md` and `stages/prod/README.md` for the per-stage detail,
+including the dev **local-contract bridge** (the worker emits `panel_completed`,
+which the pinned `image-gen-contract` ref predates — dev installs the sibling
+`../ImageGenContract` clone until that contract is published and the pins are
+bumped).

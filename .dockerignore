@@ -1,0 +1,15 @@
+# Keep the build context (repo root) lean — the Dockerfile only needs
+# pyproject.toml + imagegen/. Everything below is test/dev cruft.
+.git
+.gitignore
+.pytest_cache
+.coverage
+**/__pycache__
+*.pyc
+.vscode
+.claude
+tests
+scripts
+deploy
+*.md
+dev-model

@@ -32,6 +32,37 @@ def _build_model(
     return load_model(cfg)
 
 
+class _SubscriberClientAdapter:  # pragma: no cover - production wiring
+    """Adapt the real ``SubscriberClient.subscribe`` to the Puller's Protocol.
+
+    The Puller (puller.py) is deliberately SDK-agnostic: it passes our own
+    ``FlowControl`` dataclass positionally. The real client instead expects a
+    ``pubsub_v1.types.FlowControl`` (it splats whatever it's given into one), so
+    a bare dataclass blows up with ``TypeError``. Convert at this boundary and
+    forward ``flow_control`` as the keyword the SDK documents — keeping puller.py
+    free of any google-cloud import.
+    """
+
+    def __init__(self, client: object) -> None:
+        self._client = client
+
+    def subscribe(
+        self,
+        subscription: str,
+        callback: Callable[[object], None],
+        flow_control: FlowControl,
+    ) -> object:
+        from google.cloud import pubsub_v1  # type: ignore[import-not-found]
+
+        fc = pubsub_v1.types.FlowControl(
+            max_messages=flow_control.max_messages,
+            max_lease_duration=flow_control.max_lease_duration,
+        )
+        return self._client.subscribe(  # type: ignore[attr-defined]
+            subscription, callback=callback, flow_control=fc
+        )
+
+
 def build_runtime(
     cfg: WorkerConfig,
     *,
@@ -73,7 +104,9 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - production
     puller = build_runtime(
         cfg,
         publisher_client_factory=pubsub_v1.PublisherClient,
-        subscriber_client_factory=pubsub_v1.SubscriberClient,
+        subscriber_client_factory=lambda: _SubscriberClientAdapter(
+            pubsub_v1.SubscriberClient()
+        ),
         storage_client_factory=storage.Client,
         model_factory=_build_model,
     )

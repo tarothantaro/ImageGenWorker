@@ -1,0 +1,111 @@
+# Dev-stage stack for the image-gen worker (DESIGN.md §9).
+#
+# Brings up, against emulators (no GPU, no GCP creds):
+#   * fake-gcs-server — GCS-compatible blob store the worker downloads inputs
+#                       from / uploads outputs to.
+#   * mock-comfyui    — drop-in ComfyUI (tests/mock_comfyui): streams the real
+#                       WebSocket event sequence + returns PNGs, no models.
+#   * imagegen-worker — the worker itself, pulling jobs + publishing completions.
+#
+# It deliberately does NOT run a Pub/Sub emulator. The worker attaches to the
+# Application local stack's network (APPSTACK_NETWORK, default local_default) and
+# reaches its `pubsub-emulator` by name — so the API server and worker share one
+# emulator and one set of §6.1 topics/subs. Bring that stack up first:
+#   ../../../../Application/server/deploy/stages/local/up.sh
+#
+# Every value comes from deploy/stages/dev/env.sh via ${VAR} substitution — no
+# literals here. up.sh/down.sh/smoke.sh source env.sh before invoking compose; a
+# direct `docker compose` call must too.
+#
+# Build context is the repo root (`../../..`) so the worker image sees
+# pyproject.toml + imagegen/; mock-comfyui builds from tests/mock_comfyui.
+
+name: imagegen-worker-dev
+
+services:
+  # NOTE: fake-gcs-server is NOT defined here. The Application local stack owns
+  # the single shared GCS emulator (server/deploy/stages/local/docker-compose.yml)
+  # so the API server and the worker read/write the SAME bucket. The worker
+  # reaches it as `fake-gcs-server` over the appstack network (APPSTACK_NETWORK),
+  # via STORAGE_EMULATOR_HOST from env.sh. Bring that stack up first.
+
+  mock-comfyui:
+    build:
+      context: ../../../tests/mock_comfyui
+      dockerfile: Dockerfile
+    image: imagegen-mock-comfyui:latest
+    environment:
+      MOCK_PORT: "8188"
+      # Fast but still exercises the streaming/blocking path. Raise to simulate
+      # slow generation; keep panels × this under MAX_PROCESSING_SECONDS.
+      MOCK_STEP_DELAY: "0.2"
+      MOCK_FAIL_MODE: none
+      MOCK_WIDTH: "1024"
+      MOCK_HEIGHT: "736"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8188/system_stats').status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  imagegen-worker:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    image: imagegen-worker:dev
+    depends_on:
+      mock-comfyui:
+        condition: service_healthy
+    environment:
+      # Worker config (config.py). GOOGLE_CLOUD_PROJECT mirrors GCP_PROJECT_ID so
+      # the google-cloud-storage client picks up a project under the emulator.
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      GOOGLE_CLOUD_PROJECT: ${GCP_PROJECT_ID}
+      JOBS_SUBSCRIPTION: ${JOBS_SUBSCRIPTION}
+      COMPLETION_TOPIC: ${COMPLETION_TOPIC}
+      PUBSUB_EMULATOR_HOST: ${PUBSUB_EMULATOR_HOST}
+      STORAGE_EMULATOR_HOST: ${STORAGE_EMULATOR_HOST}
+      COMFYUI_URL: ${COMFYUI_URL}
+      MAX_CONCURRENCY: ${MAX_CONCURRENCY}
+      MAX_PROCESSING_SECONDS: ${MAX_PROCESSING_SECONDS}
+      MODEL_VERSION: ${MODEL_VERSION}
+      LOG_LEVEL: ${LOG_LEVEL}
+    # TEMPORARY local-contract bridge. The image bakes image-gen-contract at the
+    # ref pyproject.toml pins (7ee0c64), which PREDATES the worker's incremental
+    # `panel_completed` publishing — so against the pinned contract the worker
+    # raises on every job (status enum + panel_index/total_panels rejected). The
+    # commit that adds panel_completed lives in the sibling ../ImageGenContract
+    # clone but is NOT yet pushed to GitHub, so the pin can't be bumped to it.
+    # Until that contract is published and the pins (here + ../Application) are
+    # bumped — coordinated with the API-side panel_completed handling the worker
+    # DESIGN.md §6.4 flags as a cross-repo TODO — dev runs as root and force-
+    # reinstalls the local contract over the baked one before starting. Remove
+    # `user`, `command`, and the /contract mount once the pin is current.
+    user: root
+    command:
+      # Copy out of the read-only mount first — setuptools needs a writable tree
+      # to (re)build egg-info — then install over the baked contract and run.
+      - sh
+      - -c
+      - "cp -r /contract /tmp/contract-src && pip install --no-deps --force-reinstall /tmp/contract-src >/tmp/contract-install.log 2>&1 && exec python -m imagegen.main"
+    volumes:
+      # Hot-reload pure-Python changes without a rebuild (DESIGN.md §9.3). The
+      # local /app/imagegen shadows the installed copy; restart the worker to
+      # pick up edits: `docker compose ... restart imagegen-worker`.
+      - ../../../imagegen:/app/imagegen:ro
+      # Sibling ImageGenContract clone — see the bridge note above.
+      - ../../../../ImageGenContract:/contract:ro
+    networks:
+      - default
+      - appstack
+    restart: unless-stopped
+
+networks:
+  # This stack's own network — fake-gcs-server + mock-comfyui + worker.
+  default:
+  # The Application local stack's network, joined so the worker resolves
+  # `pubsub-emulator`. External: created by that stack, not this one.
+  appstack:
+    name: ${APPSTACK_NETWORK:-local_default}
+    external: true

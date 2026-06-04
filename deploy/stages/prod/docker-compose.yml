@@ -1,0 +1,53 @@
+# Prod-stage stack for the image-gen worker (DESIGN.md §10).
+#
+# Runs the pinned worker image against real GCP on a worker host. The host needs
+# Docker + outbound HTTPS to *.googleapis.com and the registry — no inbound
+# ports (§12.1). All config comes from deploy/stages/prod/env.sh via ${VAR}.
+#
+# Deliberate deviation from DESIGN.md §10.1 (kept faithful otherwise):
+#   * No `deploy.resources` GPU reservation. The worker is a ComfyUI HTTP client
+#     (DESIGN.md §7.2) — the GPU belongs to the separate ComfyUI container the
+#     worker reaches at COMFYUI_URL, not to the worker.
+#   * No :9100 HEALTHCHECK — imagegen/healthz.py doesn't exist yet (§11.1 is
+#     future work). Add one here when it lands.
+# The security hardening (read-only rootfs, dropped caps, non-root, SA-key
+# secret, graceful drain) is unchanged from §10.1/§12.2.
+
+name: imagegen-worker-prod
+
+services:
+  imagegen-worker:
+    image: ${IMAGE}
+    restart: always
+    stop_grace_period: 600s          # let in-flight jobs drain (DESIGN.md §10.2)
+    init: false                      # tini is the image ENTRYPOINT
+    # Reach a host-run ComfyUI at http://host.docker.internal:8188 (§10.4).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - gcp_sa_key
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp_sa_key
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      JOBS_SUBSCRIPTION: ${JOBS_SUBSCRIPTION}
+      COMPLETION_TOPIC: ${COMPLETION_TOPIC}
+      MAX_CONCURRENCY: ${MAX_CONCURRENCY}
+      MAX_PROCESSING_SECONDS: ${MAX_PROCESSING_SECONDS}
+      MODEL_VERSION: ${MODEL_VERSION}
+      COMFYUI_URL: ${COMFYUI_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+    read_only: true                  # immutable rootfs (§12.2)
+    tmpfs:
+      - /tmp:size=1g                  # scratch (httpx/websocket buffers)
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+secrets:
+  gcp_sa_key:
+    file: ${SA_KEY_FILE}             # root:root 0400 on the host (§10.3)
