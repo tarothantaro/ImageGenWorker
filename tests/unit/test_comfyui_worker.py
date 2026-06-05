@@ -121,6 +121,33 @@ def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
     assert all(o.width == 1024 and o.height == 736 for o in completion.output_images)
 
 
+def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
+    # Template 4 is the storybook A/B template (6 flat panels = 3 pages × 2
+    # variants). The handler tags each output panel_index = index // V, variant
+    # = index % V (V = variants_per_panel).
+    payload = _job_payload(output_count=6, template_id="4")
+    payload["variants_per_panel"] = 2
+    msg = FakePubsubMessage(payload)
+    storage = FakeStorageClient()
+    _seed_inputs(storage)
+    pub_client = RecordingPublisherClient()
+    handler = _build_handler(FakeComfyUI(), storage=storage, pub_client=pub_client)
+
+    handler.handle(msg)
+
+    completion = _last_completion(pub_client)
+    assert completion.output_images is not None
+    tagged = sorted(completion.output_images, key=lambda o: o.index)
+    assert [(o.panel_index, o.variant) for o in tagged] == [
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+        (2, 0),
+        (2, 1),
+    ]
+
+
 # --- ComfyUI-side failures ---------------------------------------------------
 
 

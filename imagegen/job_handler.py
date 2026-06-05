@@ -151,6 +151,10 @@ class JobHandler:
         outputs: list[OutputImage] = []
         total_seconds = 0.0
         model_version = ""
+        # Storybook A/B layout (contract / DESIGN.md §4): the flat panels are laid
+        # out as story-panel = index // variants_per_panel, variant = index %
+        # variants_per_panel. Default 1 keeps one image per panel (legacy).
+        variants = job.variants_per_panel
         for index, panel in enumerate(panels):
             uri = GcsClient.output_uri(job.output_prefix, index, ext="png")
             self._gcs.upload(uri, panel.image, content_type="image/png")
@@ -160,6 +164,8 @@ class JobHandler:
                 width=panel.width,
                 height=panel.height,
                 bytes=len(panel.image),
+                panel_index=index // variants,
+                variant=index % variants,
             )
             outputs.append(output)
             total_seconds += panel.processing_seconds

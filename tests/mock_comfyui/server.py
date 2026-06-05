@@ -53,8 +53,10 @@ WIDTH: web.AppKey[int] = web.AppKey("width")
 HEIGHT: web.AppKey[int] = web.AppKey("height")
 
 
-def make_png(width: int, height: int) -> bytes:
-    """Minimal valid PNG with the given dimensions in its IHDR."""
+def make_png(width: int, height: int, seed: int = 0) -> bytes:
+    """A valid solid-colour PNG. The colour is derived from ``seed`` so distinct
+    panels/variants render as visibly different images (the A/B demo needs the
+    two variants of a panel to actually differ)."""
 
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
@@ -65,7 +67,10 @@ def make_png(width: int, height: int) -> bytes:
         )
 
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    idat = zlib.compress(b"\x00" * (width * 3 + 1))
+    r, g, b = (seed * 73 + 41) % 256, (seed * 151 + 17) % 256, (seed * 199 + 89) % 256
+    # Each row: a filter byte (0 = none) then `width` RGB pixels of the colour.
+    row = b"\x00" + bytes((r, g, b)) * width
+    idat = zlib.compress(row * height)
     return (
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", ihdr)
@@ -179,13 +184,15 @@ async def _execute(
         )
         return
 
-    png = make_png(app[WIDTH], app[HEIGHT])
     outputs: dict[str, Any] = {}
     for node_id, node in prompt.items():
         if node.get("class_type") == "SaveImage":
             prefix = node.get("inputs", {}).get("filename_prefix", "output")
             filename = f"{prefix}_00001_.png"
-            app[IMAGES][filename] = png
+            # Distinct colour per filename → each panel/variant (unique prefix)
+            # renders as a different image.
+            seed = zlib.crc32(filename.encode()) & 0xFFFFFFFF
+            app[IMAGES][filename] = make_png(app[WIDTH], app[HEIGHT], seed=seed)
             outputs[node_id] = {
                 "images": [{"filename": filename, "subfolder": "", "type": "output"}]
             }
