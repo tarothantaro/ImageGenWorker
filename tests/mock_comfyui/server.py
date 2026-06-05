@@ -26,6 +26,9 @@ Env knobs (all optional):
   MOCK_FAIL_MODE   none | bad_prompt | execution_error  (default none)
   MOCK_WIDTH       output PNG width  (default 1024)
   MOCK_HEIGHT      output PNG height (default 736)
+  MOCK_MAX_UPLOAD_MB  /upload/image body cap (default 64; real ComfyUI takes
+                      large photos, so mirror that — aiohttp's own default is
+                      only 1 MB, which 413s a normal re-encoded photo)
 """
 
 from __future__ import annotations
@@ -204,8 +207,12 @@ def build_app(
     fail_mode: str = "none",
     width: int = 1024,
     height: int = 736,
+    max_upload_bytes: int = 64 * 1024 * 1024,
 ) -> web.Application:
-    app = web.Application()
+    # Real ComfyUI accepts full-size photos; aiohttp's default client_max_size is
+    # only 1 MB, which 413s a normal re-encoded upload. Lift it so the mock
+    # mirrors real ComfyUI instead of failing the worker's /upload/image.
+    app = web.Application(client_max_size=max_upload_bytes)
     app[IMAGES] = {}
     app[HISTORY] = {}
     app[CLIENTS] = {}
@@ -233,6 +240,7 @@ def main() -> None:  # pragma: no cover - container entrypoint
         fail_mode=os.environ.get("MOCK_FAIL_MODE", "none"),
         width=int(os.environ.get("MOCK_WIDTH", "1024")),
         height=int(os.environ.get("MOCK_HEIGHT", "736")),
+        max_upload_bytes=int(os.environ.get("MOCK_MAX_UPLOAD_MB", "64")) * 1024 * 1024,
     )
     web.run_app(app, host="0.0.0.0", port=int(os.environ.get("MOCK_PORT", "8188")))
 
