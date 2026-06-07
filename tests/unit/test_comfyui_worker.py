@@ -91,8 +91,8 @@ def _all_completions(client: RecordingPublisherClient) -> list[CompletionMessage
 
 
 def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
-    # Template 3 is a single-panel template → output_count == 1.
-    msg = FakePubsubMessage(_job_payload(output_count=1))
+    # Template 3 is one panel that saves two variants (V1, V2) → output_count == 2.
+    msg = FakePubsubMessage(_job_payload(output_count=2))
     storage = FakeStorageClient()
     _seed_inputs(storage)
     pub_client = RecordingPublisherClient()
@@ -103,29 +103,35 @@ def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
     assert msg.acks == 1 and msg.nacks == 0
 
     bucket = storage.bucket("outputs")
-    assert sorted(bucket.blobs) == ["u1/s1/outputs/0.png"]
+    assert sorted(bucket.blobs) == ["u1/s1/outputs/0.png", "u1/s1/outputs/1.png"]
     assert bucket.blobs["u1/s1/outputs/0.png"].uploaded[0] == (PNG, "image/png")
 
-    # One incremental panel event, then the terminal completion.
+    # One incremental panel event per variant, then the terminal completion.
     published = _all_completions(pub_client)
-    assert [c.status for c in published] == ["panel_completed", "completed"]
-    assert published[0].panel_index == 0 and published[0].total_panels == 1
+    assert [c.status for c in published] == [
+        "panel_completed",
+        "panel_completed",
+        "completed",
+    ]
+    assert published[0].panel_index == 0 and published[0].total_panels == 2
+    assert published[1].panel_index == 1
 
     completion = published[-1]
     assert completion.status == "completed"
     assert completion.model_version == "mv-test"
     assert completion.output_images is not None
     assert {o.gcs_uri for o in completion.output_images} == {
-        "gs://outputs/u1/s1/outputs/0.png"
+        "gs://outputs/u1/s1/outputs/0.png",
+        "gs://outputs/u1/s1/outputs/1.png",
     }
     assert all(o.width == 1024 and o.height == 736 for o in completion.output_images)
 
 
 def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
-    # Template 4 is the storybook A/B template (6 flat panels = 3 pages × 2
-    # variants). The handler tags each output panel_index = index // V, variant
+    # Template 4 is the storybook A/B template: 6 panels, each saving V1 + V2 →
+    # 12 outputs. The handler tags each output panel_index = index // V, variant
     # = index % V (V = variants_per_panel).
-    payload = _job_payload(output_count=6, template_id="4")
+    payload = _job_payload(output_count=12, template_id="4")
     payload["variants_per_panel"] = 2
     msg = FakePubsubMessage(payload)
     storage = FakeStorageClient()
@@ -145,6 +151,12 @@ def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
         (1, 1),
         (2, 0),
         (2, 1),
+        (3, 0),
+        (3, 1),
+        (4, 0),
+        (4, 1),
+        (5, 0),
+        (5, 1),
     ]
 
 

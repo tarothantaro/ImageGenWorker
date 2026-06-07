@@ -113,9 +113,9 @@ def _generate(base_url: str, **overrides: object) -> list[Any]:
 def test_real_transport_streams_to_completion(mock_comfyui: str) -> None:
     panels = _generate(mock_comfyui)
 
-    assert len(panels) == 1  # template 3 is a single-panel template
-    assert panels[0].width == 1024 and panels[0].height == 736
-    assert panels[0].image[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(panels) == 2  # one panel, two saved variants (V1, V2)
+    assert all(p.width == 1024 and p.height == 736 for p in panels)
+    assert all(p.image[:8] == b"\x89PNG\r\n\x1a\n" for p in panels)
 
 
 def test_real_transport_maps_bad_prompt(mock_comfyui_bad_prompt: str) -> None:

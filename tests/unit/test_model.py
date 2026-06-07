@@ -70,19 +70,23 @@ def _generate(model: ComfyUIModel, **overrides: Any) -> list[Any]:
 # --- happy path (template 3 — one panel) -------------------------------------
 
 
-def test_generate_yields_one_panel_with_v2_image() -> None:
+def test_generate_yields_both_variants_of_the_panel() -> None:
     fake = FakeComfyUI(width=1024, height=736)
     model = _model(fake)
 
     panels = _generate(model)
 
-    assert len(panels) == 1
-    assert panels[0].image == make_png(1024, 736)
-    assert panels[0].width == 1024
-    assert panels[0].height == 736
-    assert panels[0].model_version == "mv-test"
-    assert panels[0].processing_seconds == 0.0
-    assert len(fake.submitted) == 1  # one workflow submitted per panel
+    # Template 3 is one panel whose run saves two variants (V1, V2) → two outputs
+    # from a single ComfyUI submission.
+    assert len(panels) == 2
+    assert [p.image for p in panels] == [
+        make_png(1024, 736),
+        make_png(1024, 736),
+    ]
+    assert all(p.width == 1024 and p.height == 736 for p in panels)
+    assert all(p.model_version == "mv-test" for p in panels)
+    assert all(p.processing_seconds == 0.0 for p in panels)
+    assert len(fake.submitted) == 1  # both variants come from one run
 
 
 def test_generate_sends_expected_workflow_parameters() -> None:
@@ -147,7 +151,7 @@ def test_generate_consumes_realtime_ws_stream_until_done() -> None:
 
     panels = _generate(model)
 
-    assert len(panels) == 1
+    assert len(panels) == 2  # one run, two saved variants (V1, V2)
     assert fake.event_client_ids == ["s1-0"]  # WS opened with the run's client id
 
 
@@ -155,7 +159,7 @@ def test_generate_accepts_execution_success_as_terminal() -> None:
     fake = FakeComfyUI(use_execution_success=True)
     model = _model(fake)
 
-    assert len(_generate(model)) == 1
+    assert len(_generate(model)) == 2
 
 
 def test_generate_accepts_heic_input() -> None:
@@ -165,7 +169,7 @@ def test_generate_accepts_heic_input() -> None:
 
     panels = _generate(model, input_images=[heic])
 
-    assert len(panels) == 1
+    assert len(panels) == 2
     assert fake.uploads[0][1] == heic
 
 

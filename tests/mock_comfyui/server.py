@@ -26,6 +26,9 @@ Env knobs (all optional):
   MOCK_FAIL_MODE   none | bad_prompt | execution_error  (default none)
   MOCK_WIDTH       output PNG width  (default 1024)
   MOCK_HEIGHT      output PNG height (default 736)
+  MOCK_VARIANTS_PER_PANEL  A/B layout for the panel/variant label drawn on each
+                      image (default 1). Set to the story's template value
+                      (the demo's template 4 = 2) so labels read correctly.
   MOCK_MAX_UPLOAD_MB  /upload/image body cap (default 64; real ComfyUI takes
                       large photos, so mirror that — aiohttp's own default is
                       only 1 MB, which 413s a normal re-encoded photo)
@@ -35,6 +38,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import struct
 import uuid
 import zlib
@@ -51,12 +55,49 @@ STEP_DELAY: web.AppKey[float] = web.AppKey("step_delay")
 FAIL_MODE: web.AppKey[str] = web.AppKey("fail_mode")
 WIDTH: web.AppKey[int] = web.AppKey("width")
 HEIGHT: web.AppKey[int] = web.AppKey("height")
+VARIANTS: web.AppKey[int] = web.AppKey("variants")
 
 
-def make_png(width: int, height: int, seed: int = 0) -> bytes:
-    """A valid solid-colour PNG. The colour is derived from ``seed`` so distinct
-    panels/variants render as visibly different images (the A/B demo needs the
-    two variants of a panel to actually differ)."""
+# A curated, high-contrast palette stepped through by output index so the N
+# outputs of a story form a clear, *ordered* sequence (output 0 = teal, 1 =
+# orange, 2 = purple…). Index past the end wraps — fine for a mock.
+_PALETTE: list[tuple[int, int, int]] = [
+    (38, 166, 154),  # teal
+    (239, 108, 0),  # orange
+    (126, 87, 194),  # purple
+    (67, 160, 71),  # green
+    (236, 64, 122),  # pink
+    (30, 136, 229),  # blue
+    (251, 192, 45),  # amber
+    (141, 110, 99),  # brown
+]
+
+# 5×7 bitmap glyphs — just the characters the labels need: the digits, the
+# variant letters (A–D), 'P', a separator dot, and space.
+_FONT: dict[str, tuple[str, ...]] = {
+    "0": (".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."),
+    "1": ("..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."),
+    "2": (".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"),
+    "3": ("#####", "...#.", "..#..", "...#.", "....#", "#...#", ".###."),
+    "4": ("...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."),
+    "5": ("#####", "#....", "####.", "....#", "....#", "#...#", ".###."),
+    "6": ("..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."),
+    "7": ("#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."),
+    "8": (".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."),
+    "9": (".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."),
+    "A": (".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"),
+    "B": ("####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."),
+    "C": (".###.", "#...#", "#....", "#....", "#....", "#...#", ".###."),
+    "D": ("###..", "#..#.", "#...#", "#...#", "#...#", "#..#.", "###.."),
+    "P": ("####.", "#...#", "#...#", "####.", "#....", "#....", "#...."),
+    "·": (".....", ".....", ".....", ".##..", ".##..", ".....", "....."),
+    " ": (".....", ".....", ".....", ".....", ".....", ".....", "....."),
+}
+_GLYPH_W, _GLYPH_H = 5, 7
+
+
+def _png_bytes(width: int, height: int, raw: bytes) -> bytes:
+    """Wrap already-filtered RGB scanlines (``raw``) as a PNG."""
 
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
@@ -67,16 +108,101 @@ def make_png(width: int, height: int, seed: int = 0) -> bytes:
         )
 
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    r, g, b = (seed * 73 + 41) % 256, (seed * 151 + 17) % 256, (seed * 199 + 89) % 256
-    # Each row: a filter byte (0 = none) then `width` RGB pixels of the colour.
-    row = b"\x00" + bytes((r, g, b)) * width
-    idat = zlib.compress(row * height)
     return (
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", ihdr)
-        + chunk(b"IDAT", idat)
+        + chunk(b"IDAT", zlib.compress(raw))
         + chunk(b"IEND", b"")
     )
+
+
+def _solid_buffer(width: int, height: int, rgb: tuple[int, int, int]) -> bytearray:
+    """A mutable raw-scanline buffer (filter byte 0 + RGB pixels) of one colour."""
+    stride = 1 + width * 3
+    buf = bytearray(stride * height)
+    row_pixels = bytes(rgb) * width
+    for y in range(height):
+        base = y * stride
+        buf[base] = 0  # filter: none
+        buf[base + 1 : base + stride] = row_pixels
+    return buf
+
+
+def _draw_text(
+    buf: bytearray,
+    width: int,
+    text: str,
+    *,
+    cx: int,
+    cy: int,
+    scale: int,
+    rgb: tuple[int, int, int],
+) -> None:
+    """Plot ``text`` centred on (``cx``, ``cy``) into ``buf`` at ``scale``×."""
+    stride = 1 + width * 3
+    pix = bytes(rgb)
+    char_w = (_GLYPH_W + 1) * scale  # +1 column of spacing between glyphs
+    total_w = char_w * len(text) - scale  # no trailing gap → true centring
+    x0 = cx - total_w // 2
+    y0 = cy - (_GLYPH_H * scale) // 2
+    for i, ch in enumerate(text):
+        glyph = _FONT.get(ch, _FONT[" "])
+        gx = x0 + i * char_w
+        for ry, row in enumerate(glyph):
+            for rxc, cell in enumerate(row):
+                if cell != "#":
+                    continue
+                for sy in range(scale):
+                    py = y0 + ry * scale + sy
+                    if py < 0:
+                        continue
+                    base = py * stride + 1
+                    for sx in range(scale):
+                        px = gx + rxc * scale + sx
+                        off = base + px * 3
+                        if 0 <= px < width and off + 3 <= len(buf):
+                            buf[off : off + 3] = pix
+
+
+def _ink_for(bg: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Black or white, whichever reads on ``bg`` (perceived luminance)."""
+    lum = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]
+    return (20, 20, 20) if lum > 140 else (245, 245, 245)
+
+
+def make_png(width: int, height: int, seed: int = 0) -> bytes:
+    """A valid solid-colour PNG. The colour is derived from ``seed`` so distinct
+    panels/variants render as visibly different images. Kept for callers that
+    only need a plain image; the worker path uses :func:`make_labeled_png`."""
+    rgb = _PALETTE[seed % len(_PALETTE)]
+    return _png_bytes(width, height, bytes(_solid_buffer(width, height, rgb)))
+
+
+def make_labeled_png(
+    width: int, height: int, *, seq: int, panel: int, variant: int
+) -> bytes:
+    """A PNG that *shows its place in the sequence*: the 1-based output number
+    big and centred, with a ``P{panel}·{variant-letter}`` label beneath, on a
+    per-index colour. Lets the client's generating animation + review page be
+    visually verified against the order the worker produced them."""
+    bg = _PALETTE[seq % len(_PALETTE)]
+    ink = _ink_for(bg)
+    buf = _solid_buffer(width, height, bg)
+    letter = chr(ord("A") + variant) if 0 <= variant < 26 else str(variant)
+
+    # Lay the big number above its panel/variant label as one vertically-centred
+    # block so both stay on-canvas at any size.
+    num_scale = max(4, min(width, height) // 12)
+    label_scale = max(2, num_scale // 3)
+    num_h = _GLYPH_H * num_scale
+    label_h = _GLYPH_H * label_scale
+    spacing = 2 * label_scale
+    top = (height - (num_h + spacing + label_h)) // 2
+    _draw_text(buf, width, str(seq + 1), cx=width // 2, cy=top + num_h // 2,
+               scale=num_scale, rgb=ink)
+    _draw_text(buf, width, f"P{panel + 1}·{letter}", cx=width // 2,
+               cy=top + num_h + spacing + label_h // 2, scale=label_scale, rgb=ink)
+    return _png_bytes(width, height, bytes(buf))
 
 
 async def system_stats(request: web.Request) -> web.Response:
@@ -148,6 +274,32 @@ async def view_handler(request: web.Request) -> web.Response:
     return web.Response(body=data, content_type="image/png")
 
 
+def _seq_from_client_id(client_id: str) -> int:
+    """The worker's client_id is ``{story_id}-{index}``; pull off the index
+    (story_id is a ULID, so it has no ``-``). Falls back to 0 if absent."""
+    tail = client_id.rsplit("-", 1)[-1]
+    return int(tail) if tail.isdigit() else 0
+
+
+def _panel_variant_from_prefix(
+    prefix: str, *, default_panel: int
+) -> tuple[int, int]:
+    """Read the storybook panel + variant out of a SaveImage ``filename_prefix``.
+
+    The worker substitutes the template's per-panel prefixes, e.g.
+    ``{user}_{story}_P3_V2`` (panel 3, variant V2) or, for the single-panel
+    template, ``{user}_{story}_V1``. So one ComfyUI run that saves V1 + V2
+    yields two correctly-distinguished images even though they share a
+    client_id. ``_V<n>`` is 1-based; we return a 0-based variant (V1→0=A …).
+    Falls back to ``default_panel``/variant 0 when the prefix carries no marker.
+    """
+    match = re.search(r"(?:_P(\d+))?_V(\d+)$", prefix)
+    if match is None:
+        return default_panel, 0
+    panel = int(match.group(1)) if match.group(1) is not None else default_panel
+    return panel, max(0, int(match.group(2)) - 1)
+
+
 async def _execute(
     app: web.Application, *, prompt_id: str, prompt: dict[str, Any], client_id: str
 ) -> None:
@@ -184,15 +336,27 @@ async def _execute(
         )
         return
 
+    # A single run saves every variant (e.g. V1 + V2), so we read each output's
+    # storybook panel/variant from its own filename_prefix — they share a
+    # client_id and can't be told apart otherwise. The flat sequence number
+    # (panel × variants + variant) drives the colour + big digit, so the images
+    # *announce their place in the sequence*. client_id's trailing index is the
+    # fallback panel when a prefix carries no _P<n> marker (single-panel template).
+    variants = max(1, app[VARIANTS])
+    default_panel = _seq_from_client_id(client_id)
+
     outputs: dict[str, Any] = {}
     for node_id, node in prompt.items():
         if node.get("class_type") == "SaveImage":
             prefix = node.get("inputs", {}).get("filename_prefix", "output")
             filename = f"{prefix}_00001_.png"
-            # Distinct colour per filename → each panel/variant (unique prefix)
-            # renders as a different image.
-            seed = zlib.crc32(filename.encode()) & 0xFFFFFFFF
-            app[IMAGES][filename] = make_png(app[WIDTH], app[HEIGHT], seed=seed)
+            panel, variant = _panel_variant_from_prefix(
+                prefix, default_panel=default_panel
+            )
+            seq = panel * variants + variant
+            app[IMAGES][filename] = make_labeled_png(
+                app[WIDTH], app[HEIGHT], seq=seq, panel=panel, variant=variant
+            )
             outputs[node_id] = {
                 "images": [{"filename": filename, "subfolder": "", "type": "output"}]
             }
@@ -214,6 +378,7 @@ def build_app(
     fail_mode: str = "none",
     width: int = 1024,
     height: int = 736,
+    variants_per_panel: int = 1,
     max_upload_bytes: int = 64 * 1024 * 1024,
 ) -> web.Application:
     # Real ComfyUI accepts full-size photos; aiohttp's default client_max_size is
@@ -228,6 +393,10 @@ def build_app(
     app[FAIL_MODE] = fail_mode
     app[WIDTH] = width
     app[HEIGHT] = height
+    # ComfyUI's API carries no panel/variant info, so the mock can't infer the
+    # A/B layout from the wire. It's set out-of-band to match the story's
+    # template (the demo's template 4 = 2) so the labels read correctly.
+    app[VARIANTS] = variants_per_panel
     app.add_routes(
         [
             web.get("/system_stats", system_stats),
@@ -247,6 +416,7 @@ def main() -> None:  # pragma: no cover - container entrypoint
         fail_mode=os.environ.get("MOCK_FAIL_MODE", "none"),
         width=int(os.environ.get("MOCK_WIDTH", "1024")),
         height=int(os.environ.get("MOCK_HEIGHT", "736")),
+        variants_per_panel=int(os.environ.get("MOCK_VARIANTS_PER_PANEL", "1")),
         max_upload_bytes=int(os.environ.get("MOCK_MAX_UPLOAD_MB", "64")) * 1024 * 1024,
     )
     web.run_app(app, host="0.0.0.0", port=int(os.environ.get("MOCK_PORT", "8188")))

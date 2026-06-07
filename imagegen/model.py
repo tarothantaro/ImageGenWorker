@@ -287,7 +287,7 @@ class ComfyUIModel:
         for index, panel in enumerate(prepared.panels):
             seed = None if seed_option is None else seed_option + index
             try:
-                image, processing_seconds = self._run_panel(
+                images, processing_seconds = self._run_panel(
                     prepared,
                     panel,
                     placeholders=placeholders,
@@ -301,14 +301,18 @@ class ComfyUIModel:
             except (ComfyUIUnavailable, ComfyUIExecutionError) as exc:
                 raise ModelTransientError(f"ComfyUI run failed: {exc}") from exc
 
-            width, height = _png_dimensions(image)
-            yield PanelResult(
-                image=image,
-                width=width,
-                height=height,
-                model_version=self._model_version,
-                processing_seconds=processing_seconds,
-            )
+            # One ComfyUI run saves every variant the workflow declares (V1, V2 …);
+            # each becomes its own output — the user's A/B choices for this panel.
+            per_image_seconds = processing_seconds / max(1, len(images))
+            for image in images:
+                width, height = _png_dimensions(image)
+                yield PanelResult(
+                    image=image,
+                    width=width,
+                    height=height,
+                    model_version=self._model_version,
+                    processing_seconds=per_image_seconds,
+                )
 
     def _upload_inputs(
         self,
@@ -338,7 +342,7 @@ class ComfyUIModel:
         steps: int | None,
         seed: int | None,
         client_id: str,
-    ) -> tuple[bytes, float]:
+    ) -> tuple[list[bytes], float]:
         start = self._clock()
         workflow = self._builder.render(
             prepared,
@@ -348,7 +352,7 @@ class ComfyUIModel:
             steps=steps,
             seed=seed,
         )
-        final_prefix = self._builder.final_output_prefix(workflow)
+        prefixes = self._builder.output_prefixes(workflow)
 
         # Open the WebSocket *before* queuing, so we don't miss early events,
         # then block on the live stream until ComfyUI signals completion.
@@ -362,13 +366,9 @@ class ComfyUIModel:
 
         history = self._transport.get_history(prompt_id)
         outputs = history.get(prompt_id, {}).get("outputs", {})
-        image_ref = self._select_output(outputs, final_prefix)
-        image = self._transport.fetch_image(
-            filename=image_ref["filename"],
-            subfolder=image_ref.get("subfolder", ""),
-            image_type=image_ref.get("type", "output"),
-        )
-        return image, self._clock() - start
+        # Every variant the workflow saved, in variant order (V1, V2 …).
+        images = [self._fetch_variant(outputs, prefix) for prefix in prefixes]
+        return images, self._clock() - start
 
     def _await_execution(
         self, events: Iterator[dict[str, Any]], prompt_id: str, *, deadline: float
@@ -405,16 +405,25 @@ class ComfyUIModel:
             f"ComfyUI closed the event stream before prompt {prompt_id} completed"
         )
 
+    def _fetch_variant(self, outputs: dict[str, Any], prefix: str) -> bytes:
+        """Fetch the produced image whose filename matches ``prefix``."""
+        ref = self._image_for_prefix(outputs, prefix)
+        return self._transport.fetch_image(
+            filename=ref["filename"],
+            subfolder=ref.get("subfolder", ""),
+            image_type=ref.get("type", "output"),
+        )
+
     @staticmethod
-    def _select_output(outputs: dict[str, Any], final_prefix: str) -> dict[str, Any]:
-        """Find the produced image whose filename matches the final prefix."""
+    def _image_for_prefix(outputs: dict[str, Any], prefix: str) -> dict[str, Any]:
+        """Find the produced image whose filename matches ``prefix``."""
         for node_output in outputs.values():
             for image in node_output.get("images", []):
                 filename = image.get("filename", "")
-                if filename.startswith(final_prefix):
+                if filename.startswith(prefix):
                     return image
         raise ModelTransientError(
-            f"ComfyUI produced no output image matching {final_prefix!r}"
+            f"ComfyUI produced no output image matching {prefix!r}"
         )
 
 

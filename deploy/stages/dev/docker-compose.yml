@@ -47,6 +47,10 @@ services:
       MOCK_FAIL_MODE: none
       MOCK_WIDTH: "1024"
       MOCK_HEIGHT: "736"
+      # A/B layout for the panel/variant label drawn on each mock image. Matches
+      # the demo's template 4 (3 panels × 2 variants); the worker still derives
+      # the real panel_index/variant itself from output_count + variants.
+      MOCK_VARIANTS_PER_PANEL: "2"
     healthcheck:
       test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8188/system_stats').status==200 else 1)"]
       interval: 5s

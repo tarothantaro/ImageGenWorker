@@ -12,6 +12,13 @@ When a prompt is queued it streams the same events a real generation emits
 serves a generated PNG for each SaveImage node from `/view`. So the worker
 exercises the genuine *blocking-on-WebSocket* path, just fast.
 
+Each PNG **announces its place in the sequence**: a per-index background colour
+with the 1-based output number and a `P{panel}·{variant}` label drawn on it
+(e.g. `1 / P1·A`). Panel/variant come from the SaveImage `filename_prefix`
+(`…_P{n}_V{n}`, or `…_V{n}` for a single-panel template); the flat sequence
+number uses `MOCK_VARIANTS_PER_PANEL`. This makes the client's generating
+animation + A/B review visually verifiable against the order the worker produced.
+
 ## Endpoints
 
 | Method | Path | Purpose |
@@ -31,6 +38,7 @@ exercises the genuine *blocking-on-WebSocket* path, just fast.
 | `MOCK_STEP_DELAY` | `2.0` | seconds between per-node events (simulate slow gen; ~0 in tests) |
 | `MOCK_FAIL_MODE` | `none` | `none` \| `bad_prompt` (400 on `/prompt`) \| `execution_error` (error on the WS) |
 | `MOCK_WIDTH` / `MOCK_HEIGHT` | `1024` / `736` | output PNG dimensions |
+| `MOCK_VARIANTS_PER_PANEL` | `1` | A/B layout for the panel/variant label drawn on each image — set to the story's template value (the demo's template 4 = 2) so labels read correctly |
 
 ## Run it
 
