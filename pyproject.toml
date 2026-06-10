@@ -5,7 +5,7 @@ description = "Stateless image-generation worker that pulls jobs from Pub/Sub."
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
-    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@7ee0c6447f957aa88ff2385724f519e0a3a48091",
+    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@9d2dd1de5ad804af6bfa77ac96a874e0160d1a90",
 ]
 
 [project.optional-dependencies]
