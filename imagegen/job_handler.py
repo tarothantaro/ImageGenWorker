@@ -156,6 +156,18 @@ class JobHandler:
         # variants_per_panel. Default 1 keeps one image per panel (legacy).
         variants = job.variants_per_panel
         for index, panel in enumerate(panels):
+            if index >= job.output_count:
+                # The template definition produced more images than the job
+                # promised (template drift between API and worker). The panels
+                # iterator is lazy, so this is the earliest the overrun is
+                # knowable — and it is deterministic: a retry regenerates the
+                # exact same overrun, so report failed instead of nacking
+                # (publishing the excess would also violate the contract's
+                # panel_index < total_panels and retry forever).
+                raise InvalidConfigError(
+                    f"model produced more than the expected "
+                    f"{job.output_count} images"
+                )
             uri = GcsClient.output_uri(job.output_prefix, index, ext="png")
             self._gcs.upload(uri, panel.image, content_type="image/png")
             output = OutputImage(

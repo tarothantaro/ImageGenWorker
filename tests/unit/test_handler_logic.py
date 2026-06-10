@@ -368,6 +368,33 @@ def test_handle_treats_wrong_image_count_as_invalid_config() -> None:
     assert completion.failure_reason == "invalid_config"
 
 
+def test_handle_reports_failed_when_model_overruns_output_count() -> None:
+    # Template drift: the worker-side template yields MORE images than the
+    # job promised. Deterministic, so it must report failed + ack — never
+    # nack — and must stop before publishing a panel_completed whose
+    # panel_index would violate the contract's panel_index < total_panels.
+    msg = _FakePubsubMessage(_job_payload(output_count=2))
+    model = _StubModel(images=[b"out0", b"out1", b"excess"])
+    pub_client = _RecordingPublisherClient()
+    handler, storage = _build_handler(model=model, publisher_client=pub_client)
+
+    handler.handle(msg)
+
+    assert msg.acks == 1 and msg.nacks == 0
+
+    published = _all_completions(pub_client)
+    assert [c.status for c in published] == [
+        "panel_completed",
+        "panel_completed",
+        "failed",
+    ]
+    assert published[-1].failure_reason == "invalid_config"
+
+    # The excess image was never uploaded.
+    bucket = storage.bucket("outputs")
+    assert sorted(bucket.blobs.keys()) == ["u1/s1/outputs/0.png", "u1/s1/outputs/1.png"]
+
+
 def test_handle_passes_input_bytes_in_position_order() -> None:
     msg = _FakePubsubMessage(_job_payload())
     storage = _FakeStorageClient()
