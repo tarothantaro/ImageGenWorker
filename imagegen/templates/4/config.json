@@ -2,6 +2,7 @@
     "id": "4",
     "name": "storybook-ab",
     "workflow_id": "2",
+    "story": "1_1",
     "panels": [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},

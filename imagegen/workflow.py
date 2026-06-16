@@ -18,6 +18,13 @@ Vocabulary (unchanged from the legacy service):
   ``inputs``. **One panel == one ComfyUI run == one output image** (DESIGN.md
   §7.2). A story with N scenes is N panels; the worker renders + submits each
   panel in turn.
+* A template may declare ``"story": "<id>"`` to source its per-panel prompts
+  from ``prompts/<id>.json`` (an ordered array, one prompt per panel) instead of
+  carrying them inline. Those prompts may contain character ``{TOKEN}``
+  placeholders (e.g. ``{GENDER_F_AGE_70_RACE_ASIAN}``) which :meth:`prepare`
+  resolves against ``prompts/character.json`` so the same generated character
+  looks identical across every panel of the story. ``USER_ID`` / ``STORY_ID``
+  are still resolved later, at :meth:`render` time, since they are per-job.
 
 Image filenames in a panel carry ``USER_ID`` / ``STORY_ID`` placeholders
 (e.g. ``USER_ID_STORY_ID_INPUT_1.png``). After substitution they become the
@@ -83,9 +90,22 @@ def _substitute(value: Any, placeholders: dict[str, str]) -> Any:
 class WorkflowBuilder:
     """Loads workflow/template assets and renders submit-ready prompts."""
 
-    def __init__(self, workflow_root: Path, template_root: Path) -> None:
+    def __init__(
+        self,
+        workflow_root: Path,
+        template_root: Path,
+        prompts_root: Path | None = None,
+    ) -> None:
         self._workflow_root = workflow_root
         self._template_root = template_root
+        # Story prompt sets + the character placeholder library live in
+        # ``imagegen/prompts/`` (a sibling of templates/). Defaulting from the
+        # template root keeps existing two-arg callers (and tests) working.
+        self._prompts_root = (
+            prompts_root
+            if prompts_root is not None
+            else template_root.parent / "prompts"
+        )
 
     # -- loading ----------------------------------------------------------
 
@@ -126,6 +146,10 @@ class WorkflowBuilder:
                     f"{len(config_nodes)} nodes"
                 )
 
+        story_ref = template.get("story")
+        if story_ref:
+            self._apply_story_prompts(template_id, str(story_ref), panels)
+
         base_workflow = self._load_json(
             self._workflow_root / workflow_id / "workflow.json"
         )
@@ -146,6 +170,56 @@ class WorkflowBuilder:
             base_workflow=base_workflow,
             image_slots=image_slots,
         )
+
+    def _apply_story_prompts(
+        self,
+        template_id: str,
+        story_ref: str,
+        panels: list[list[dict[str, Any]]],
+    ) -> None:
+        """Fill each panel's CLIPTextEncode ``text`` from the bound story's prompts.
+
+        ``prompts/<story_ref>.json`` carries a ``prompts`` array — one prompt per
+        panel, in order. Character ``{TOKEN}`` placeholders are resolved here
+        against ``prompts/character.json`` (static across a job, so resolve once
+        at load), leaving ``USER_ID`` / ``STORY_ID`` for :meth:`render`. A prompt/
+        panel count mismatch, a panel with no ``text`` field, or a missing
+        prompts/character asset is a deploy bug → :class:`UnsupportedTemplateError`.
+        """
+        story = self._load_json(self._prompts_root / f"{story_ref}.json")
+        prompts = story.get("prompts", [])
+        if len(prompts) != len(panels):
+            raise UnsupportedTemplateError(
+                f"template {template_id!r} story {story_ref!r} has {len(prompts)} "
+                f"prompts but the template has {len(panels)} panels"
+            )
+
+        characters = self._load_character_map()
+        for panel_index, (panel, prompt) in enumerate(zip(panels, prompts)):
+            text_field = next((fields for fields in panel if "text" in fields), None)
+            if text_field is None:
+                raise UnsupportedTemplateError(
+                    f"template {template_id!r} story {story_ref!r}: panel "
+                    f"{panel_index} has no 'text' field to receive a prompt"
+                )
+            text_field["text"] = _substitute(str(prompt), characters)
+
+    def _load_character_map(self) -> dict[str, str]:
+        """Map each ``{TOKEN}`` placeholder to its description from character.json.
+
+        ``prompts/character.json`` is the shared library of generated supporting
+        characters (owned by the ``character-config`` skill). Only the runtime
+        ``characters[*].description`` field is consumed. Tokens with no entry are
+        simply not in the map, so the caller's substitution leaves them
+        untouched (visible in the rendered prompt rather than failing the job).
+        """
+        data = self._load_json(self._prompts_root / "character.json")
+        placeholders: dict[str, str] = {}
+        for token, entry in data.get("characters", {}).items():
+            description = entry.get("description") if isinstance(entry, dict) else None
+            if description:
+                placeholders[f"{{{token}}}"] = str(description)
+        return placeholders
 
     # -- rendering --------------------------------------------------------
 

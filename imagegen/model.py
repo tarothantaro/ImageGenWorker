@@ -58,6 +58,7 @@ logger = logging.getLogger(__name__)
 _PACKAGE_ROOT = Path(__file__).resolve().parent
 _DEFAULT_WORKFLOW_ROOT = _PACKAGE_ROOT / "workflows"
 _DEFAULT_TEMPLATE_ROOT = _PACKAGE_ROOT / "templates"
+_DEFAULT_PROMPTS_ROOT = _PACKAGE_ROOT / "prompts"
 
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180.0
@@ -225,12 +226,13 @@ class ComfyUIModel:
         *,
         workflow_root: Path = _DEFAULT_WORKFLOW_ROOT,
         template_root: Path = _DEFAULT_TEMPLATE_ROOT,
+        prompts_root: Path = _DEFAULT_PROMPTS_ROOT,
         model_version: str = _DEFAULT_MODEL_VERSION,
         request_timeout_seconds: float = _DEFAULT_REQUEST_TIMEOUT_SECONDS,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._transport = transport
-        self._builder = WorkflowBuilder(workflow_root, template_root)
+        self._builder = WorkflowBuilder(workflow_root, template_root, prompts_root)
         self._model_version = model_version
         self._request_timeout = request_timeout_seconds
         self._clock = clock

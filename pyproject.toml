@@ -29,9 +29,9 @@ include = ["imagegen*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
-# Ship the ComfyUI workflow graphs + template configs with the package so the
-# model can resolve them at runtime inside the container.
-imagegen = ["workflows/**/*.json", "templates/**/*.json"]
+# Ship the ComfyUI workflow graphs + template configs + story/character prompt
+# sets with the package so the model can resolve them at runtime in the container.
+imagegen = ["workflows/**/*.json", "templates/**/*.json", "prompts/**/*.json"]
 
 [tool.black]
 line-length = 88

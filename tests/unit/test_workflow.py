@@ -50,9 +50,13 @@ def _write_assets(
     template_id: str = "t",
     workflow_id: str = "w",
     template_text: str | None = None,
+    story: dict[str, Any] | None = None,
+    story_id: str = "s",
+    characters: dict[str, Any] | None = None,
 ) -> WorkflowBuilder:
     wf_root = tmp_path / "workflows"
     tpl_root = tmp_path / "templates"
+    prompts_root = tmp_path / "prompts"
     (tpl_root / template_id).mkdir(parents=True)
     if template_text is not None:
         (tpl_root / template_id / "config.json").write_text(template_text)
@@ -64,7 +68,15 @@ def _write_assets(
         (wf_root / workflow_id / "config.json").write_text(json.dumps(workflow_config))
     if workflow is not None:
         (wf_root / workflow_id / "workflow.json").write_text(json.dumps(workflow))
-    return WorkflowBuilder(wf_root, tpl_root)
+    if story is not None or characters is not None:
+        prompts_root.mkdir(parents=True, exist_ok=True)
+    if story is not None:
+        (prompts_root / f"{story_id}.json").write_text(json.dumps(story))
+    if characters is not None:
+        (prompts_root / "character.json").write_text(
+            json.dumps({"characters": characters})
+        )
+    return WorkflowBuilder(wf_root, tpl_root, prompts_root)
 
 
 # --- prepare: happy ----------------------------------------------------------
@@ -156,6 +168,83 @@ def test_prepare_panel_node_count_mismatch_raises(tmp_path: Path) -> None:
 
     with pytest.raises(UnsupportedTemplateError, match="panel 1 has 2 entries"):
         builder.prepare("t")
+
+
+# --- prepare: story-bound templates (per-panel prompts + character tokens) ----
+
+
+def test_prepare_template_4_injects_story_prompts_and_resolves_characters(
+    real_builder: WorkflowBuilder,
+) -> None:
+    """Template 4 declares ``"story": "1_1"`` — prepare sources each panel's text
+    from prompts/1_1.json and resolves {TOKEN}s against prompts/character.json."""
+    prepared = real_builder.prepare("4")
+
+    assert prepared.panel_count == 6
+    # Panel 0 is solo (no token): the story prompt is injected verbatim.
+    panel0_text = next(f["text"] for f in prepared.panels[0] if "text" in f)
+    assert panel0_text.startswith("Place the person from the input image")
+    # Panel 1 references {GENDER_F_AGE_70_RACE_ASIAN}: resolved to its
+    # description, with no leftover placeholder braces.
+    panel1_text = next(f["text"] for f in prepared.panels[1] if "text" in f)
+    assert "{" not in panel1_text and "}" not in panel1_text
+    assert "elderly East Asian woman" in panel1_text
+    assert "the far left" in panel1_text
+
+
+def test_prepare_story_prompt_count_mismatch_raises(tmp_path: Path) -> None:
+    builder = _write_assets(
+        tmp_path,
+        template={
+            "workflow_id": "w",
+            "story": "s",
+            "panels": [[{"text": ""}], [{"text": ""}]],
+        },
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={"prompts": ["only one prompt"]},
+        characters={},
+    )
+
+    with pytest.raises(
+        UnsupportedTemplateError,
+        match="has 1 prompts but the template has 2 panels",
+    ):
+        builder.prepare("t")
+
+
+def test_prepare_story_panel_without_text_field_raises(tmp_path: Path) -> None:
+    builder = _write_assets(
+        tmp_path,
+        template={"workflow_id": "w", "story": "s", "panels": [[{"image": "a.png"}]]},
+        workflow_config={"nodes": [{"id": 1, "type": "LoadImage"}]},
+        workflow={"1": {"class_type": "LoadImage", "inputs": {"image": "x"}}},
+        story={"prompts": ["a prompt with nowhere to go"]},
+        characters={},
+    )
+
+    with pytest.raises(UnsupportedTemplateError, match="no 'text' field"):
+        builder.prepare("t")
+
+
+def test_prepare_story_resolves_known_tokens_and_leaves_unknown(tmp_path: Path) -> None:
+    builder = _write_assets(
+        tmp_path,
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": ""}]]},
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={"prompts": ["{HERO} meets {UNKNOWN}"]},
+        characters={
+            "HERO": {"description": "a brave knight"},
+            "NO_DESC": {},  # entry without a description → skipped
+            "BAD": "not-a-dict",  # non-dict entry → skipped
+        },
+    )
+
+    prepared = builder.prepare("t")
+
+    text = next(f["text"] for f in prepared.panels[0] if "text" in f)
+    assert text == "a brave knight meets {UNKNOWN}"
 
 
 # --- render: happy -----------------------------------------------------------
