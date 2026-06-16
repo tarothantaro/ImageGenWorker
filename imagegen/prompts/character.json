@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "_comment": "Library of fully-generated supporting characters referenced from story prompts (imagegen/prompts/<type>_<n>.json) as {TOKEN} placeholders. Maintained by the `character-config` skill. The input-photo person (the protagonist) is NEVER defined here -- only the conjured supporting cast. See README.md for the placeholder/runtime contract.",
+
+  "runtime": {
+    "placeholder_format": "{<TOKEN>}",
+    "resolution": "Strip the curly braces from a placeholder found in a prompt string, look up characters[<TOKEN>].description, and substitute it in. This is the same flat string-replace mechanism workflow.py already uses for USER_ID / STORY_ID. characters[*].description is the ONLY field read at runtime; everything else in this file is authoring metadata.",
+    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). Enumerate the character explicitly under `characters` whenever it appears in a story, so its look/dress stays byte-for-byte identical across every panel.",
+    "example": "{GENDER_M_AGE_30_RACE_ASIAN}  ->  characters['GENDER_M_AGE_30_RACE_ASIAN'].description"
+  },
+
+  "_recipe": {
+    "comment": "How a character's `description` is composed from the modular tables below. characters[*].description is the COMPILED output and must be regenerated whenever any fragment it references changes -- it is the single source of truth at runtime, the refs are bookkeeping.",
+    "render_order": ["age", "ethnicity", "gender_noun", "hair", "build", "wardrobe", "features"],
+    "template": "{age} {ethnicity} {gender_noun} with {hair}, {build}, wearing {wardrobe}, with {features}",
+    "rules": [
+      "gender_noun: use dimensions.gender[g].noun_child when dimensions.age[a].child is true, otherwise dimensions.gender[g].noun.",
+      "Articles are baked into dimensions.age[a].phrase (e.g. 'an 8-year-old', 'a 30-year-old', 'an elderly').",
+      "The trailing ', with {features}' segment is omitted entirely when the character has no `features` ref.",
+      "Keep descriptions appearance-only (age, ethnicity, build, hair, clothing, fixed features). Never bake in actions, expressions, poses or positions -- those belong in the per-panel story prompt."
+    ]
+  },
+
+  "dimensions": {
+    "gender": {
+      "M":  {"noun": "man",    "noun_child": "boy",   "pronoun": "he"},
+      "F":  {"noun": "woman",  "noun_child": "girl",  "pronoun": "she"},
+      "NB": {"noun": "person", "noun_child": "child", "pronoun": "they"}
+    },
+    "age": {
+      "06": {"phrase": "a 6-year-old",  "child": true},
+      "08": {"phrase": "an 8-year-old", "child": true},
+      "12": {"phrase": "a 12-year-old", "child": true},
+      "16": {"phrase": "a 16-year-old", "child": true},
+      "25": {"phrase": "a 25-year-old", "child": false},
+      "30": {"phrase": "a 30-year-old", "child": false},
+      "35": {"phrase": "a 35-year-old", "child": false},
+      "45": {"phrase": "a 45-year-old", "child": false},
+      "60": {"phrase": "a 60-year-old", "child": false},
+      "70": {"phrase": "an elderly",    "child": false}
+    },
+    "race": {
+      "ASIAN":          {"adj": "East Asian"},
+      "SOUTHEAST_ASIAN":{"adj": "Southeast Asian"},
+      "SOUTH_ASIAN":    {"adj": "South Asian"},
+      "BLACK":          {"adj": "Black"},
+      "WHITE":          {"adj": "White"},
+      "HISPANIC":       {"adj": "Hispanic"},
+      "MIDDLE_EASTERN": {"adj": "Middle Eastern"}
+    }
+  },
+
+  "hair": {
+    "SHORT_BLACK_NEAT":   "short, neatly combed black hair",
+    "SHORT_BROWN":        "short brown hair",
+    "LONG_BLACK_STRAIGHT":"long straight black hair",
+    "CURLY_BLACK_SHORT":  "short curly black hair",
+    "BOB_BLACK":          "a chin-length black bob",
+    "GREY_BUN":           "grey hair tied in a low bun",
+    "BALDING_GREY":       "thinning grey hair"
+  },
+
+  "build": {
+    "AVERAGE_MEDIUM": "an average build and medium height",
+    "SLIM_TALL":      "a slim build and tall stature",
+    "PETITE":         "a petite build",
+    "STOCKY":         "a stocky, solid build",
+    "CHILD_SMALL":    "a small child's frame"
+  },
+
+  "wardrobe": {
+    "CASUAL_TEE_JEANS":   "a plain navy crew-neck t-shirt and dark blue jeans",
+    "CARDIGAN_FLORAL":    "a soft beige cardigan over a floral blouse and a long grey skirt",
+    "BUSINESS_GREY_SUIT": "a charcoal-grey business suit with a white shirt",
+    "SCHOOL_UNIFORM_BLUE":"a navy school uniform with a white collared shirt",
+    "SUMMER_DRESS_YELLOW":"a light yellow summer dress",
+    "HOODIE_GREEN":       "a forest-green hoodie and black joggers"
+  },
+
+  "features": {
+    "STUBBLE":         "light stubble",
+    "GLASSES_ROUND":   "round wire-frame glasses",
+    "FRECKLES":        "light freckles across the cheeks",
+    "KIND_SMILE":      "a warm, kind smile",
+    "WRINKLES_GENTLE": "gentle smile lines"
+  },
+
+  "characters": {
+    "GENDER_F_AGE_70_RACE_ASIAN": {
+      "refs": {"gender": "F", "age": "70", "race": "ASIAN", "hair": "GREY_BUN", "build": "PETITE", "wardrobe": "CARDIGAN_FLORAL", "features": "WRINKLES_GENTLE"},
+      "description": "an elderly East Asian woman with grey hair tied in a low bun, a petite build, wearing a soft beige cardigan over a floral blouse and a long grey skirt, with gentle smile lines"
+    },
+    "GENDER_M_AGE_25_RACE_ASIAN": {
+      "refs": {"gender": "M", "age": "25", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "SLIM_TALL", "wardrobe": "HOODIE_GREEN"},
+      "description": "a 25-year-old East Asian man with short, neatly combed black hair, a slim build and tall stature, wearing a forest-green hoodie and black joggers"
+    },
+    "GENDER_M_AGE_08_RACE_ASIAN": {
+      "refs": {"gender": "M", "age": "08", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "CHILD_SMALL", "wardrobe": "SCHOOL_UNIFORM_BLUE"},
+      "description": "an 8-year-old East Asian boy with short, neatly combed black hair, a small child's frame, wearing a navy school uniform with a white collared shirt"
+    },
+    "GENDER_M_AGE_35_RACE_WHITE": {
+      "refs": {"gender": "M", "age": "35", "race": "WHITE", "hair": "SHORT_BROWN", "build": "AVERAGE_MEDIUM", "wardrobe": "BUSINESS_GREY_SUIT", "features": "STUBBLE"},
+      "description": "a 35-year-old White man with short brown hair, an average build and medium height, wearing a charcoal-grey business suit with a white shirt, with light stubble"
+    },
+    "GENDER_F_AGE_30_RACE_BLACK": {
+      "refs": {"gender": "F", "age": "30", "race": "BLACK", "hair": "CURLY_BLACK_SHORT", "build": "SLIM_TALL", "wardrobe": "SUMMER_DRESS_YELLOW", "features": "KIND_SMILE"},
+      "description": "a 30-year-old Black woman with short curly black hair, a slim build and tall stature, wearing a light yellow summer dress, with a warm, kind smile"
+    }
+  }
+}
