@@ -4,7 +4,9 @@
 #   * fake-gcs-server — GCS-compatible blob store the worker downloads inputs
 #                       from / uploads outputs to.
 #   * mock-comfyui    — drop-in ComfyUI (tests/mock_comfyui): streams the real
-#                       WebSocket event sequence + returns PNGs, no models.
+#                       WebSocket event sequence + returns PNGs, no models. OFF
+#                       by default (`mock` profile); opt in with `up.sh --mock`.
+#                       Otherwise the worker uses the host's real ComfyUI :8188.
 #   * imagegen-worker — the worker itself, pulling jobs + publishing completions.
 #
 # It deliberately does NOT run a Pub/Sub emulator. The worker attaches to the
@@ -30,10 +32,11 @@ services:
   # via STORAGE_EMULATOR_HOST from env.sh. Bring that stack up first.
 
   mock-comfyui:
-    # Behind the `mock` profile. dev runs it by default (COMFYUI_BACKEND=mock,
-    # which env.sh maps to COMPOSE_PROFILES=mock); COMFYUI_BACKEND=real skips it
-    # and points the worker at the host's real imagegen-comfyui (:8188) via
-    # host.docker.internal (see the worker's extra_hosts).
+    # Behind the `mock` profile, OFF by default. dev points the worker at the
+    # host's real imagegen-comfyui (:8188) via host.docker.internal (see the
+    # worker's extra_hosts). Opt in to the mock with `up.sh --mock` (or
+    # COMFYUI_BACKEND=mock), which env.sh maps to COMPOSE_PROFILES=mock so this
+    # container starts and the worker is pointed at it by service name.
     profiles: ["mock"]
     build:
       context: ../../../tests/mock_comfyui
@@ -71,8 +74,8 @@ services:
         # at the host's real imagegen-comfyui instead).
         required: false
     extra_hosts:
-      # Reach the host's real imagegen-comfyui (:8188) when COMFYUI_BACKEND=real
-      # (COMFYUI_URL=http://host.docker.internal:8188). Harmless when using mock.
+      # Reach the host's real imagegen-comfyui (:8188) — the default backend
+      # (COMFYUI_URL=http://host.docker.internal:8188). Harmless under --mock.
       - "host.docker.internal:host-gateway"
     environment:
       # Worker config (config.py). GOOGLE_CLOUD_PROJECT mirrors GCP_PROJECT_ID so

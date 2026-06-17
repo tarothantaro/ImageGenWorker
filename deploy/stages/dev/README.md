@@ -10,8 +10,12 @@ pulls the jobs the server publishes and writes completions the server can read.
 | Service | Image | Role |
 |---|---|---|
 | `fake-gcs-server` | `fsouza/fake-gcs-server` | GCS the worker downloads inputs from / uploads outputs to. |
-| `mock-comfyui` | built from `tests/mock_comfyui` | Drop-in ComfyUI: streams the real WebSocket event sequence + returns PNGs, no models. |
 | `imagegen-worker` | built from the repo root `Dockerfile` | The worker — pulls jobs, runs the model, publishes completions. |
+| `mock-comfyui` | built from `tests/mock_comfyui` | Drop-in ComfyUI: streams the real WebSocket event sequence + returns PNGs, no models. **Off by default** — opt in with `./up.sh --mock`. |
+
+By default the worker talks to the **host's real ComfyUI** on `:8188`
+(reached via `host.docker.internal`), so generation produces real images. Pass
+`./up.sh --mock` to run the bundled mock ComfyUI instead (no GPU/models needed).
 
 It deliberately does **not** run a Pub/Sub emulator. The worker attaches to the
 Application local stack's docker network (`APPSTACK_NETWORK`, default
@@ -31,12 +35,17 @@ Application local stack's docker network (`APPSTACK_NETWORK`, default
 ## Run it
 
 ```bash
-./up.sh        # build + start, wait until healthy (or: ../../deploy.sh dev)
-./smoke.sh     # seed GCS → publish a job → print the worker's completions
-./down.sh      # stop
+./up.sh         # build + start against the host's real ComfyUI (:8188)
+./up.sh --mock  # ...or against the bundled mock ComfyUI (no GPU/models)
+./smoke.sh      # seed GCS → publish a job → print the worker's completions
+./down.sh       # stop
 
 docker compose -f docker-compose.yml logs -f imagegen-worker   # tail
 ```
+
+> Real ComfyUI must be listening on the host's `:8188` (the default backend).
+> If it isn't running, use `./up.sh --mock`, or point elsewhere with
+> `COMFYUI_URL=... ./up.sh`.
 
 `smoke.sh` runs `smoke.py` inside the worker image (so it reaches the emulators
 by service name). A green run prints one `panel_completed` per panel followed by
@@ -48,10 +57,12 @@ publishes jobs.
 
 Everything is overridable inline. Notable knobs:
 
-- `COMFYUI_URL` — defaults to the bundled `http://mock-comfyui:8188`. Point at a
-  real host-run ComfyUI with
-  `COMFYUI_URL=http://host.docker.internal:8188 ./up.sh` (add the host-gateway
-  mapping if your Docker needs it).
+- `COMFYUI_BACKEND` — `real` (default) talks to the host's ComfyUI on `:8188`
+  via `host.docker.internal`; `mock` runs the bundled `mock-comfyui` (activates
+  the `mock` compose profile). `./up.sh --mock` / `--real` are shorthands.
+- `COMFYUI_URL` — derived from `COMFYUI_BACKEND`, but wins if set explicitly,
+  e.g. `COMFYUI_URL=http://host.docker.internal:8188 ./up.sh` (add the
+  host-gateway mapping if your Docker needs it).
 - `APPSTACK_NETWORK` — the Application local stack's network (default
   `local_default`; check `docker network ls`).
 - `GCS_BUCKET` — bucket `smoke.py` seeds/reads (default `tarostory-local-images`).

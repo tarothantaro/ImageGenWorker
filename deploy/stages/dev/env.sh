@@ -30,19 +30,19 @@ export COMPLETION_TOPIC="${COMPLETION_TOPIC:-projects/${GCP_PROJECT_ID}/topics/j
 export PUBSUB_EMULATOR_HOST="${PUBSUB_EMULATOR_HOST:-pubsub-emulator:8085}"
 export STORAGE_EMULATOR_HOST="${STORAGE_EMULATOR_HOST:-http://fake-gcs-server:4443}"
 # Generation backend (DESIGN.md §9):
-#   * mock (default) — the bundled mock ComfyUI (tests/mock_comfyui). Activates
-#     the `mock` compose profile so the container starts, and points the worker
-#     at it by service name.
-#   * real           — the host's real imagegen-comfyui on :8188, reached via
+#   * real (default) — the host's real imagegen-comfyui on :8188, reached via
 #     host.docker.internal (the worker's extra_hosts). mock-comfyui is NOT
 #     started (its `mock` profile stays off; the worker's depends_on is optional).
+#   * mock           — the bundled mock ComfyUI (tests/mock_comfyui). Activates
+#     the `mock` compose profile so the container starts, and points the worker
+#     at it by service name. Opt in with `up.sh --mock` or COMFYUI_BACKEND=mock.
 # COMFYUI_URL still wins if set explicitly.
-export COMFYUI_BACKEND="${COMFYUI_BACKEND:-mock}"
-if [ "$COMFYUI_BACKEND" = "real" ]; then
-  export COMFYUI_URL="${COMFYUI_URL:-http://host.docker.internal:8188}"
-else
+export COMFYUI_BACKEND="${COMFYUI_BACKEND:-real}"
+if [ "$COMFYUI_BACKEND" = "mock" ]; then
   export COMFYUI_URL="${COMFYUI_URL:-http://mock-comfyui:8188}"
   export COMPOSE_PROFILES="${COMPOSE_PROFILES:-mock}"
+else
+  export COMFYUI_URL="${COMFYUI_URL:-http://host.docker.internal:8188}"
 fi
 
 # Worker knobs (DESIGN.md §10.4 dev column).
