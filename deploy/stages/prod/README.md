@@ -19,7 +19,6 @@ The pinned worker image running against real GCP on a worker host (DESIGN.md
 ```bash
 # Pull the pinned image, then recreate detached so the old container drains.
 IMAGE=ghcr.io/<org>/imagegen-worker@sha256:<digest> ./deploy.sh
-# or: ../../deploy.sh prod
 ```
 
 Override any default inline, e.g. `GCP_PROJECT_ID=tarostory-staging

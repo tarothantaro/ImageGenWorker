@@ -509,9 +509,9 @@ It's an **operation** script (`operation/stages/<stage>/`), mirroring `../Applic
 Firestore is an extra (`pip install -e .[catalog]`), kept out of `runtime` so the worker container stays lean. Usage:
 
 ```
-operation/sync_story_catalog.sh <dev|preprod|prod> [--template ID] [--dry-run]
-# or the per-stage wrapper directly:
-operation/stages/dev/sync_story_catalog.sh --dry-run
+operation/stages/dev/sync_story_catalog.sh [--dry-run]
+operation/stages/preprod/sync_story_catalog.sh [--template ID] [--dry-run]
+operation/stages/prod/sync_story_catalog.sh [--template ID] [--dry-run]
 ```
 
 The catalog template MUST stay in lockstep with the bound prompt (the same lockstep §7.2 already requires between the template config and the prompt set): re-running the sync after editing a prompt is what republishes the new title/lesson to the client.
