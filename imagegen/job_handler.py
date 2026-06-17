@@ -40,7 +40,13 @@ logger = logging.getLogger(__name__)
 
 
 class PanelResult(Protocol):
-    """One generated panel, as the model yields it."""
+    """One generated image, as the model yields it.
+
+    The model owns the storybook layout: ``index`` is the flat ordinal,
+    ``panel_index`` / ``variant`` decompose it into page + A/B variant, and
+    ``total`` is the total image count for the job (so panel_completed can carry
+    ``total_panels`` without the job declaring an ``output_count``).
+    """
 
     @property
     def image(self) -> bytes: ...
@@ -52,6 +58,14 @@ class PanelResult(Protocol):
     def model_version(self) -> str: ...
     @property
     def processing_seconds(self) -> float: ...
+    @property
+    def index(self) -> int: ...
+    @property
+    def panel_index(self) -> int: ...
+    @property
+    def variant(self) -> int: ...
+    @property
+    def total(self) -> int: ...
 
 
 @runtime_checkable
@@ -59,8 +73,9 @@ class ImageGenModel(Protocol):
     """The model's wire surface. The production implementation is the ComfyUI
     client in model.py (DESIGN.md §7.2); unit tests substitute a stub.
 
-    ``generate`` returns an iterable of one :class:`PanelResult` per template
-    panel — consumed lazily so the handler can publish each panel as it lands.
+    ``generate`` returns an iterable of one :class:`PanelResult` per generated
+    image — consumed lazily so the handler can publish each as it lands. The
+    job's ``type``/``id`` select the prompt set; the render template is fixed.
     """
 
     def generate(
@@ -68,8 +83,8 @@ class ImageGenModel(Protocol):
         *,
         story_id: str,
         user_id: str,
-        template_id: str,
-        configurable_options: dict[str, object],
+        prompt_type: int,
+        prompt_id: int,
         input_images: list[bytes],
     ) -> Iterable[PanelResult]: ...
 
@@ -81,11 +96,13 @@ class JobHandler:
         self,
         *,
         gcs: GcsClient,
+        gcs_bucket: str,
         model: ImageGenModel,
         publisher: CompletionPublisher,
         max_delivery_attempts: int = 5,
     ) -> None:
         self._gcs = gcs
+        self._gcs_bucket = gcs_bucket
         self._model = model
         self._publisher = publisher
         # Mirror the subscription's dead_letter_policy.max_delivery_attempts so
@@ -139,74 +156,70 @@ class JobHandler:
 
     def _run(self, job: JobMessage) -> JobResult:
         # Download inputs in declared order so the model gets them in the
-        # position specified by the job. (Worker must not reorder.)
-        ordered = sorted(job.input_photos, key=lambda p: p.position)
-        input_bytes = [self._gcs.download(p.gcs_uri) for p in ordered]
+        # position specified by the job. (Worker must not reorder.) The objects
+        # are at the deterministic per-story name the API wrote them under —
+        # gs://<bucket>/<user>_<story>_input_<position>.png (DESIGN.md §5.1).
+        ordered = sorted(job.input_images, key=lambda p: p.position)
+        input_bytes = [
+            self._gcs.download(
+                GcsClient.input_uri(
+                    self._gcs_bucket, job.user_id, job.story_id, p.position
+                )
+            )
+            for p in ordered
+        ]
 
         panels = self._model.generate(
             story_id=job.story_id,
             user_id=job.user_id,
-            template_id=job.template_id,
-            configurable_options=dict(job.configurable_options),
+            prompt_type=job.type,
+            prompt_id=job.id,
             input_images=input_bytes,
         )
 
-        # One ComfyUI run per panel. Upload + publish each as it lands, then let
-        # the model produce the next — the worker never fires all panels at once.
+        # One ComfyUI run per panel. Upload + publish each image as it lands, then
+        # let the model produce the next — the worker never fires all panels at
+        # once. The model owns the storybook layout (index / panel_index / variant
+        # / total), so the handler just records and relays each image.
         outputs: list[OutputImage] = []
         total_seconds = 0.0
         model_version = ""
-        # Storybook A/B layout (contract / DESIGN.md §4): the flat panels are laid
-        # out as story-panel = index // variants_per_panel, variant = index %
-        # variants_per_panel. Default 1 keeps one image per panel (legacy).
-        variants = job.variants_per_panel
-        for index, panel in enumerate(panels):
-            if index >= job.output_count:
-                # The template definition produced more images than the job
-                # promised (template drift between API and worker). The panels
-                # iterator is lazy, so this is the earliest the overrun is
-                # knowable — and it is deterministic: a retry regenerates the
-                # exact same overrun, so report failed instead of nacking
-                # (publishing the excess would also violate the contract's
-                # panel_index < total_panels and retry forever).
-                raise InvalidConfigError(
-                    f"model produced more than the expected "
-                    f"{job.output_count} images"
-                )
-            uri = GcsClient.output_uri(job.output_prefix, index, ext="png")
+        for panel in panels:
+            uri = GcsClient.output_uri(
+                self._gcs_bucket, job.user_id, job.story_id, panel.index
+            )
             self._gcs.upload(uri, panel.image, content_type="image/png")
             output = OutputImage(
-                index=index,
+                index=panel.index,
                 gcs_uri=uri,
                 width=panel.width,
                 height=panel.height,
                 bytes=len(panel.image),
-                panel_index=index // variants,
-                variant=index % variants,
+                panel_index=panel.panel_index,
+                variant=panel.variant,
             )
             outputs.append(output)
             total_seconds += panel.processing_seconds
             model_version = panel.model_version
-            # Incremental, non-terminal: surfaces this panel to the user now.
+            # Incremental, non-terminal: surfaces this image to the user now.
             # A failed publish here raises PublishTransientError → nack/redeliver.
             self._publisher.publish(
                 build_panel_completed(
                     story_id=job.story_id,
                     user_id=job.user_id,
                     request_id=job.request_id,
-                    panel_index=index,
-                    total_panels=job.output_count,
+                    panel_index=panel.index,
+                    total_panels=panel.total,
                     output_image=output,
                     model_version=panel.model_version,
                     processing_seconds=panel.processing_seconds,
                 )
             )
 
-        if len(outputs) != job.output_count:
-            # Model produced the wrong number of panels for this job.
-            raise InvalidConfigError(
-                f"model produced {len(outputs)} images, expected {job.output_count}"
-            )
+        if not outputs:
+            # A story always has at least one panel; zero images means a broken
+            # template/prompt set — deterministic, so report failed (not nack).
+            raise InvalidConfigError("model produced no images")
 
         return JobResult(
             output_images=outputs,

@@ -44,8 +44,8 @@ Located at `tests/unit/`. No I/O, no subprocess, no emulators, no `time.sleep`. 
 | `test_failure_classification.py` | Given a model exception or GCS error, decide: nack-and-redeliver vs. publish-failed-completion vs. let-Pub/Sub-DLQ. This is the heart of §6.2 — exhaustive coverage matters. |
 | `test_completion_builder.py` | Building a `job-completed` payload from a `JobResult`. Asserts that every retry generates a fresh `event_id` (DESIGN §5.2). |
 | `test_handler_logic.py` | The pure-logic part of `job_handler.py` with `gcs` and `publisher` mocked, exercising the decision tree. |
-| `test_workflow.py` | The pure workflow renderer (`workflow.py`): loads `workflows/2` + `templates/3`, applies overrides/placeholders/image-remap, and lists the SaveImage output prefixes in `_V<n>` order (`output_prefixes`; `final_output_prefix` still resolves `_V2`). Malformed assets → `UnsupportedTemplateError`. |
-| `test_model.py` | `ComfyUIModel` (`model.py`) against the mock ComfyUI container: the exact workflow + params sent, **every saved variant per panel run** as a separate output (a one-panel template → 2 outputs V1+V2; multi-panel: per-panel values, and `seed + i` per-panel variation under a global seed override), the per-request timeout, and every worker-side (`CorruptInput`/`InvalidConfig`/`UnsupportedTemplate`) and ComfyUI-side error mapping. |
+| `test_workflow.py` | The pure workflow renderer (`workflow.py`): loads `workflows/1` + `templates/1` (applying a prompt set via `prepare(template_id, story_ref)`), applies placeholders/image-remap, and lists the SaveImage output prefixes in `_V<n>` order (`output_prefixes`; `final_output_prefix` still resolves `_V2`). Malformed assets → `UnsupportedTemplateError`. |
+| `test_model.py` | `ComfyUIModel` (`model.py`) against the mock ComfyUI container: the exact workflow + params sent, **every saved variant per panel run** as a separate output (`templates/1` = 6 panels × V1/V2 → 12 outputs, tagged `panel_index`/`variant`/`total`; a crafted multi-panel template asserts per-panel seeds), the per-request timeout, and every worker-side (`CorruptInput`/`UnsupportedTemplate`) and ComfyUI-side error mapping. |
 | `test_comfyui_worker.py` | Full `JobHandler` + real `ComfyUIModel` + mock ComfyUI, driven by job messages: asserts GCS outputs, the incremental `panel_completed` events + terminal `completed`, and ack/nack per outcome. |
 
 Run:
@@ -110,7 +110,7 @@ tests/integration/
 | `test_comfyui_client.py` | The real `HttpComfyUIClient` (HTTP + WebSocket) driven end-to-end against the in-process mock ComfyUI (`tests/mock_comfyui/server.py`, started on a random port): streams a 2-image job to completion over the WS, maps a `/prompt` 400 to `InvalidConfigError`, and a WS `execution_error` to `ModelTransientError`. No GPU; the only place `comfyui_client.py` runs for real. Auto-skips if `aiohttp`/`websocket-client` are absent. |
 | `test_puller.py` | Publish to `image-gen-jobs`, the `Puller` calls `on_message` exactly once, ack→no redelivery. Then nack→redelivery within `retry_policy.minimum_backoff`. Lease-extension path: simulate a 30s processing window with `max_lease_duration=60` and verify the message stays leased. |
 | `test_publisher.py` | Publish a completion, subscribe with a fresh test-only subscription, verify the message body and attributes match what was sent. |
-| `test_gcs.py` | Round-trip a JPEG through fake-gcs-server: upload → download → bytes match. Object is written under the configured `output_prefix`. |
+| `test_gcs.py` | Round-trip a JPEG through fake-gcs-server: upload → download → bytes match. Plus the derived per-story URIs (`input_uri` = `<user>_<story>_input_<position>.png`, `output_uri` = `<user>/<story>/outputs/<index>.png`). |
 | `test_handler_e2e_in_proc.py` | Full `JobHandler.handle()` against both emulators with a stub `model.generate()` that returns deterministic bytes. Verifies: input is downloaded from the right URI, output lands at the right URI, completion is published with `status='completed'` and the expected `output_images[]`. |
 | `test_exactly_once.py` | With `enable_exactly_once_delivery=true`, simulate a slow processor (sleep > base ack deadline but extend lease) and verify no duplicate delivery. Then simulate a worker crash by abandoning the lease and verify redelivery happens after lease expiration. |
 
@@ -183,7 +183,7 @@ The stub:
 - On message receipt:
   - Sleeps for `STUB_DELAY_SECONDS` (default `2`).
   - With probability `STUB_FAIL_PROB` (default `0`), publishes `status='failed'` instead of `'completed'`.
-  - Generates `output_count` placeholder PNGs (a colored gradient) and uploads them to `output_prefix` on `STORAGE_EMULATOR_HOST`.
+  - Generates placeholder PNGs (a colored gradient) and uploads them to the derived per-story output path `gs://$GCS_BUCKET/<user>/<story>/outputs/<index>.png` on `STORAGE_EMULATOR_HOST`.
   - Publishes a completion to `job-completed` matching the schema in DESIGN §5.2.
   - Acks the original message.
 - Logs every step in the same JSON structlog format as the real worker, so the Application repo's e2e logs look uniform.

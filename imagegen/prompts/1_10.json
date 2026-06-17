@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 10,
+  "type": 1,
+  "id": 10,
   "title": "Bubbly Clean Hands",
   "lesson": "Washing your hands keeps germs away and keeps you healthy.",
   "characters": [
     "GENDER_F_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a bright sunny garden, playing happily on the grass with a small toy spade, hands a little muddy. Medium shot at eye level, the person facing the camera with their face fully visible and a cheerful smile. Warm natural sunlight, leafy green plants, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene just inside a bright home doorway leading toward the kitchen before a snack. The person from the input image stands on the far left in the mid-ground, facing three-quarter toward the camera with their face clearly visible and slightly muddy hands held up. In the right foreground, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels gently and points toward a bathroom sink down the hall. Eye-level medium-wide shot, warm indoor light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

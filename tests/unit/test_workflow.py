@@ -1,9 +1,9 @@
 """Unit tests for the pure workflow renderer (imagegen/workflow.py).
 
 These exercise the renderer against the *real* copied assets
-(``imagegen/workflows/2`` + ``imagegen/templates/3``) for the happy paths, and
-against tiny crafted assets in ``tmp_path`` for the multi-panel and
-malformed-asset branches. No ComfyUI, no network.
+(``imagegen/workflows/1`` + ``imagegen/templates/1``, the single render
+template) for the happy paths, and against tiny crafted assets in ``tmp_path``
+for the multi-panel and malformed-asset branches. No ComfyUI, no network.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ _PKG = Path(imagegen.__file__).resolve().parent
 _WORKFLOW_ROOT = _PKG / "workflows"
 _TEMPLATE_ROOT = _PKG / "templates"
 
-# Template 3 / workflow 2 node ids that templates/3 customizes.
+# workflow 1 node ids that templates/1's panels customize.
 _NODE_INPUT_IMAGE = "46"
 _NODE_SOURCE_FACE = "122"
 _NODE_PROMPT = "68:6"
@@ -31,8 +31,8 @@ _NODE_SEED = "68:25"
 _NODE_SAVE_V1 = "123"
 _NODE_SAVE_V2 = "119"
 
+# templates/1 panel 0 seed; its input image filename carries USER_ID / STORY_ID.
 _TEMPLATE_DEFAULT_SEED = 771062815410683
-# templates/3's input image filename carries USER_ID / STORY_ID placeholders.
 _INPUT_SLOT = "USER_ID_STORY_ID_INPUT_1.png"
 
 
@@ -82,13 +82,13 @@ def _write_assets(
 # --- prepare: happy ----------------------------------------------------------
 
 
-def test_prepare_loads_template_3_against_workflow_2(
+def test_prepare_loads_template_1_against_workflow_1(
     real_builder: WorkflowBuilder,
 ) -> None:
-    prepared = real_builder.prepare("3")
+    prepared = real_builder.prepare("1")
 
-    assert prepared.workflow_id == "2"
-    assert prepared.panel_count == 1
+    assert prepared.workflow_id == "1"
+    assert prepared.panel_count == 6
     assert len(prepared.panels[0]) == len(prepared.config_nodes)
     # Both LoadImage nodes default to the same input filename → one dedup'd slot.
     assert prepared.image_slots == [_INPUT_SLOT]
@@ -173,12 +173,13 @@ def test_prepare_panel_node_count_mismatch_raises(tmp_path: Path) -> None:
 # --- prepare: story-bound templates (per-panel prompts + character tokens) ----
 
 
-def test_prepare_template_4_injects_story_prompts_and_resolves_characters(
+def test_prepare_injects_story_prompts_and_resolves_characters(
     real_builder: WorkflowBuilder,
 ) -> None:
-    """Template 4 declares ``"story": "1_1"`` — prepare sources each panel's text
-    from prompts/1_1.json and resolves {TOKEN}s against prompts/character.json."""
-    prepared = real_builder.prepare("4")
+    """``prepare("1", "1_1")`` sources each panel's text from prompts/1_1.json
+    and resolves {TOKEN}s against prompts/character.json (the template no longer
+    binds a story inline; the job's type/id select it)."""
+    prepared = real_builder.prepare("1", "1_1")
 
     assert prepared.panel_count == 6
     # Panel 0 is solo (no token): the story prompt is injected verbatim.
@@ -253,7 +254,7 @@ def test_prepare_story_resolves_known_tokens_and_leaves_unknown(tmp_path: Path) 
 def test_render_applies_overrides_and_placeholders(
     real_builder: WorkflowBuilder,
 ) -> None:
-    prepared = real_builder.prepare("3")
+    prepared = real_builder.prepare("1")
 
     workflow = real_builder.render(
         prepared,
@@ -270,14 +271,15 @@ def test_render_applies_overrides_and_placeholders(
     # Image filename is substituted to the per-story upload name (no remap).
     assert workflow[_NODE_INPUT_IMAGE]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert workflow[_NODE_SOURCE_FACE]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert workflow[_NODE_SAVE_V1]["inputs"]["filename_prefix"] == "u1_s1_V1"
-    assert workflow[_NODE_SAVE_V2]["inputs"]["filename_prefix"] == "u1_s1_V2"
+    # Panel 0's filename prefixes carry the per-panel P0 marker.
+    assert workflow[_NODE_SAVE_V1]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
+    assert workflow[_NODE_SAVE_V2]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
 
 
 def test_render_without_overrides_keeps_template_defaults(
     real_builder: WorkflowBuilder,
 ) -> None:
-    prepared = real_builder.prepare("3")
+    prepared = real_builder.prepare("1")
 
     workflow = real_builder.render(
         prepared,
@@ -342,7 +344,7 @@ def test_render_uses_each_panels_own_values(tmp_path: Path) -> None:
 def test_render_does_not_mutate_the_base_workflow(
     real_builder: WorkflowBuilder,
 ) -> None:
-    prepared = real_builder.prepare("3")
+    prepared = real_builder.prepare("1")
 
     first = real_builder.render(
         prepared,

@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 11,
+  "type": 1,
+  "id": 11,
   "title": "Brave at Bedtime",
   "lesson": "The dark isn't scary when you feel cozy and safe; you can be brave.",
   "characters": [
     "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a cozy child's bedroom in the evening, sitting up on a comfy bed and hugging a small teddy bear, looking a little unsure about the dark. Medium shot at eye level, the person facing the camera with their face fully visible and well-lit. A soft warm glow fills the room, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene in the same cozy bedroom at bedtime. The person from the input image sits on the far left in the mid-ground on the comfy bed, facing the camera with their face clearly visible and a slightly worried expression, still holding the teddy bear. In the right foreground, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} kneels beside the bed reaching toward a small night-light, smiling warmly and reassuringly. Eye-level medium-wide shot, gentle warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

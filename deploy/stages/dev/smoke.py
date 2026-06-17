@@ -26,12 +26,10 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
-
 from google.api_core import exceptions as gax
 from google.cloud import pubsub_v1, storage
 
-from image_gen_contract import CURRENT_SCHEMA_VERSION, JobInputPhoto, JobMessage
+from image_gen_contract import CURRENT_SCHEMA_VERSION, JobInputImage, JobMessage
 
 # A 1x1 PNG — enough to pass the worker's magic-byte input check (model.py
 # `_looks_like_image`); the mock ComfyUI stores the bytes but never decodes them.
@@ -72,22 +70,19 @@ def _publish_job(project: str, bucket: str) -> str:
     request_id = f"req_smoke_{os.urandom(4).hex()}"
     photo_id = f"ph_{os.urandom(4).hex()}"
 
-    input_uri = _seed_input(bucket, f"{user_id}/photos/{photo_id}.png")
-    output_prefix = f"gs://{bucket}/{user_id}/{story_id}/outputs/"
-    completion_topic = f"projects/{project}/topics/job-completed"
+    # The worker downloads inputs by the deterministic per-story name; seed the
+    # photo there (stands in for what the API writes — DESIGN.md §5.1). The job
+    # carries only the prompt selector (type/id) + lightweight input metadata.
+    input_uri = _seed_input(bucket, f"{user_id}_{story_id}_input_0.png")
 
     job = JobMessage(
         schema_version=CURRENT_SCHEMA_VERSION,
         story_id=story_id,
         user_id=user_id,
         request_id=request_id,
-        template_id="3",  # bundled "custom" template → workflow 2, 1 panel
-        configurable_options={},
-        input_photos=[JobInputPhoto(photo_id=photo_id, position=0, gcs_uri=input_uri)],
-        output_count=1,
-        output_prefix=output_prefix,
-        callback_topic=completion_topic,
-        enqueued_at=datetime.now(timezone.utc),
+        type=1,  # prompt set prompts/1_1.json, rendered through templates/1
+        id=1,
+        input_images=[JobInputImage(photo_id=photo_id, position=0)],
     )
 
     publisher = pubsub_v1.PublisherClient()
@@ -101,7 +96,8 @@ def _publish_job(project: str, bucket: str) -> str:
         request_id=request_id,
     ).result(timeout=30.0)
     print(f"[smoke] published job story_id={story_id} message_id={msg_id}")
-    print(f"[smoke] output_prefix={output_prefix}")
+    print(f"[smoke] seeded input {input_uri}")
+    print(f"[smoke] outputs → gs://{bucket}/{user_id}/{story_id}/outputs/")
     return story_id
 
 

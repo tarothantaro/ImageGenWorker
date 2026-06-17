@@ -30,6 +30,12 @@ class WorkerConfig:
     gcp_project_id: str
     jobs_subscription: str
     completion_topic: str
+    # The single GCS bucket the worker reads inputs from and writes outputs to.
+    # Inputs:  gs://<bucket>/<user_id>_<story_id>_input_<position>.png
+    # Outputs: gs://<bucket>/<user_id>/<story_id>/outputs/<index>.png
+    # The job message no longer carries a gcs_uri / output_prefix (DESIGN.md §5.1);
+    # the worker derives both from this bucket + the message's ids.
+    gcs_bucket: str
     max_concurrency: int
     max_processing_seconds: int
     log_level: str
@@ -52,7 +58,7 @@ class WorkerConfig:
         )
 
 
-_REQUIRED = ("GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC")
+_REQUIRED = ("GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC", "GCS_BUCKET")
 
 
 def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
@@ -65,6 +71,7 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
         gcp_project_id=src["GCP_PROJECT_ID"],
         jobs_subscription=_validate_subscription(src["JOBS_SUBSCRIPTION"]),
         completion_topic=_validate_topic(src["COMPLETION_TOPIC"]),
+        gcs_bucket=src["GCS_BUCKET"],
         max_concurrency=_parse_positive_int(
             src.get("MAX_CONCURRENCY", "4"), "MAX_CONCURRENCY"
         ),

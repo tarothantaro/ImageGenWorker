@@ -2,16 +2,18 @@
 """Manual smoke test: drive the real ComfyUIModel against a live ComfyUI.
 
 Runs the production transport (``HttpComfyUIClient``, httpx + websocket-client)
-and the real :class:`~imagegen.model.ComfyUIModel` through template 3 /
-workflow 2 against a running ComfyUI container, using a real input photo. This
-is the GPU/model integration path that emulators and the in-process mock can't
-cover (TESTING.md §7).
+and the real :class:`~imagegen.model.ComfyUIModel` through templates/1 /
+workflow 1, rendering the prompt set selected by ``--type``/``--id``, against a
+running ComfyUI container with a real input photo. This is the GPU/model
+integration path that emulators and the in-process mock can't cover (TESTING.md
+§7).
 
 Usage (from the repo root, with the ComfyUI container up on :8188):
 
     ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
         --url http://localhost:8188 \
         --input tests/assets/test.jpg \
+        --type 1 --id 1 \
         --out /tmp/smoke_out
 
 Exits non-zero on any failure. Saves each produced panel image to ``--out``.
@@ -34,10 +36,10 @@ def main() -> int:
     parser.add_argument("--url", default="http://localhost:8188")
     parser.add_argument("--input", default="tests/assets/test.jpg")
     parser.add_argument("--out", default="/tmp/smoke_out")
-    parser.add_argument("--template", default="3")
+    parser.add_argument("--type", type=int, default=1, help="prompt type")
+    parser.add_argument("--id", type=int, default=1, help="prompt id")
     parser.add_argument("--story-id", default="smoke")
     parser.add_argument("--user-id", default="tester")
-    parser.add_argument("--prompt", default=None, help="override the panel prompt")
     parser.add_argument("--timeout", type=float, default=300.0)
     args = parser.parse_args()
 
@@ -50,10 +52,6 @@ def main() -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    options: dict[str, object] = {}
-    if args.prompt is not None:
-        options["prompt"] = args.prompt
-
     transport = HttpComfyUIClient(base_url=args.url, timeout=args.timeout)
     model = ComfyUIModel(
         transport,
@@ -62,15 +60,19 @@ def main() -> int:
     )
 
     log.info(
-        "submitting story=%s template=%s to %s", args.story_id, args.template, args.url
+        "submitting story=%s prompt=%s_%s to %s",
+        args.story_id,
+        args.type,
+        args.id,
+        args.url,
     )
     started = time.monotonic()
     try:
         panels = model.generate(
             story_id=args.story_id,
             user_id=args.user_id,
-            template_id=args.template,
-            configurable_options=options,
+            prompt_type=args.type,
+            prompt_id=args.id,
             input_images=[image_bytes],
         )
         count = 0

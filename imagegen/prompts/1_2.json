@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 2,
+  "type": 1,
+  "id": 2,
   "title": "Sharing Makes More Fun",
   "lesson": "Sharing your toys makes playtime more fun for everyone.",
   "characters": [
     "GENDER_F_AGE_06_RACE_BLACK"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a sunny backyard garden, sitting on a soft picnic blanket happily playing with a pile of colourful building blocks. Medium shot at eye level, the person facing the camera with their face fully visible and a cheerful smile. Warm natural sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene on the same sunny garden picnic blanket. The person from the input image sits on the far left, turned toward the camera with their face clearly visible, holding a colourful toy block a little close. On the right, {GENDER_F_AGE_06_RACE_BLACK} walks up with open hands and a hopeful, friendly smile, wanting to join the play. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

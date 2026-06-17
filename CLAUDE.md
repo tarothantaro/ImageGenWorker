@@ -48,6 +48,8 @@ API server → Pub/Sub image-gen-jobs → [worker pulls] → ComfyUI (HTTP+WS)
          ↓ output PNGs → GCS → Pub/Sub job-completed → API server /internal/jobs/completed
 ```
 
+The job event is a thin selector — `{schema_version, story_id, user_id, request_id, type, id, input_images:[{photo_id, position}]}`. No image bytes, no gcs_uri: the worker downloads inputs by the deterministic name `gs://$GCS_BUCKET/<user_id>_<story_id>_input_<position>.png` and writes outputs to `gs://$GCS_BUCKET/<user_id>/<story_id>/outputs/<index>.png`. `type`/`id` pick the prompt set `prompts/<type>_<id>.json`, rendered through `templates/1`.
+
 Per-panel streaming: for an N-panel story the worker publishes N non-terminal `panel_completed` events (one per panel as it finishes) followed by one terminal `completed`. The API side is expected to stream these to the client. The job is only ack'd after the terminal event.
 
 ### Module map (`imagegen/`)
@@ -55,10 +57,10 @@ Per-panel streaming: for an N-panel story the worker publishes N non-terminal `p
 | File | Role |
 |---|---|
 | `main.py` | Entrypoint: wires config → model → handler → puller. Excluded from unit coverage. |
-| `config.py` | Env-driven `WorkerConfig` dataclass. Three required vars: `GCP_PROJECT_ID`, `JOBS_SUBSCRIPTION`, `COMPLETION_TOPIC`. |
+| `config.py` | Env-driven `WorkerConfig` dataclass. Required vars: `GCP_PROJECT_ID`, `JOBS_SUBSCRIPTION`, `COMPLETION_TOPIC`, `GCS_BUCKET` (inputs read / outputs written here — the job carries no gcs_uri/output_prefix). |
 | `puller.py` | `google-cloud-pubsub` StreamingPull wrapper; handles ack lease extension. |
 | `job_handler.py` | `JobHandler.handle()` — parses message → downloads inputs → runs model → uploads outputs → publishes completion. Routes all exceptions through `failure_classification`. |
-| `model.py` | `ComfyUIModel` — implements the `ImageGenModel` Protocol; drives a ComfyUI container via `ComfyUITransport`. Validates inputs + options eagerly, then yields one `PanelResult` per panel lazily. |
+| `model.py` | `ComfyUIModel` — implements the `ImageGenModel` Protocol; drives a ComfyUI container via `ComfyUITransport`. `generate(story_id, user_id, prompt_type, prompt_id, input_images)` validates inputs eagerly, then yields one `PanelResult` per saved variant lazily. |
 | `workflow.py` | Pure, no-I/O: loads workflow/template JSON assets, resolves story prompt arrays + character `{TOKEN}` placeholders, renders an API-format ComfyUI prompt per panel. |
 | `comfyui_client.py` | Real `httpx` + `websocket-client` transport. Not unit-tested; pinned by integration test against mock ComfyUI. |
 | `failure_classification.py` | Maps exceptions to `Disposition.NACK_RETRY` or `Disposition.REPORT_FAILED`. The policy is exhaustively unit-tested here, separately from the handler. |
@@ -80,17 +82,17 @@ Assets ship as package data (`pyproject.toml [tool.setuptools.package-data]`):
 
 ```
 imagegen/
-├── workflows/<id>/workflow.json   # ComfyUI API-format graph
-├── workflows/<id>/config.json     # positional node list (what templates may override)
-├── templates/<id>/config.json     # per-panel field presets; "story" key → prompts/<ref>.json
+├── workflows/1/workflow.json   # ComfyUI API-format graph (the only workflow)
+├── workflows/1/config.json     # positional node list (what the template may override)
+├── templates/1/config.json     # the only render template: 6 per-panel field presets
 └── prompts/
-    ├── character.json             # {TOKEN} → description for supporting characters
-    └── <type>_<number>.json       # story prompts — owned by the `story-prompts` skill
+    ├── character.json          # {TOKEN} → description for supporting characters
+    └── <type>_<id>.json        # story prompts — owned by the `story-prompts` skill
 ```
 
-`workflow.py:WorkflowBuilder.prepare()` loads and validates a template; `.render()` applies per-panel overrides + `USER_ID`/`STORY_ID` placeholder substitution. `{TOKEN}` character placeholders are resolved at `prepare()` time from `character.json`; `USER_ID`/`STORY_ID` are resolved at `render()` time per job.
+There is **one** workflow (`workflows/1`) and **one** render template (`templates/1`, 6 panels). The job's `type`/`id` select which `prompts/<type>_<id>.json` set fills the panels' `text` — `templates/1` no longer binds a story inline. `prepare(template_id, story_ref)` loads + validates the template and applies that prompt set; `.render()` applies per-panel values + `USER_ID`/`STORY_ID` substitution. `{TOKEN}` character placeholders resolve at `prepare()` from `character.json`; `USER_ID`/`STORY_ID` at `render()` per job. Panel count = `len(prompts)` (must equal the template's 6).
 
-Workflow 2 saves two variants per panel run: `_V1` (pre-face-swap) and `_V2` (face-restored). The handler receives both as separate `PanelResult`s — a 3-panel story with 2 variants = `output_count=6`.
+Workflow 1 saves two variants per panel run: `_V1` (pre-face-swap) and `_V2` (face-restored). The model yields both as separate `PanelResult`s and owns the storybook layout (`index`/`panel_index`/`variant`/`total`) — a 6-panel story with 2 variants = 12 outputs. The job carries no `output_count`/`variants_per_panel`.
 
 ### Test structure
 
@@ -110,7 +112,7 @@ tests/
 
 The two Claude Code skills in `.claude/skills/` own specific files:
 
-- **`story-prompts`** — writes/edits `imagegen/prompts/<type>_<n>.json`
+- **`story-prompts`** — writes/edits `imagegen/prompts/<type>_<id>.json`
 - **`character-config`** — edits `imagegen/prompts/character.json` (the generated supporting cast)
 
 After editing prompts or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons to the API server's Firestore `templates/` collection.

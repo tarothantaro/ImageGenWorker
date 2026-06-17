@@ -169,21 +169,15 @@ A JSON key for this service account is provisioned via `gcloud iam service-accou
   "story_id": "01HX...ULID",
   "user_id": "uid_abc...",
   "request_id": "req_...",
-  "template_id": "tpl_life_lesson_v3",
-  "configurable_options": { "...": "..." },
-  "input_photos": [
-    {
-      "photo_id": "ph_...",
-      "position": 0,
-      "gcs_uri": "gs://tarostory-prod-uploads/uid_abc/photos/ph_xyz.jpg"
-    }
-  ],
-  "output_count": 4,
-  "output_prefix": "gs://tarostory-prod-outputs/uid_abc/01HX.../outputs/",
-  "callback_topic": "projects/<project>/topics/job-completed",
-  "enqueued_at": "2026-05-05T12:34:56Z"
+  "type": 1,
+  "id": 1,
+  "input_images": [
+    { "photo_id": "ph_...", "position": 0 }
+  ]
 }
 ```
+
+The event is a thin selector — it names **what** to generate, not the assets. `type`/`id` select the prompt set `imagegen/prompts/<type>_<id>.json` (e.g. `1_1`), which the worker renders through the single render template `imagegen/templates/1`. There is **no image payload and no `gcs_uri`**: the worker downloads each input from object storage by the deterministic per-story name `<user_id>_<story_id>_input_<position>.png` (the API writes inputs there before publishing), and uploads outputs to `gs://<bucket>/<user_id>/<story_id>/outputs/<index>.png`. The bucket and the completion topic are worker config (`GCS_BUCKET`, `COMPLETION_TOPIC`; §10.4), not per-message. `input_images[].photo_id` is carried for tracing only.
 
 The `request_id` propagates from the originating HTTP request through Pub/Sub → worker → completion → result_processor, so a single trace id covers the whole pipeline (../Application/DESIGN.md §11.2.1).
 
@@ -283,7 +277,7 @@ The worker never schedules its own retries, never sleeps with backoff, and never
 `POST /stories` does the following inside a single Firestore transaction (../Application/DESIGN.md §4.1 Charge-on-success invariant + Photo lifecycle invariant):
 
 1. Verify `(users.credit_balance - users.credit_held) >= templates.required_credits`. Otherwise reject with `402 PAYMENT_REQUIRED`.
-2. For each new upload in the request: create one `photos/{photo_id}` doc with `visible=false`, `story_count=1`. (The re-encoded bytes were uploaded to GCS at `{user_id}/photos/{photo_id}.{ext}` *before* the txn opened — §11.3.2.)
+2. For each new upload in the request: create one `photos/{photo_id}` doc with `visible=false`, `story_count=1`. (The re-encoded bytes were uploaded to GCS at the per-story input name `{user_id}_{story_id}_input_{position}.png` *before* the txn opened — §11.3.2 — the deterministic name the worker downloads by; reused photos are copied to the new story's input name too.)
 3. For each reused `photo_id`: validate `visible=true` and ownership, then increment `photos/{id}.story_count`.
 4. **Hold credits**: `users.credit_held += credits_spent`. **Do NOT touch `users.credit_balance`. Do NOT write a `credit_transactions` doc.** The actual balance debit is deferred to result_processor on success (§6.4).
 5. Write the `stories/{story_id}` doc with `status='queued'`, `credits_spent = templates.required_credits`, and `input_photos[]` referencing the photo IDs from steps 2–3.
@@ -432,25 +426,19 @@ The image is pushed to a private registry (`ghcr.io/<org>/imagegen-worker:<git-s
 
 Assets bundled with the package (`pyproject.toml` `package-data`):
 
-- `imagegen/workflows/2/workflow.json` — a Flux 2 image-edit + ReActor face-swap graph in ComfyUI **API format**; `workflows/2/config.json` lists, positionally, the nodes a template may customize.
-- `imagegen/templates/3/config.json` — the `custom` template. Each **panel** is a list of `{field: value}` presets parallel to workflow 2's node list (input image, face source, prompt, steps, seed, V1/V2 filename prefixes). Template 3 ships **one** panel; a multi-scene story is a template with multiple panels. Image filenames carry `USER_ID` / `STORY_ID` placeholders (e.g. `USER_ID_STORY_ID_INPUT_1.png`) that resolve to the per-story name the worker uploads the photo under — so the rendered `LoadImage` node references exactly what ComfyUI stored.
+- `imagegen/workflows/1/workflow.json` — a Flux 2 image-edit + ReActor face-swap graph in ComfyUI **API format**; `workflows/1/config.json` lists, positionally, the nodes a template may customize.
+- `imagegen/templates/1/config.json` — the single render template every story uses. Each **panel** is a list of `{field: value}` presets parallel to workflow 1's node list (input image, face source, prompt, steps, per-panel seed, per-panel `P<n>_V1`/`P<n>_V2` filename prefixes). It ships **six** panels (one ComfyUI run each); the panels' `text` fields are filled at prepare time from the job's prompt set. Image filenames carry `USER_ID` / `STORY_ID` placeholders (e.g. `USER_ID_STORY_ID_INPUT_1.png`) that resolve to the per-story name the worker uploads the photo under — so the rendered `LoadImage` node references exactly what ComfyUI stored.
 
-`generate(*, story_id, user_id, template_id, configurable_options, input_images)` returns an **iterator of one result per saved variant of each panel run** — *one panel == one ComfyUI run, which yields every variant the workflow saves (`_V1`, `_V2`) as a separate output* — consumed lazily by the handler so each output is uploaded + published before the next request is sent. `story_id`/`user_id` thread through so the `USER_ID_STORY_ID` placeholders resolve per-story. Steps:
+`generate(*, story_id, user_id, prompt_type, prompt_id, input_images)` returns an **iterator of one result per saved variant of each panel run** — *one panel == one ComfyUI run, which yields every variant the workflow saves (`_V1`, `_V2`) as a separate output* — consumed lazily by the handler so each output is uploaded + published before the next request is sent. `prompt_type`/`prompt_id` select the prompt set `prompts/<type>_<id>.json` (each panel's `text` comes from its ordered prompt); `story_id`/`user_id` thread through so the `USER_ID_STORY_ID` placeholders resolve per-story. Steps:
 
-1. Validate the input image bytes (magic-byte sniff → `CorruptInputError`) and the supported `configurable_options` (type/range → `InvalidConfigError`). *(eager — before any ComfyUI call)*
-2. Load + validate the template/workflow (missing or malformed asset → `UnsupportedTemplateError`); every panel must line up positionally with the workflow config's node list. *(eager)*
-3. Upload each distinct input slot once, **under its substituted per-story filename**. Workflow 2 points both LoadImage nodes at the same input slot, so a single photo fills the base image *and* the face-swap source. *(eager)*
+1. Validate the input image bytes (magic-byte sniff → `CorruptInputError`). *(eager — before any ComfyUI call)*
+2. Load + validate `templates/1` + its workflow and apply `prompts/<type>_<id>.json` to the panels (missing or malformed asset, or a prompt/panel count mismatch → `UnsupportedTemplateError`); every panel must line up positionally with the workflow config's node list. *(eager)*
+3. Upload each distinct input slot once, **under its substituted per-story filename**. Workflow 1 points both LoadImage nodes at the same input slot, so a single photo fills the base image *and* the face-swap source. *(eager)*
 4. For each panel: render the API-format workflow with that panel's values, submit it, and **block on the live `/ws` stream until that run completes** (subject to the per-request timeout below). Then collect **every** SaveImage output, ordered by its `_V<n>` suffix (`_V1` pre-face-swap, `_V2` face-restored), by filtering ComfyUI's history on those per-story prefixes, and yield each as a separate output — the panel's A/B variants (variant 0 = V1, 1 = V2 …). Then move to the next panel.
 
-The number of ComfyUI calls is the panel count; each call yields one output per saved variant, so total outputs = panels × variants-per-run, which the handler expects to equal the job's `output_count` (reporting `invalid_config` if it doesn't, §6.2). Each panel run is bounded by a **configurable per-request timeout** (`COMFYUI_REQUEST_TIMEOUT_SECONDS`, default 180s; §10.4): if ComfyUI doesn't finish a panel within it, the run is treated as transient (nack → redeliver). It is per-request, not per-job — an N-panel job can take up to N × the timeout, so keep N × timeout under `MAX_PROCESSING_SECONDS`.
+The number of ComfyUI calls is the panel count = `len(prompts)`; each call yields one output per saved variant, so total outputs = panels × variants-per-run. The model owns the storybook layout — it tags each yielded result with its flat `index`, `panel_index` (= index // variants), `variant` (= index % variants), and `total` — so the job carries no `output_count`/`variants_per_panel`. Each panel run is bounded by a **configurable per-request timeout** (`COMFYUI_REQUEST_TIMEOUT_SECONDS`, default 180s; §10.4): if ComfyUI doesn't finish a panel within it, the run is treated as transient (nack → redeliver). It is per-request, not per-job — an N-panel job can take up to N × the timeout, so keep N × timeout under `MAX_PROCESSING_SECONDS`.
 
-`configurable_options` (all optional; applied to **every** panel, each field falling back to that panel's template default):
-
-| Key | Type | Workflow target |
-|---|---|---|
-| `prompt` | string | CLIPTextEncode `text` (node `68:6`) — replaces every panel's prompt |
-| `steps` | int 1–30 | step count (node `68:90`) — replaces every panel's step count |
-| `seed` | int ≥ 0 | `noise_seed` (node `68:25`); panel *i* uses `seed + i`. Absent → each panel keeps its own template `noise_seed`. |
+There are no per-job prompt/step/seed overrides: each panel uses its own template `noise_seed` and `filename_prefix`, and its `text` comes from the bound prompt set. (The job dropped `configurable_options` along with `template_id`/`output_count`/`output_prefix`/`callback_topic` — §5.1.)
 
 ComfyUI's surface sits behind the `ComfyUITransport` Protocol, injected the same way the worker injects `google-cloud-*` clients. It exposes HTTP (`upload_image`/`queue_prompt`/`get_history`/`fetch_image`) plus `open_events` — a context manager yielding the live `/ws` message stream. Per panel, the model opens the socket *before* queuing (so no early event is missed), then blocks in `_await_execution` consuming `executing`/`progress` events until a terminal `executing(node=None)` / `execution_success` for its `prompt_id`, or the per-request deadline elapses. The real transport (`comfyui_client.py`, sync `httpx` + `websocket-client`) is wired by `load_model(cfg)` from `COMFYUI_URL` / `MODEL_VERSION` / `COMFYUI_REQUEST_TIMEOUT_SECONDS` (§10.4); unit tests inject an in-process mock that replays the same event stream, and an integration test runs the real transport against a runnable mock ComfyUI container (TESTING.md §2.1 / §3). A manual smoke script (`scripts/smoke_real_comfyui.py`) drives the real model against a live ComfyUI container with a real photo (TESTING.md §7). Transport errors map onto the failure taxonomy (§6.2):
 
@@ -494,9 +482,9 @@ A periodic task (Cloud Scheduler → HTTP target on the API server, every 60s) t
 
 ### 8.4 Story-catalog sync (`operation/sync_story_catalog.py`)
 
-The worker owns story *content* — the prompt sets (`imagegen/prompts/<type>_<number>.json`, carrying `story_type` / `story_number` / `title` / `lesson` / `version`) and the template→story binding (`imagegen/templates/<id>/config.json` → `"story"`). The Create card in the app needs to show that story's real title + lesson, which the API server serves from its `templates/{id}` doc via `GET /api/v1/templates/{id}` (../Application/DESIGN.md §5).
+The worker owns story *content* — the prompt sets `imagegen/prompts/<type>_<id>.json`, carrying `type` / `id` / `title` / `lesson` / `version` (the prompt JSON no longer stores `story_type_name`; the display name is mapped from `type` in code). The Create card in the app needs to show that story's real title + lesson, which the API server serves from its `templates/{id}` doc via `GET /api/v1/templates/{id}` (../Application/DESIGN.md §5).
 
-`operation/sync_story_catalog.py` closes that loop: for every template config that binds a story, it loads the bound prompt and writes `{ story_type, story_type_name, story_number, title, lesson, story_version }` onto `templates/{template_id}` with `merge=True` — augmenting (never clobbering) the seed-owned `required_credits` / `output_count` half. Idempotent.
+`operation/sync_story_catalog.py` closes that loop: for every prompt set `prompts/<type>_<id>.json` it writes `{ story_type, story_type_name, story_number, title, lesson, story_version }` onto `templates/<type>_<id>` with `merge=True` — augmenting (never clobbering) the seed-owned `required_credits` / `output_count` / `active` half. It reads the prompt's `type`/`id`, maps `type` → its display name (`_TYPE_NAMES`, e.g. `1 → "life_lesson"`), and writes the Firestore field names the API still reads (`story_type`/`story_number`/`story_type_name`), so the API/client contract is unchanged. Idempotent.
 
 It's an **operation** script (`operation/stages/<stage>/`), mirroring `../Application`'s "operation vs deploy" split: each per-stage wrapper sources that stage's canonical `deploy/stages/<stage>/env.sh` for the project, then runs the shared Python.
 

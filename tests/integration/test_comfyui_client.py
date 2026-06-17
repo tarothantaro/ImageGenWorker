@@ -99,8 +99,8 @@ def _generate(base_url: str, **overrides: object) -> list[Any]:
         kwargs = {
             "story_id": "s1",
             "user_id": "u1",
-            "template_id": "3",
-            "configurable_options": {"prompt": "hello", "steps": 6, "seed": 1},
+            "prompt_type": 1,
+            "prompt_id": 1,
             "input_images": [INPUT_PNG],
         }
         kwargs.update(overrides)
@@ -113,7 +113,8 @@ def _generate(base_url: str, **overrides: object) -> list[Any]:
 def test_real_transport_streams_to_completion(mock_comfyui: str) -> None:
     panels = _generate(mock_comfyui)
 
-    assert len(panels) == 2  # one panel, two saved variants (V1, V2)
+    # templates/1: 6 panels × 2 saved variants (V1, V2) → 12 outputs.
+    assert len(panels) == 12
     assert all(p.width == 1024 and p.height == 736 for p in panels)
     assert all(p.image[:8] == b"\x89PNG\r\n\x1a\n" for p in panels)
 

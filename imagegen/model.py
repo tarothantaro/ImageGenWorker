@@ -3,8 +3,9 @@
 ``main.py`` imports ``load_model`` from here; ``job_handler.JobHandler`` drives
 the returned object through the ``ImageGenModel`` protocol. The model:
 
-1. validates inputs + ``configurable_options`` (worker-side terminal failures),
-2. loads ``workflows/2`` + ``templates/3`` (see :mod:`imagegen.workflow`),
+1. validates the input images (worker-side terminal failures),
+2. loads ``workflows/1`` + ``templates/1`` bound to the job's prompt set
+   ``prompts/<type>_<id>.json`` (see :mod:`imagegen.workflow`),
 3. uploads the input photo(s) to ComfyUI under their per-story filenames,
 4. **yields one image per template panel** (DESIGN.md §7.2: *one panel == one
    ComfyUI run == one output image*). For each panel it renders an API-format
@@ -62,8 +63,9 @@ _DEFAULT_PROMPTS_ROOT = _PACKAGE_ROOT / "prompts"
 
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180.0
-_MIN_STEPS = 1
-_MAX_STEPS = 30
+# The single render template every story uses (DESIGN.md §7.2). Its panels carry
+# the per-scene seeds + filename prefixes; the job's prompt set fills the text.
+_RENDER_TEMPLATE_ID = "1"
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -123,13 +125,24 @@ class ComfyUITransport(Protocol):
 
 @dataclass(frozen=True)
 class PanelResult:
-    """One generated panel. Satisfies ``job_handler.PanelResult`` structurally."""
+    """One generated image. Satisfies ``job_handler.PanelResult`` structurally.
+
+    The model owns the storybook layout now that the job no longer carries
+    ``output_count`` / ``variants_per_panel``: ``index`` is the flat ordinal,
+    ``panel_index`` the story page, ``variant`` the A/B index within that page,
+    and ``total`` the total image count (panels × variants) so the handler can
+    stamp each ``panel_completed``'s ``total_panels`` without a separate count.
+    """
 
     image: bytes
     width: int
     height: int
     model_version: str
     processing_seconds: float
+    index: int
+    panel_index: int
+    variant: int
+    total: int
 
 
 # --- helpers -----------------------------------------------------------------
@@ -179,41 +192,6 @@ def _png_dimensions(data: bytes) -> tuple[int, int]:
     return width, height
 
 
-def _extract_options(
-    options: dict[str, object],
-) -> tuple[str | None, int | None, int | None]:
-    """Pull the three supported overrides out of ``configurable_options``.
-
-    Unknown keys are ignored (forward-compat). Present-but-wrong-typed values
-    are terminal :class:`InvalidConfigError`s. The overrides apply to *every*
-    panel: ``prompt``/``steps`` replace that field in each panel; ``seed`` is a
-    base — panel *i* uses ``seed + i`` so per-panel images still vary — while an
-    absent ``seed`` lets each panel keep its own template ``noise_seed``.
-    """
-    prompt = options.get("prompt")
-    if prompt is not None and not isinstance(prompt, str):
-        raise InvalidConfigError("configurable_options.prompt must be a string")
-
-    steps = options.get("steps")
-    if steps is not None and (
-        isinstance(steps, bool)
-        or not isinstance(steps, int)
-        or not _MIN_STEPS <= steps <= _MAX_STEPS
-    ):
-        raise InvalidConfigError(
-            f"configurable_options.steps must be an int in "
-            f"[{_MIN_STEPS}, {_MAX_STEPS}]"
-        )
-
-    seed = options.get("seed")
-    if seed is not None and (
-        isinstance(seed, bool) or not isinstance(seed, int) or seed < 0
-    ):
-        raise InvalidConfigError("configurable_options.seed must be a non-negative int")
-
-    return prompt, steps, seed
-
-
 # --- the model ---------------------------------------------------------------
 
 
@@ -242,20 +220,22 @@ class ComfyUIModel:
         *,
         story_id: str,
         user_id: str,
-        template_id: str,
-        configurable_options: dict[str, object],
+        prompt_type: int,
+        prompt_id: int,
         input_images: list[bytes],
     ) -> Iterator[PanelResult]:
         """Validate + upload eagerly, then return a per-panel result iterator.
 
-        Worker-side terminal failures (bad input, bad options, unknown template)
-        and a failed input upload are raised here, before any panel runs — so
-        the caller sees them immediately. Per-panel ComfyUI failures surface as
-        the iterator is consumed.
+        Worker-side terminal failures (bad input, unknown template/prompt) and a
+        failed input upload are raised here, before any panel runs — so the
+        caller sees them immediately. Per-panel ComfyUI failures surface as the
+        iterator is consumed. The job's ``type``/``id`` select the prompt set
+        ``prompts/<type>_<id>.json`` rendered through ``templates/1``.
         """
         _validate_input_images(input_images)
-        prompt, steps, seed_option = _extract_options(configurable_options)
-        prepared = self._builder.prepare(template_id)  # UnsupportedTemplateError
+        story_ref = f"{prompt_type}_{prompt_id}"
+        # UnsupportedTemplateError on a missing/malformed template or prompt set.
+        prepared = self._builder.prepare(_RENDER_TEMPLATE_ID, story_ref)
 
         placeholders = {"USER_ID": user_id, "STORY_ID": story_id}
         try:
@@ -269,9 +249,6 @@ class ComfyUIModel:
             prepared,
             story_id=story_id,
             placeholders=placeholders,
-            prompt=prompt,
-            steps=steps,
-            seed_option=seed_option,
         )
 
     # -- internals --------------------------------------------------------
@@ -282,21 +259,24 @@ class ComfyUIModel:
         *,
         story_id: str,
         placeholders: dict[str, str],
-        prompt: str | None,
-        steps: int | None,
-        seed_option: int | None,
     ) -> Iterator[PanelResult]:
-        for index, panel in enumerate(prepared.panels):
-            seed = None if seed_option is None else seed_option + index
+        # Each panel keeps its own template ``noise_seed`` + ``filename_prefix``
+        # (no per-job overrides now that the job carries no configurable_options).
+        # variants_per_panel is how many images one run saves (V1, V2 …); the
+        # storybook layout is panel = index // variants, variant = index % variants.
+        variants = len(self._builder.output_prefixes(prepared.base_workflow))
+        total = len(prepared.panels) * variants
+        index = 0
+        for panel_index, panel in enumerate(prepared.panels):
             try:
                 images, processing_seconds = self._run_panel(
                     prepared,
                     panel,
                     placeholders=placeholders,
-                    prompt=prompt,
-                    steps=steps,
-                    seed=seed,
-                    client_id=f"{story_id}-{index}",
+                    prompt=None,
+                    steps=None,
+                    seed=None,
+                    client_id=f"{story_id}-{panel_index}",
                 )
             except ComfyUIBadRequest as exc:
                 raise InvalidConfigError(f"ComfyUI rejected the prompt: {exc}") from exc
@@ -306,7 +286,7 @@ class ComfyUIModel:
             # One ComfyUI run saves every variant the workflow declares (V1, V2 …);
             # each becomes its own output — the user's A/B choices for this panel.
             per_image_seconds = processing_seconds / max(1, len(images))
-            for image in images:
+            for variant, image in enumerate(images):
                 width, height = _png_dimensions(image)
                 yield PanelResult(
                     image=image,
@@ -314,7 +294,12 @@ class ComfyUIModel:
                     height=height,
                     model_version=self._model_version,
                     processing_seconds=per_image_seconds,
+                    index=index,
+                    panel_index=panel_index,
+                    variant=variant,
+                    total=total,
                 )
+                index += 1
 
     def _upload_inputs(
         self,

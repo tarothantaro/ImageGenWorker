@@ -1,14 +1,12 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 18,
+  "type": 1,
+  "id": 18,
   "title": "Better Together",
   "lesson": "Working together as a team gets the job done and is much more fun.",
   "characters": [
     "GENDER_M_AGE_06_RACE_WHITE",
     "GENDER_F_AGE_06_RACE_ASIAN"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image onto a sunny sandy beach. The person from the input image kneels alone building a sandcastle, head turned toward the camera so the face stays clearly visible, with a determined expression. A bucket and spade beside them, bright sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image kneels in the sand as part of the sandcastle wall crumbles, facing the camera with a frustrated, disappointed expression and the face fully visible. Scattered sand and a tipped bucket, sunny beach, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

@@ -84,7 +84,24 @@ class GcsClient:
             raise GcsTransientError(f"upload {uri} failed: {exc}") from exc
 
     @staticmethod
-    def output_uri(prefix: str, index: int, ext: str = "png") -> str:
-        if not prefix.endswith("/"):
-            raise ValueError("output prefix must end in '/'")
-        return f"{prefix}{index}.{ext}"
+    def input_uri(
+        bucket: str, user_id: str, story_id: str, position: int, ext: str = "png"
+    ) -> str:
+        """Deterministic per-story input object name (DESIGN.md §5.1).
+
+        ``gs://<bucket>/<user_id>_<story_id>_input_<position>.png`` — the worker
+        downloads inputs by this convention rather than a per-message gcs_uri.
+        """
+        return f"gs://{bucket}/{user_id}_{story_id}_input_{position}.{ext}"
+
+    @staticmethod
+    def output_uri(
+        bucket: str, user_id: str, story_id: str, index: int, ext: str = "png"
+    ) -> str:
+        """Per-story output object name.
+
+        ``gs://<bucket>/<user_id>/<story_id>/outputs/<index>.png`` — mirrors the
+        ``output_prefix`` the API records on the story doc, so orphan cleanup and
+        the API's stored prefix stay consistent.
+        """
+        return f"gs://{bucket}/{user_id}/{story_id}/outputs/{index}.{ext}"

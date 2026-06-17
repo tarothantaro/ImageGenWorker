@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 13,
+  "type": 1,
+  "id": 13,
   "title": "Good Things Take Time",
   "lesson": "Some good things take time and patience to grow.",
   "characters": [
     "GENDER_F_AGE_70_RACE_ASIAN"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a sunny backyard garden in the morning. The person from the input image stands on the far left in the mid-ground, holding a small clay pot and a seed packet, facing the camera with a curious smile and the face fully visible. In the right foreground, {GENDER_F_AGE_70_RACE_ASIAN} kneels by a garden bed, gesturing toward the soil. Eye-level medium-wide shot, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image kneels alone in the garden pressing a tiny seed into the soil of a clay pot, head turned toward the camera so the face stays clearly visible, with a focused, gentle expression. A small gardening trowel beside them, warm morning light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

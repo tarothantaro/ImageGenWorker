@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 6,
+  "type": 1,
+  "id": 6,
   "title": "Gentle Hands",
   "lesson": "Be gentle and kind to little animals.",
   "characters": [
     "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a sunny home garden, kneeling on soft green grass and beaming with excitement at a small fluffy brown puppy sitting a little way ahead. Medium shot at eye level, head turned toward the camera so the face stays clearly visible, the face facing the camera and fully unobstructed. Warm natural sunlight, flowers and a low wooden fence behind, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Transform the scene in the same sunny home garden: the person from the input image leans forward and reaches out both hands too eagerly toward a small fluffy brown puppy, while the puppy shrinks back and tucks its tail, ears flattened. Medium shot at eye level, the person's head turned toward the camera so the face stays clearly visible, face front-on and unobstructed with a surprised expression. Warm light, green grass and flowers, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

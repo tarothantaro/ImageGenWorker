@@ -1,7 +1,6 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 15,
+  "type": 1,
+  "id": 15,
   "title": "Brave at a New School",
   "lesson": "Trying something new feels scary at first, but being brave helps you find new friends and fun.",
   "characters": [
@@ -9,7 +8,6 @@
     "GENDER_F_AGE_30_RACE_BLACK",
     "GENDER_F_AGE_06_RACE_ASIAN"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image at the front gate of a friendly school on a bright morning. The person from the input image stands on the far left holding a small backpack, facing the camera with a nervous, uncertain expression and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} holds their hand reassuringly. Eye-level medium-wide shot, soft morning light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image stands on the far left in the mid-ground, facing the camera with a brave little smile and the face fully visible. In the right foreground, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels and gestures encouragingly toward the school doors. Warm morning light at the school gate, eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

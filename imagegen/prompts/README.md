@@ -10,7 +10,7 @@ Two skills own this directory:
 
 | Skill | Owns | Use it to |
 |---|---|---|
-| `story-prompts` | `<type>_<n>.json` | Write/edit a story's prompt array |
+| `story-prompts` | `<type>_<id>.json` | Write/edit a story's prompt array |
 | `character-config` | `character.json` | Add/edit the generated supporting cast |
 
 ## Files
@@ -18,14 +18,16 @@ Two skills own this directory:
 ```
 imagegen/prompts/
 ├── character.json     # library of generated supporting characters ({TOKEN} placeholders)
-├── 1_1.json           # story: type 1 (life_lesson), number 1
+├── 1_1.json           # story: type 1 (life_lesson), id 1
 └── README.md          # this file
 ```
 
-### Story file naming: `<story_type>_<story_number>.json`
+### Story file naming: `<type>_<id>.json`
 
-`<story_type>` is the numeric story category, `<story_number>` is the 1-based
-index within that category. `1_1.json` = first life-lesson story.
+`<type>` is the numeric story category, `<id>` is the 1-based index within that
+category. `1_1.json` = first life-lesson story. The file stem is also the API
+catalog doc id (`templates/<type>_<id>`) and the Pub/Sub job's `type`/`id`
+selector.
 
 **Story type registry**
 
@@ -33,32 +35,35 @@ index within that category. `1_1.json` = first life-lesson story.
 |---|---|---|
 | 1 | `life_lesson` | A short visual narrative whose arc teaches one clear lesson. |
 
-(Reserve new numbers here as new categories are added.)
+The `name` column is the canonical mapping — it lives in code (the worker's
+`sync_story_catalog._TYPE_NAMES`), not in the JSON. Reserve new numbers here as
+new categories are added (and add them to `_TYPE_NAMES`).
 
 ### Story file schema
 
 ```jsonc
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 1,
+  "type": 1,
+  "id": 1,
   "title": "Kindness Comes Back Around",
   "lesson": "A small act of kindness returns to you when you least expect it.",
   "characters": ["GENDER_F_AGE_70_RACE_ASIAN", "GENDER_M_AGE_25_RACE_ASIAN"],
-  "panel_count": 6,
   "prompts": [
     "…panel 1 prompt…",
     "…panel 2 prompt…"
-  ]
+  ],
+  "version": 1
 }
 ```
 
+- `type` / `id` — the story selector (replaces the old `story_type` /
+  `story_number`); the file is named `<type>_<id>.json`.
 - `prompts` — the array of per-panel prompt strings, **in panel order**. This is
-  the payload; `prompts[i]` becomes panel *i*'s `text`.
+  the payload; `prompts[i]` becomes panel *i*'s `text`. The **panel count is
+  `len(prompts)`** (there is no separate `panel_count` field), and it must match
+  the render template `templates/1`'s panel count (6).
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
-- `panel_count` — `== len(prompts)`, and must match the chosen template's panel
-  count (e.g. template `4` = 6 panels, template `3` = 1 panel).
 
 ## The two hard constraints (every prompt must honor)
 

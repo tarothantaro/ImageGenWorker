@@ -1,14 +1,12 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 14,
+  "type": 1,
+  "id": 14,
   "title": "Come Play With Us",
   "lesson": "Inviting someone who is alone to join in makes everyone happier.",
   "characters": [
     "GENDER_F_AGE_06_RACE_BLACK",
     "GENDER_M_AGE_06_RACE_SOUTH_ASIAN"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a bright playground on a sunny afternoon. The person from the input image stands on the far left tossing a colourful ball, facing the camera with a happy expression and the face fully visible. On the right, {GENDER_F_AGE_06_RACE_BLACK} catches the ball, laughing. Eye-level medium-wide shot, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image stands on the far left, facing the camera with a thoughtful, caring expression and the face fully visible, looking toward a bench. In the background on the right, {GENDER_M_AGE_06_RACE_SOUTH_ASIAN} sits alone on a playground bench looking sad and left out. Eye-level medium shot, soft afternoon light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

@@ -1,14 +1,12 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 1,
+  "type": 1,
+  "id": 1,
   "title": "Kindness Comes Back Around",
   "lesson": "A small act of kindness returns to you when you least expect it.",
   "characters": [
     "GENDER_F_AGE_70_RACE_ASIAN",
     "GENDER_M_AGE_25_RACE_ASIAN"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a bright suburban neighbourhood on a sunny morning, walking along a tree-lined pavement. Medium shot at eye level, the person facing the camera with their face fully visible. Warm natural sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene on the same sunny pavement. The person from the input image stands on the far left in the mid-ground, facing the camera with their face clearly visible and a concerned expression. In the right foreground, {GENDER_F_AGE_70_RACE_ASIAN} has dropped a torn paper grocery bag, oranges rolling across the ground. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

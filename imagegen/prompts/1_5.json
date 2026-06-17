@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 5,
+  "type": 1,
+  "id": 5,
   "title": "Tidy-Up Time",
   "lesson": "Putting your toys away keeps your room tidy and happy.",
   "characters": [
     "GENDER_F_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a cozy child's bedroom with toys scattered everywhere, building blocks, a teddy bear and picture books spread across the floor. Medium shot at eye level, the person standing in the messy room facing the camera with their face fully visible. Warm lamplight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene in the same messy bedroom. The person from the input image stands on the far left in the mid-ground, facing the camera with their face clearly visible and an unsure expression, looking at the toys on the floor. In the right foreground, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels beside a colourful toy box and gestures gently toward the scattered toys, suggesting it is time to tidy up. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

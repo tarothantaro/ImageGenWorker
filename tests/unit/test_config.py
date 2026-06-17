@@ -4,12 +4,13 @@ import os
 
 import pytest
 
-from imagegen.config import ConfigError, WorkerConfig, load_config
+from imagegen.config import ConfigError, load_config
 
 _VALID_ENV: dict[str, str] = {
     "GCP_PROJECT_ID": "growstory-prod",
     "JOBS_SUBSCRIPTION": "projects/growstory-prod/subscriptions/image-gen-jobs-worker-sub",
     "COMPLETION_TOPIC": "projects/growstory-prod/topics/job-completed",
+    "GCS_BUCKET": "growstory-prod-media",
 }
 
 
@@ -19,6 +20,7 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.gcp_project_id == "growstory-prod"
     assert cfg.jobs_subscription.endswith("/image-gen-jobs-worker-sub")
     assert cfg.completion_topic.endswith("/job-completed")
+    assert cfg.gcs_bucket == "growstory-prod-media"
     assert cfg.max_concurrency == 4
     assert cfg.max_processing_seconds == 540
     assert cfg.log_level == "info"
@@ -101,7 +103,8 @@ def test_load_config_uses_real_os_environ_when_no_dict_passed(
 
 
 @pytest.mark.parametrize(
-    "missing", ["GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC"]
+    "missing",
+    ["GCP_PROJECT_ID", "JOBS_SUBSCRIPTION", "COMPLETION_TOPIC", "GCS_BUCKET"],
 )
 def test_load_config_rejects_missing_required(missing: str) -> None:
     env = _VALID_ENV.copy()

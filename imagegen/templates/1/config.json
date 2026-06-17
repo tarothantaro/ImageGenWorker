@@ -1,8 +1,7 @@
 {
-    "id": "4",
-    "name": "storybook-ab",
-    "workflow_id": "2",
-    "story": "1_1",
+    "id": "1",
+    "name": "one-input-six-panels-two-versions",
+    "workflow_id": "1",
     "panels": [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},

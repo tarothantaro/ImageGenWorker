@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 9,
+  "type": 1,
+  "id": 9,
   "title": "A Helping Hand",
   "lesson": "Helping a friend who needs you makes you both happy.",
   "characters": [
     "GENDER_M_AGE_06_RACE_WHITE"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a sunny playground in a green park on a cheerful morning, skipping happily near a sandbox and a set of swings. Medium shot at eye level, the person facing the camera with their face fully visible and a happy smile. Warm natural sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A scene on the same sunny playground. The person from the input image stands on the far left in the mid-ground, facing the camera with their face clearly visible and a surprised, caring expression. In the right foreground, {GENDER_M_AGE_06_RACE_WHITE} has gently tripped and sits on the grass beside a tipped-over basket, toy blocks spilled across the ground, looking sad. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

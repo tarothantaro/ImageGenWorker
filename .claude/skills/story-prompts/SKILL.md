@@ -1,13 +1,13 @@
 ---
 name: story-prompts
-description: Generate Qwen-Image-Edit-2511 story prompt sets for the image-gen worker. Use when asked to write, add, or edit a story's image prompts, create a new story (e.g. "life lesson story 2"), or produce the per-panel prompts that put the input-photo person into a multi-image narrative. Writes imagegen/prompts/<type>_<n>.json. Pairs with the `character-config` skill.
+description: Generate Qwen-Image-Edit-2511 story prompt sets for the image-gen worker. Use when asked to write, add, or edit a story's image prompts, create a new story (e.g. "life lesson story 2"), or produce the per-panel prompts that put the input-photo person into a multi-image narrative. Writes imagegen/prompts/<type>_<id>.json. Pairs with the `character-config` skill.
 ---
 
 # story-prompts
 
 Write the per-panel text prompts that drive the **Qwen-Image-Edit-2511** edit for
 one story. Each story is an array of prompts stored at
-`imagegen/prompts/<story_type>_<story_number>.json`; each prompt is run against
+`imagegen/prompts/<type>_<id>.json`; each prompt is run against
 the **same single input photo** to produce one panel image. Read
 `imagegen/prompts/README.md` first — it defines the file schema, naming, and
 story-type registry. Generated supporting characters come from
@@ -97,20 +97,21 @@ For every prompt in the array, confirm:
 - [ ] Same style phrase as the rest of the story.
 - [ ] Ends with the preserve-identity sentence.
 
-## Writing a story (story_type 1 = life_lesson)
+## Writing a story (type 1 = life_lesson)
 
 1. **Pick the lesson** and a 1-sentence statement of it (`lesson` field).
 2. **Decide the cast.** Protagonist = input person (implicit). Choose generated
    characters; ensure each token exists in `character.json` — if not, add it with
    the `character-config` skill *before* referencing it.
-3. **Plan the arc across `panel_count` panels** (match the target template:
-   template `4` = 6 panels, template `3` = 1). A clean life-lesson arc:
+3. **Plan the arc across 6 panels** (the render template `templates/1` has 6
+   panels, so a story has exactly 6 prompts). A clean life-lesson arc:
    *establish → encounter/choice → action → consequence → turn → resolution that
    lands the lesson.* Keep location/time continuity unless the story moves on.
 4. **Write each panel** with the rules above. Alternate solo and multi-person
    panels naturally, but every multi-person panel obeys constraint #1.
-5. **Fill the metadata** (`title`, `lesson`, `characters` = every token used,
-   `panel_count` = `len(prompts)`).
+5. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
+   token used, `version`). The panel count is just `len(prompts)` — no
+   `panel_count` field.
 
 ## Worked reference
 
@@ -121,12 +122,13 @@ consistent storybook style, identity preserved each panel.
 
 ## Validate before done
 
-- [ ] File is `imagegen/prompts/<type>_<n>.json`, valid JSON, schema per README.
-- [ ] `panel_count == len(prompts)` and matches the intended template.
+- [ ] File is `imagegen/prompts/<type>_<id>.json`, valid JSON, schema per README.
+- [ ] `len(prompts) == 6` (matches the render template `templates/1`).
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
 - [ ] Re-run the per-panel checklist on each prompt.
-- [ ] `story_type` / `story_type_name` match the README registry.
+- [ ] `type` matches the README registry (its display name lives in code,
+      `sync_story_catalog._TYPE_NAMES`).
 
 ## Settings reference (informational)
 

@@ -83,6 +83,7 @@ def build_runtime(
     gcs = GcsClient(client=storage_client_factory())  # type: ignore[arg-type]
     handler = JobHandler(
         gcs=gcs,
+        gcs_bucket=cfg.gcs_bucket,
         model=model_factory(cfg),
         publisher=publisher,
         max_delivery_attempts=cfg.max_delivery_attempts,

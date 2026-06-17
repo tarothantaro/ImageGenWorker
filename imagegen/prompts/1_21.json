@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 21,
+  "type": 1,
+  "id": 21,
   "title": "My Job to Care",
   "lesson": "Looking after a pet every day teaches you to be responsible and caring.",
   "characters": [
     "GENDER_F_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image into a cozy living room in the morning. The person from the input image sits on the far left gently holding a small fluffy brown puppy, facing the camera with a delighted smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels nearby smiling warmly. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image stands on the far left in the mid-ground, facing the camera with an attentive expression and the face fully visible, listening as a small brown puppy sits at their feet. In the right foreground, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} points to a pet food bowl and a water bowl, explaining. Warm kitchen light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

@@ -1,13 +1,11 @@
 {
-  "story_type": 1,
-  "story_type_name": "life_lesson",
-  "story_number": 8,
+  "type": 1,
+  "id": 8,
   "title": "Try, Try Again",
   "lesson": "If you fall down, you can get back up and try again.",
   "characters": [
     "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
   ],
-  "panel_count": 6,
   "prompts": [
     "Place the person from the input image on a sunny park path, sitting on a little red balance bike with both feet on the ground, wearing a snug safety helmet. The person from the input image is on the far left, facing the camera in an eye-level medium shot with their face fully visible and an excited smile. {GENDER_M_AGE_35_RACE_ASIAN_PARENT} stands to the right, one hand resting gently on the bike, smiling encouragingly. Green grass, leafy trees, warm morning sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Transform the scene: on the same sunny park path, the person from the input image wobbles on the little red balance bike, wearing the safety helmet, leaning slightly to one side with a surprised expression. The person from the input image is on the far left, head turned toward the camera so the face stays clearly visible in an eye-level three-quarter shot. {GENDER_M_AGE_35_RACE_ASIAN_PARENT} stands to the right, reaching out a hand, looking watchful and ready to help. Green grass, leafy trees, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

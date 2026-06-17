@@ -59,53 +59,56 @@ def _generate(model: ComfyUIModel, **overrides: Any) -> list[Any]:
     kwargs: dict[str, Any] = {
         "story_id": "s1",
         "user_id": "u1",
-        "template_id": "3",
-        "configurable_options": {},
+        "prompt_type": 1,
+        "prompt_id": 1,
         "input_images": [PNG],
     }
     kwargs.update(overrides)
     return list(model.generate(**kwargs))
 
 
-# --- happy path (template 3 — one panel) -------------------------------------
+# --- happy path (templates/1 — 6 panels, 2 variants each) --------------------
 
 
-def test_generate_yields_both_variants_of_the_panel() -> None:
+def test_generate_yields_all_panel_variants() -> None:
     fake = FakeComfyUI(width=1024, height=736)
     model = _model(fake)
 
     panels = _generate(model)
 
-    # Template 3 is one panel whose run saves two variants (V1, V2) → two outputs
-    # from a single ComfyUI submission.
-    assert len(panels) == 2
-    assert [p.image for p in panels] == [
-        make_png(1024, 736),
-        make_png(1024, 736),
-    ]
+    # templates/1 has 6 panels; each run saves two variants (V1, V2) → 12 outputs
+    # from 6 ComfyUI submissions.
+    assert len(panels) == 12
+    assert all(p.image == make_png(1024, 736) for p in panels)
     assert all(p.width == 1024 and p.height == 736 for p in panels)
     assert all(p.model_version == "mv-test" for p in panels)
     assert all(p.processing_seconds == 0.0 for p in panels)
-    assert len(fake.submitted) == 1  # both variants come from one run
+    assert len(fake.submitted) == 6  # one run per panel; each yields V1 + V2
+    # Storybook layout: index 0..11 → (panel_index, variant) pairs.
+    assert [(p.panel_index, p.variant) for p in panels] == [
+        (panel, variant) for panel in range(6) for variant in range(2)
+    ]
+    assert all(p.total == 12 for p in panels)
 
 
 def test_generate_sends_expected_workflow_parameters() -> None:
     fake = FakeComfyUI()
     model = _model(fake)
 
-    _generate(
-        model,
-        configurable_options={"prompt": "a teacher", "steps": 12, "seed": 500},
-    )
+    _generate(model)
 
+    # Panel 0: the story's first prompt fills text; steps/seed/prefix come from
+    # the template (no per-job overrides anymore).
     first = fake.submitted[0].prompt
-    assert first["68:6"]["inputs"]["text"] == "a teacher"
-    assert first["68:90"]["inputs"]["value"] == 12
+    assert first["68:6"]["inputs"]["text"].startswith(
+        "Place the person from the input image"
+    )
+    assert first["68:90"]["inputs"]["value"] == 6
     assert first["46"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert first["122"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert first["123"]["inputs"]["filename_prefix"] == "u1_s1_V1"
-    assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_V2"
-    assert first["68:25"]["inputs"]["noise_seed"] == 500
+    assert first["123"]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
+    assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
+    assert first["68:25"]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
     assert fake.submitted[0].client_id == "s1-0"
 
 
@@ -115,7 +118,7 @@ def test_generate_uploads_input_under_its_substituted_filename() -> None:
 
     _generate(model)
 
-    # One image slot in template 3 → one upload, under the per-story filename.
+    # One image slot in templates/1 → one upload, under the per-story filename.
     assert len(fake.uploads) == 1
     assert fake.uploads[0] == ("u1_s1_INPUT_1.png", PNG)
 
@@ -130,36 +133,39 @@ def test_generate_uses_first_input_for_the_single_image_slot() -> None:
     assert fake.uploads[0][1] == PNG
 
 
-def test_generate_defaults_seed_and_prompt_from_template_when_absent() -> None:
+def test_generate_uses_template_seed_and_story_prompt() -> None:
     fake = FakeComfyUI()
     model = _model(fake)
 
-    _generate(model, configurable_options={})
+    _generate(model)
 
     submitted = fake.submitted[0].prompt
     assert submitted["68:25"]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
-    assert submitted["68:6"]["inputs"]["text"] == ""
+    assert submitted["68:6"]["inputs"]["text"].startswith(
+        "Place the person from the input image"
+    )
     assert submitted["68:90"]["inputs"]["value"] == 6
 
 
 def test_generate_consumes_realtime_ws_stream_until_done() -> None:
     # The default fake replays status → execution_start → per-node executing +
     # progress → executing(node=None). The model must ride that stream and
-    # return once the terminal event arrives.
+    # return once the terminal event arrives — once per panel.
     fake = FakeComfyUI()
     model = _model(fake)
 
     panels = _generate(model)
 
-    assert len(panels) == 2  # one run, two saved variants (V1, V2)
-    assert fake.event_client_ids == ["s1-0"]  # WS opened with the run's client id
+    assert len(panels) == 12  # 6 runs, two saved variants (V1, V2) each
+    # WS opened once per panel run, with that run's client id.
+    assert fake.event_client_ids == [f"s1-{i}" for i in range(6)]
 
 
 def test_generate_accepts_execution_success_as_terminal() -> None:
     fake = FakeComfyUI(use_execution_success=True)
     model = _model(fake)
 
-    assert len(_generate(model)) == 2
+    assert len(_generate(model)) == 12
 
 
 def test_generate_accepts_heic_input() -> None:
@@ -169,7 +175,7 @@ def test_generate_accepts_heic_input() -> None:
 
     panels = _generate(model, input_images=[heic])
 
-    assert len(panels) == 2
+    assert len(panels) == 12
     assert fake.uploads[0][1] == heic
 
 
@@ -178,12 +184,19 @@ def test_generate_accepts_heic_input() -> None:
 
 def _write_multi_panel_template(
     tmp_path: Path, panels: list[tuple[str, int]]
-) -> tuple[Path, Path]:
-    """A 3-node template/workflow (text + seed + _V2 SaveImage) with N panels."""
+) -> tuple[Path, Path, Path]:
+    """A 3-node template/workflow (text + seed + _V2 SaveImage) with N panels.
+
+    Named ``templates/1`` (the fixed render template) + ``prompts/1_1.json``
+    (the story whose prompts fill the panels' text). Each panel keeps its own
+    ``noise_seed``; the story prompts overwrite the inline placeholder text.
+    """
     wf_root = tmp_path / "workflows"
     tpl_root = tmp_path / "templates"
+    prompts_root = tmp_path / "prompts"
     (wf_root / "w").mkdir(parents=True)
-    (tpl_root / "t").mkdir(parents=True)
+    (tpl_root / "1").mkdir(parents=True)
+    prompts_root.mkdir(parents=True)
 
     panel_rows = [
         [
@@ -194,8 +207,8 @@ def _write_multi_panel_template(
         ]
         for text, seed in panels
     ]
-    (tpl_root / "t" / "config.json").write_text(
-        json.dumps({"id": "t", "workflow_id": "w", "panels": panel_rows})
+    (tpl_root / "1" / "config.json").write_text(
+        json.dumps({"id": "1", "workflow_id": "w", "panels": panel_rows})
     )
     (wf_root / "w" / "config.json").write_text(
         json.dumps(
@@ -222,17 +235,22 @@ def _write_multi_panel_template(
             }
         )
     )
-    return wf_root, tpl_root
+    (prompts_root / "1_1.json").write_text(
+        json.dumps({"type": 1, "id": 1, "prompts": [text for text, _ in panels]})
+    )
+    (prompts_root / "character.json").write_text(json.dumps({"characters": {}}))
+    return wf_root, tpl_root, prompts_root
 
 
 def _multi_panel_model(
     fake: FakeComfyUI, tmp_path: Path, panels: list[tuple[str, int]]
 ) -> ComfyUIModel:
-    wf_root, tpl_root = _write_multi_panel_template(tmp_path, panels)
+    wf_root, tpl_root, prompts_root = _write_multi_panel_template(tmp_path, panels)
     return ComfyUIModel(
         fake,
         workflow_root=wf_root,
         template_root=tpl_root,
+        prompts_root=prompts_root,
         model_version="mv-test",
         clock=lambda: 0.0,
     )
@@ -248,8 +266,8 @@ def test_generate_yields_one_image_per_panel(tmp_path: Path) -> None:
         model.generate(
             story_id="s1",
             user_id="u1",
-            template_id="t",
-            configurable_options={},
+            prompt_type=1,
+            prompt_id=1,
             input_images=[PNG],
         )
     )
@@ -261,7 +279,7 @@ def test_generate_yields_one_image_per_panel(tmp_path: Path) -> None:
     assert len(fake.uploads) == 1
 
 
-def test_generate_uses_each_panels_own_seed_without_override(tmp_path: Path) -> None:
+def test_generate_uses_each_panels_own_seed(tmp_path: Path) -> None:
     fake = FakeComfyUI()
     model = _multi_panel_model(fake, tmp_path, [("a", 11), ("b", 22)])
 
@@ -269,8 +287,8 @@ def test_generate_uses_each_panels_own_seed_without_override(tmp_path: Path) -> 
         model.generate(
             story_id="s1",
             user_id="u1",
-            template_id="t",
-            configurable_options={},
+            prompt_type=1,
+            prompt_id=1,
             input_images=[PNG],
         )
     )
@@ -279,51 +297,7 @@ def test_generate_uses_each_panels_own_seed_without_override(tmp_path: Path) -> 
     assert fake.submitted[1].prompt["3"]["inputs"]["noise_seed"] == 22
 
 
-def test_generate_seed_override_advances_per_panel(tmp_path: Path) -> None:
-    fake = FakeComfyUI()
-    model = _multi_panel_model(fake, tmp_path, [("a", 11), ("b", 22), ("c", 33)])
-
-    list(
-        model.generate(
-            story_id="s1",
-            user_id="u1",
-            template_id="t",
-            configurable_options={"seed": 500},
-            input_images=[PNG],
-        )
-    )
-
-    seeds = [s.prompt["3"]["inputs"]["noise_seed"] for s in fake.submitted]
-    assert seeds == [500, 501, 502]
-
-
 # --- worker-side terminal failures (raised eagerly, before any ComfyUI call) -
-
-
-@pytest.mark.parametrize(
-    "options",
-    [
-        {"prompt": 123},
-        {"steps": 0},
-        {"steps": 31},
-        {"steps": "8"},
-        {"steps": True},
-        {"seed": -1},
-        {"seed": 1.5},
-        {"seed": True},
-    ],
-)
-def test_generate_rejects_invalid_options_before_calling_comfyui(
-    options: dict[str, Any],
-) -> None:
-    fake = FakeComfyUI()
-    model = _model(fake)
-
-    with pytest.raises(InvalidConfigError):
-        _generate(model, configurable_options=options)
-
-    assert fake.submitted == []
-    assert fake.uploads == []
 
 
 def test_generate_rejects_empty_input_images() -> None:
@@ -351,12 +325,14 @@ def test_generate_rejects_ftyp_with_unknown_brand() -> None:
         _generate(model, input_images=[not_heic])
 
 
-def test_generate_rejects_unknown_template() -> None:
+def test_generate_rejects_unknown_prompt() -> None:
     fake = FakeComfyUI()
     model = _model(fake)
 
+    # No prompts/1_999.json exists → UnsupportedTemplateError (missing asset),
+    # raised before any ComfyUI upload.
     with pytest.raises(UnsupportedTemplateError):
-        _generate(model, template_id="no-such-template")
+        _generate(model, prompt_id=999)
 
     assert fake.uploads == []
 

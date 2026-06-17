@@ -51,8 +51,8 @@ services:
       MOCK_WIDTH: "1024"
       MOCK_HEIGHT: "736"
       # A/B layout for the panel/variant label drawn on each mock image. Matches
-      # the demo's template 4 (3 panels × 2 variants); the worker still derives
-      # the real panel_index/variant itself from output_count + variants.
+      # templates/1 (6 panels × 2 variants); the worker derives the real
+      # panel_index/variant itself from the template's SaveImage nodes.
       MOCK_VARIANTS_PER_PANEL: "2"
     healthcheck:
       test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8188/system_stats').status==200 else 1)"]
@@ -84,6 +84,10 @@ services:
       GOOGLE_CLOUD_PROJECT: ${GCP_PROJECT_ID}
       JOBS_SUBSCRIPTION: ${JOBS_SUBSCRIPTION}
       COMPLETION_TOPIC: ${COMPLETION_TOPIC}
+      # Bucket the worker reads inputs from / writes outputs to. The job message
+      # no longer carries a gcs_uri/output_prefix — the worker derives both from
+      # this bucket + the message ids (DESIGN.md §5.1).
+      GCS_BUCKET: ${GCS_BUCKET}
       PUBSUB_EMULATOR_HOST: ${PUBSUB_EMULATOR_HOST}
       STORAGE_EMULATOR_HOST: ${STORAGE_EMULATOR_HOST}
       COMFYUI_URL: ${COMFYUI_URL}

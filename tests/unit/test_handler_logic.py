@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any
 
 import pytest
@@ -79,6 +78,10 @@ class _FakeStorageClient:
 @dataclass
 class _StubPanel:
     image: bytes
+    index: int = 0
+    panel_index: int = 0
+    variant: int = 0
+    total: int = 0
     width: int = 64
     height: int = 64
     model_version: str = "stub-1"
@@ -88,6 +91,7 @@ class _StubPanel:
 @dataclass
 class _StubModel:
     images: list[bytes] = field(default_factory=lambda: [b"out0", b"out1"])
+    variants_per_panel: int = 1
     raise_on_generate: BaseException | None = None
     seen_kwargs: dict[str, Any] = field(default_factory=dict)
 
@@ -96,22 +100,36 @@ class _StubModel:
         *,
         story_id: str,
         user_id: str,
-        template_id: str,
-        configurable_options: dict[str, object],
+        prompt_type: int,
+        prompt_id: int,
         input_images: list[bytes],
     ) -> Any:
         # Mirrors the real model: validate eagerly (raise here), then return an
-        # iterator of one panel per output image.
+        # iterator of one panel per output image. The model owns the storybook
+        # layout (index / panel_index / variant / total).
         self.seen_kwargs = {
             "story_id": story_id,
             "user_id": user_id,
-            "template_id": template_id,
-            "configurable_options": configurable_options,
+            "prompt_type": prompt_type,
+            "prompt_id": prompt_id,
             "input_images": input_images,
         }
         if self.raise_on_generate is not None:
             raise self.raise_on_generate
-        return iter([_StubPanel(image=img) for img in self.images])
+        v = self.variants_per_panel
+        total = len(self.images)
+        return iter(
+            [
+                _StubPanel(
+                    image=img,
+                    index=i,
+                    panel_index=i // v,
+                    variant=i % v,
+                    total=total,
+                )
+                for i, img in enumerate(self.images)
+            ]
+        )
 
 
 class _RecordingPublisherClient:
@@ -147,31 +165,22 @@ class _RecordingPublisherClient:
 # --- helpers ------------------------------------------------------------------
 
 
-def _job_payload(*, output_count: int = 2) -> dict[str, Any]:
+def _job_payload() -> dict[str, Any]:
     return {
         "schema_version": 1,
         "story_id": "s1",
         "user_id": "u1",
         "request_id": "r1",
-        "template_id": "tpl_v1",
-        "configurable_options": {"k": "v"},
-        "input_photos": [
-            {
-                "photo_id": "ph_1",
-                "position": 1,
-                "gcs_uri": "gs://uploads/u1/photos/ph_1.jpg",
-            },
-            {
-                "photo_id": "ph_0",
-                "position": 0,
-                "gcs_uri": "gs://uploads/u1/photos/ph_0.jpg",
-            },
+        "type": 1,
+        "id": 1,
+        "input_images": [
+            {"photo_id": "ph_1", "position": 1},
+            {"photo_id": "ph_0", "position": 0},
         ],
-        "output_count": output_count,
-        "output_prefix": "gs://outputs/u1/s1/outputs/",
-        "callback_topic": "projects/p/topics/job-completed",
-        "enqueued_at": datetime(2026, 5, 5, tzinfo=timezone.utc).isoformat(),
     }
+
+
+_BUCKET = "bkt"
 
 
 def _build_handler(
@@ -184,6 +193,7 @@ def _build_handler(
     storage = storage_client or _FakeStorageClient()
     handler = JobHandler(
         gcs=GcsClient(storage),
+        gcs_bucket=_BUCKET,
         model=model,
         publisher=CompletionPublisher(
             publisher_client,
@@ -208,7 +218,7 @@ def _all_completions(client: _RecordingPublisherClient) -> list[CompletionMessag
 
 
 def test_handle_happy_path_uploads_outputs_and_acks() -> None:
-    msg = _FakePubsubMessage(_job_payload(output_count=2))
+    msg = _FakePubsubMessage(_job_payload())
     model = _StubModel(images=[b"out0", b"out1"])
     pub_client = _RecordingPublisherClient()
     handler, storage = _build_handler(model=model, publisher_client=pub_client)
@@ -217,18 +227,19 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
 
     assert msg.acks == 1 and msg.nacks == 0
 
-    # Inputs were downloaded in declared position order (0 before 1).
-    assert model.seen_kwargs["template_id"] == "tpl_v1"
+    # The job's type/id select the prompt set; inputs downloaded in position order.
+    assert model.seen_kwargs["prompt_type"] == 1
+    assert model.seen_kwargs["prompt_id"] == 1
     assert model.seen_kwargs["story_id"] == "s1"
     assert model.seen_kwargs["user_id"] == "u1"
     assert len(model.seen_kwargs["input_images"]) == 2
 
-    # Outputs were uploaded under output_prefix as 0.png, 1.png.
-    bucket = storage.bucket("outputs")
-    assert sorted(bucket.blobs.keys()) == ["u1/s1/outputs/0.png", "u1/s1/outputs/1.png"]
-    for name, blob in bucket.blobs.items():
-        del name
-        assert blob.uploaded[0][1] == "image/png"
+    # Outputs were uploaded under the derived per-story prefix as 0.png, 1.png.
+    bucket = storage.bucket("bkt")
+    outputs = {k for k in bucket.blobs if k.startswith("u1/s1/outputs/")}
+    assert outputs == {"u1/s1/outputs/0.png", "u1/s1/outputs/1.png"}
+    for name in outputs:
+        assert bucket.blobs[name].uploaded[0][1] == "image/png"
 
     # Published: one panel_completed per image, then a terminal completed.
     published = _all_completions(pub_client)
@@ -241,8 +252,8 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
     assert all(c.total_panels == 2 for c in published[:2])
     # Each panel_completed carries only its own image.
     assert published[0].output_images is not None
-    assert published[0].output_images[0].gcs_uri == "gs://outputs/u1/s1/outputs/0.png"
-    assert published[1].output_images[0].gcs_uri == "gs://outputs/u1/s1/outputs/1.png"
+    assert published[0].output_images[0].gcs_uri == "gs://bkt/u1/s1/outputs/0.png"
+    assert published[1].output_images[0].gcs_uri == "gs://bkt/u1/s1/outputs/1.png"
 
     # The terminal completed carries every image.
     completion = published[-1]
@@ -251,8 +262,8 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
     assert completion.panel_index is None
     assert completion.output_images is not None
     assert {o.gcs_uri for o in completion.output_images} == {
-        "gs://outputs/u1/s1/outputs/0.png",
-        "gs://outputs/u1/s1/outputs/1.png",
+        "gs://bkt/u1/s1/outputs/0.png",
+        "gs://bkt/u1/s1/outputs/1.png",
     }
 
 
@@ -402,7 +413,7 @@ def test_handle_nacks_when_completion_publish_fails_so_job_redelivers() -> None:
 def test_handle_nacks_when_final_completion_publish_fails() -> None:
     # Panels publish fine, but the terminal 'completed' publish fails → nack,
     # so Pub/Sub redelivers and the whole job re-runs (DESIGN §6.2).
-    msg = _FakePubsubMessage(_job_payload(output_count=2))
+    msg = _FakePubsubMessage(_job_payload())
     model = _StubModel(images=[b"out0", b"out1"])
     pub_client = _RecordingPublisherClient(raise_on_status="completed")
     handler, _storage = _build_handler(model=model, publisher_client=pub_client)
@@ -427,9 +438,11 @@ def test_handle_nacks_when_failed_completion_publish_itself_fails() -> None:
     assert msg.nacks == 1 and msg.acks == 0
 
 
-def test_handle_treats_wrong_image_count_as_invalid_config() -> None:
-    msg = _FakePubsubMessage(_job_payload(output_count=4))
-    model = _StubModel(images=[b"only-one"])
+def test_handle_reports_failed_when_model_yields_no_images() -> None:
+    # A broken template/prompt set that yields zero images is deterministic, so
+    # the handler reports failed + acks rather than nacking forever.
+    msg = _FakePubsubMessage(_job_payload())
+    model = _StubModel(images=[])
     pub_client = _RecordingPublisherClient()
     handler, _storage = _build_handler(model=model, publisher_client=pub_client)
 
@@ -441,40 +454,14 @@ def test_handle_treats_wrong_image_count_as_invalid_config() -> None:
     assert completion.failure_reason == "invalid_config"
 
 
-def test_handle_reports_failed_when_model_overruns_output_count() -> None:
-    # Template drift: the worker-side template yields MORE images than the
-    # job promised. Deterministic, so it must report failed + ack — never
-    # nack — and must stop before publishing a panel_completed whose
-    # panel_index would violate the contract's panel_index < total_panels.
-    msg = _FakePubsubMessage(_job_payload(output_count=2))
-    model = _StubModel(images=[b"out0", b"out1", b"excess"])
-    pub_client = _RecordingPublisherClient()
-    handler, storage = _build_handler(model=model, publisher_client=pub_client)
-
-    handler.handle(msg)
-
-    assert msg.acks == 1 and msg.nacks == 0
-
-    published = _all_completions(pub_client)
-    assert [c.status for c in published] == [
-        "panel_completed",
-        "panel_completed",
-        "failed",
-    ]
-    assert published[-1].failure_reason == "invalid_config"
-
-    # The excess image was never uploaded.
-    bucket = storage.bucket("outputs")
-    assert sorted(bucket.blobs.keys()) == ["u1/s1/outputs/0.png", "u1/s1/outputs/1.png"]
-
-
 def test_handle_passes_input_bytes_in_position_order() -> None:
     msg = _FakePubsubMessage(_job_payload())
     storage = _FakeStorageClient()
-    # Make each blob return distinguishable bytes.
-    bucket = storage.bucket("uploads")
-    bucket.blobs["u1/photos/ph_0.jpg"] = _FakeBlob(b"FIRST")
-    bucket.blobs["u1/photos/ph_1.jpg"] = _FakeBlob(b"SECOND")
+    # Inputs live at the deterministic per-story name <user>_<story>_input_<n>.png;
+    # make each blob return distinguishable bytes so we can assert ordering.
+    bucket = storage.bucket(_BUCKET)
+    bucket.blobs["u1_s1_input_0.png"] = _FakeBlob(b"FIRST")
+    bucket.blobs["u1_s1_input_1.png"] = _FakeBlob(b"SECOND")
     model = _StubModel(images=[b"out0", b"out1"])
     pub_client = _RecordingPublisherClient()
     handler, _storage = _build_handler(

@@ -12,6 +12,7 @@ def _cfg() -> WorkerConfig:
         gcp_project_id="p",
         jobs_subscription="projects/p/subscriptions/jobs",
         completion_topic="projects/p/topics/job-completed",
+        gcs_bucket="bkt",
         max_concurrency=3,
         max_processing_seconds=60,
         log_level="info",

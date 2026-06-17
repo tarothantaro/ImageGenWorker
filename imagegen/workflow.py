@@ -18,9 +18,11 @@ Vocabulary (unchanged from the legacy service):
   ``inputs``. **One panel == one ComfyUI run == one output image** (DESIGN.md
   §7.2). A story with N scenes is N panels; the worker renders + submits each
   panel in turn.
-* A template may declare ``"story": "<id>"`` to source its per-panel prompts
-  from ``prompts/<id>.json`` (an ordered array, one prompt per panel) instead of
-  carrying them inline. Those prompts may contain character ``{TOKEN}``
+* :meth:`prepare` sources each panel's prompt from ``prompts/<story_ref>.json``
+  (an ordered array, one prompt per panel). ``story_ref`` is passed in — for the
+  single render template (``templates/1``) it comes from the job's ``type``/
+  ``id`` (e.g. ``"1_1"``); a legacy template may instead carry its own
+  ``"story"`` field. Those prompts may contain character ``{TOKEN}``
   placeholders (e.g. ``{GENDER_F_AGE_70_RACE_ASIAN}``) which :meth:`prepare`
   resolves against ``prompts/character.json`` so the same generated character
   looks identical across every panel of the story. ``USER_ID`` / ``STORY_ID``
@@ -49,7 +51,7 @@ from typing import Any
 from .failure_classification import UnsupportedTemplateError
 
 # SaveImage nodes whose substituted ``filename_prefix`` ends with this marker
-# hold the *final* image we return to the caller. workflows/2 emits two:
+# hold the *final* image we return to the caller. workflows/1 emits two:
 # ``..._V1`` (pre-face-swap) and ``..._V2`` (face-restored). We collect V2.
 FINAL_OUTPUT_SUFFIX = "_V2"
 
@@ -117,8 +119,16 @@ class WorkflowBuilder:
         except json.JSONDecodeError as exc:
             raise UnsupportedTemplateError(f"invalid JSON in {path}: {exc}") from exc
 
-    def prepare(self, template_id: str) -> PreparedTemplate:
+    def prepare(
+        self, template_id: str, story_ref: str | None = None
+    ) -> PreparedTemplate:
         """Load + validate a template and its workflow, ready for :meth:`render`.
+
+        ``story_ref`` selects which ``prompts/<story_ref>.json`` set fills the
+        panels' ``text`` fields. The single render template (``templates/1``) no
+        longer binds a story inline, so the caller passes it from the job's
+        ``type``/``id`` (e.g. ``"1_1"``); if omitted, a legacy template's own
+        ``"story"`` field is used.
 
         Raises :class:`UnsupportedTemplateError` if any asset is missing, if the
         template names no workflow, has no panels, or *any* panel doesn't line
@@ -146,7 +156,7 @@ class WorkflowBuilder:
                     f"{len(config_nodes)} nodes"
                 )
 
-        story_ref = template.get("story")
+        story_ref = story_ref or template.get("story")
         if story_ref:
             self._apply_story_prompts(template_id, str(story_ref), panels)
 

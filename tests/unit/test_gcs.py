@@ -130,12 +130,13 @@ def test_upload_passes_content_type_none_by_default() -> None:
     assert blob.uploads == [(b"data", None)]
 
 
-def test_output_uri_builds_indexed_name_under_prefix() -> None:
-    uri = GcsClient.output_uri("gs://b/uid/story/outputs/", index=2, ext="png")
+def test_output_uri_builds_per_story_indexed_name() -> None:
+    uri = GcsClient.output_uri("b", "uid", "story", index=2, ext="png")
 
     assert uri == "gs://b/uid/story/outputs/2.png"
 
 
-def test_output_uri_rejects_prefix_without_trailing_slash() -> None:
-    with pytest.raises(ValueError, match="trailing slash|/"):
-        GcsClient.output_uri("gs://b/uid/story/outputs", index=0)
+def test_input_uri_builds_deterministic_per_story_name() -> None:
+    uri = GcsClient.input_uri("b", "uid", "story", position=0)
+
+    assert uri == "gs://b/uid_story_input_0.png"
