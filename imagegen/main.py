@@ -81,7 +81,12 @@ def build_runtime(
         topic=cfg.completion_topic,
     )
     gcs = GcsClient(client=storage_client_factory())  # type: ignore[arg-type]
-    handler = JobHandler(gcs=gcs, model=model_factory(cfg), publisher=publisher)
+    handler = JobHandler(
+        gcs=gcs,
+        model=model_factory(cfg),
+        publisher=publisher,
+        max_delivery_attempts=cfg.max_delivery_attempts,
+    )
     return Puller(
         client=subscriber_client_factory(),  # type: ignore[arg-type]
         subscription=cfg.jobs_subscription,

@@ -12,12 +12,19 @@ from typing import Any
 
 
 class FakePubsubMessage:
-    """A delivered Pub/Sub message that records ack/nack."""
+    """A delivered Pub/Sub message that records ack/nack.
 
-    def __init__(self, body: dict[str, Any]) -> None:
+    ``delivery_attempt`` mirrors the real SDK: ``None`` when the subscription
+    has no dead_letter_policy, else 1 + nacks (first delivery == 1).
+    """
+
+    def __init__(
+        self, body: dict[str, Any], *, delivery_attempt: int | None = None
+    ) -> None:
         self.data = json.dumps(body).encode("utf-8")
         self.attributes: dict[str, str] = {}
         self.message_id = "mid_test"
+        self.delivery_attempt = delivery_attempt
         self.acks = 0
         self.nacks = 0
 

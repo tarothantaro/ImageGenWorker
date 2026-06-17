@@ -29,6 +29,7 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.comfyui_url == "http://host.docker.internal:8188"
     assert cfg.model_version == "comfyui-flux2"
     assert cfg.comfyui_request_timeout_seconds == 180
+    assert cfg.max_delivery_attempts == 5
 
 
 def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:
@@ -70,6 +71,19 @@ def test_comfyui_request_timeout_rejects_non_positive() -> None:
     env = _VALID_ENV | {"COMFYUI_REQUEST_TIMEOUT_SECONDS": "0"}
 
     with pytest.raises(ConfigError, match="COMFYUI_REQUEST_TIMEOUT_SECONDS"):
+        load_config(env)
+
+
+def test_load_config_picks_up_max_delivery_attempts_override() -> None:
+    cfg = load_config(_VALID_ENV | {"MAX_DELIVERY_ATTEMPTS": "7"})
+
+    assert cfg.max_delivery_attempts == 7
+
+
+def test_max_delivery_attempts_rejects_non_positive() -> None:
+    env = _VALID_ENV | {"MAX_DELIVERY_ATTEMPTS": "0"}
+
+    with pytest.raises(ConfigError, match="MAX_DELIVERY_ATTEMPTS"):
         load_config(env)
 
 

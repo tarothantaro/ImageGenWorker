@@ -89,6 +89,7 @@ services:
       COMFYUI_URL: ${COMFYUI_URL}
       MAX_CONCURRENCY: ${MAX_CONCURRENCY}
       MAX_PROCESSING_SECONDS: ${MAX_PROCESSING_SECONDS}
+      MAX_DELIVERY_ATTEMPTS: ${MAX_DELIVERY_ATTEMPTS}
       MODEL_VERSION: ${MODEL_VERSION}
       LOG_LEVEL: ${LOG_LEVEL}
     # TEMPORARY local-contract bridge. The image bakes image-gen-contract at the

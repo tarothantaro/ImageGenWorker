@@ -29,6 +29,13 @@ class PubsubMessage(Protocol):
     @property
     def message_id(self) -> str: ...
 
+    @property
+    def delivery_attempt(self) -> int | None:
+        """1 + (nacks + ack-deadline exceeds), or ``None`` if the subscription
+        has no dead_letter_policy. The handler uses it to detect the final
+        delivery before Pub/Sub dead-letters the message."""
+        ...
+
     def ack(self) -> None: ...
 
     def nack(self) -> None: ...

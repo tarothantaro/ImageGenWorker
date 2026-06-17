@@ -16,6 +16,13 @@ _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 # before treating it as a transient failure. Per-request, not per-job: a job
 # with N panels can take up to N × this. DESIGN.md §7.2.
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180
+# Must mirror the jobs subscription's dead_letter_policy.max_delivery_attempts
+# (DESIGN.md §4.1 — Pub/Sub's floor is 5). The worker uses it to recognise the
+# FINAL delivery: on that attempt a would-be transient nack instead publishes a
+# terminal 'failed' completion + acks, so a job that's about to be silently
+# dead-lettered still surfaces to the user (see job_handler) rather than leaving
+# the story stuck non-terminal forever.
+_DEFAULT_MAX_DELIVERY_ATTEMPTS = 5
 
 
 @dataclass(frozen=True)
@@ -35,6 +42,7 @@ class WorkerConfig:
     comfyui_url: str = _DEFAULT_COMFYUI_URL
     model_version: str = _DEFAULT_MODEL_VERSION
     comfyui_request_timeout_seconds: int = _DEFAULT_REQUEST_TIMEOUT_SECONDS
+    max_delivery_attempts: int = _DEFAULT_MAX_DELIVERY_ATTEMPTS
 
     @property
     def is_emulator(self) -> bool:
@@ -77,6 +85,10 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
                 str(_DEFAULT_REQUEST_TIMEOUT_SECONDS),
             ),
             "COMFYUI_REQUEST_TIMEOUT_SECONDS",
+        ),
+        max_delivery_attempts=_parse_positive_int(
+            src.get("MAX_DELIVERY_ATTEMPTS", str(_DEFAULT_MAX_DELIVERY_ATTEMPTS)),
+            "MAX_DELIVERY_ATTEMPTS",
         ),
     )
 

@@ -48,6 +48,11 @@ fi
 # Worker knobs (DESIGN.md §10.4 dev column).
 export MAX_CONCURRENCY="${MAX_CONCURRENCY:-2}"
 export MAX_PROCESSING_SECONDS="${MAX_PROCESSING_SECONDS:-60}"
+# Must match the worker-sub's dead_letter_policy.max_delivery_attempts (set by
+# the Application local stack's bootstrap_pubsub.py). On this attempt the worker
+# stops retrying and publishes a terminal 'failed' instead of nacking into the
+# DLQ. Pub/Sub's floor is 5.
+export MAX_DELIVERY_ATTEMPTS="${MAX_DELIVERY_ATTEMPTS:-5}"
 export MODEL_VERSION="${MODEL_VERSION:-comfyui-flux2}"
 export LOG_LEVEL="${LOG_LEVEL:-debug}"
 

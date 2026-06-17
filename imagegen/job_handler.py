@@ -83,10 +83,15 @@ class JobHandler:
         gcs: GcsClient,
         model: ImageGenModel,
         publisher: CompletionPublisher,
+        max_delivery_attempts: int = 5,
     ) -> None:
         self._gcs = gcs
         self._model = model
         self._publisher = publisher
+        # Mirror the subscription's dead_letter_policy.max_delivery_attempts so
+        # we can spot the final delivery and report a terminal failure instead of
+        # letting Pub/Sub dead-letter it silently (see ``_handle_failure``).
+        self._max_delivery_attempts = max_delivery_attempts
 
     def handle(self, message: PubsubMessage) -> None:
         """Pub/Sub callback. Must always either ack or nack."""
@@ -218,12 +223,31 @@ class JobHandler:
         reason: str | None,
     ) -> None:
         if disposition is Disposition.NACK_RETRY:
+            if self._is_final_attempt(message):
+                # Retries are exhausted: nacking now would let Pub/Sub move the
+                # job to the DLQ silently, leaving the story stuck non-terminal
+                # forever (the client then spins on its GEN-TIMEOUT path). Give
+                # the user a terminal 'failed' instead so the API refunds + flips
+                # status. The DLQ stays a backstop for true crashes (worker dies
+                # before ack/nack), not for handled transient failures.
+                logger.warning(
+                    "job_failed_retries_exhausted",
+                    extra={
+                        "story_id": job.story_id,
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                        "delivery_attempt": message.delivery_attempt,
+                    },
+                )
+                self._report_failed(message, job, reason="generation_failed")
+                return
             logger.warning(
                 "job_failed_will_retry",
                 extra={
                     "story_id": job.story_id,
                     "error_type": type(exc).__name__,
                     "error": str(exc),
+                    "delivery_attempt": message.delivery_attempt,
                 },
             )
             message.nack()
@@ -231,6 +255,26 @@ class JobHandler:
 
         # REPORT_FAILED — publish the failed completion and ack.
         assert reason is not None  # invariant of classify()
+        self._report_failed(message, job, reason=reason)
+
+    def _is_final_attempt(self, message: PubsubMessage) -> bool:
+        """True when this is the last delivery before Pub/Sub dead-letters it.
+
+        ``delivery_attempt`` is ``None`` when the subscription has no
+        dead_letter_policy — then we never short-circuit (legacy: nack forever).
+        """
+        attempt = message.delivery_attempt
+        return attempt is not None and attempt >= self._max_delivery_attempts
+
+    def _report_failed(
+        self, message: PubsubMessage, job: JobMessage, *, reason: str
+    ) -> None:
+        """Publish a terminal 'failed' completion and ack.
+
+        If the publish itself fails transiently we nack — better to risk a
+        redelivery (or, on the final attempt, a DLQ landing) than to ack a job
+        the API never heard failed.
+        """
         try:
             completion = build_failed(
                 story_id=job.story_id,

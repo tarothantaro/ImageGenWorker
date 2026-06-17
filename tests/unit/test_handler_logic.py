@@ -23,10 +23,14 @@ from imagegen.publisher import CompletionPublisher
 
 
 class _FakePubsubMessage:
-    def __init__(self, body: dict[str, Any]) -> None:
+    def __init__(
+        self, body: dict[str, Any], *, delivery_attempt: int | None = None
+    ) -> None:
         self.data = json.dumps(body).encode("utf-8")
         self.attributes: dict[str, str] = {}
         self.message_id = "mid_test"
+        # None mirrors a subscription without a dead_letter_policy.
+        self.delivery_attempt = delivery_attempt
         self.acks = 0
         self.nacks = 0
 
@@ -175,6 +179,7 @@ def _build_handler(
     model: _StubModel,
     publisher_client: _RecordingPublisherClient,
     storage_client: _FakeStorageClient | None = None,
+    max_delivery_attempts: int = 5,
 ) -> tuple[JobHandler, _FakeStorageClient]:
     storage = storage_client or _FakeStorageClient()
     handler = JobHandler(
@@ -185,6 +190,7 @@ def _build_handler(
             topic="projects/p/topics/job-completed",
             max_attempts=1,
         ),
+        max_delivery_attempts=max_delivery_attempts,
     )
     return handler, storage
 
@@ -313,6 +319,73 @@ def test_handle_nacks_when_unknown_exception_bubbles_up() -> None:
 
     assert msg.nacks == 1 and msg.acks == 0
     assert pub_client.published == []
+
+
+def test_handle_still_nacks_transient_on_non_final_delivery_attempt() -> None:
+    # Attempts before the last still retry: nack, publish nothing.
+    msg = _FakePubsubMessage(_job_payload(), delivery_attempt=4)
+    model = _StubModel(raise_on_generate=GcsTransientError("flake"))
+    pub_client = _RecordingPublisherClient()
+    handler, _storage = _build_handler(
+        model=model, publisher_client=pub_client, max_delivery_attempts=5
+    )
+
+    handler.handle(msg)
+
+    assert msg.nacks == 1 and msg.acks == 0
+    assert pub_client.published == []
+
+
+def test_handle_reports_failed_on_final_attempt_instead_of_dead_lettering() -> None:
+    # On the last delivery before Pub/Sub would dead-letter (delivery_attempt ==
+    # max), a transient failure must become a terminal 'failed' + ack — so the
+    # API flips the story failed and the client shows GEN-FAILED instead of
+    # spinning on GEN-TIMEOUT forever.
+    msg = _FakePubsubMessage(_job_payload(), delivery_attempt=5)
+    model = _StubModel(raise_on_generate=GcsTransientError("still flaking"))
+    pub_client = _RecordingPublisherClient()
+    handler, _storage = _build_handler(
+        model=model, publisher_client=pub_client, max_delivery_attempts=5
+    )
+
+    handler.handle(msg)
+
+    assert msg.acks == 1 and msg.nacks == 0
+    completion = _last_completion(pub_client)
+    assert completion.status == "failed"
+    assert completion.failure_reason == "generation_failed"
+
+
+def test_handle_nacks_transient_when_no_dead_letter_policy() -> None:
+    # delivery_attempt is None without a dead_letter_policy → never short-circuit
+    # to failed; keep the legacy nack-and-redeliver behavior.
+    msg = _FakePubsubMessage(_job_payload(), delivery_attempt=None)
+    model = _StubModel(raise_on_generate=GcsTransientError("flake"))
+    pub_client = _RecordingPublisherClient()
+    handler, _storage = _build_handler(model=model, publisher_client=pub_client)
+
+    handler.handle(msg)
+
+    assert msg.nacks == 1 and msg.acks == 0
+    assert pub_client.published == []
+
+
+def test_handle_nacks_on_final_attempt_when_failed_publish_fails() -> None:
+    # Exhausted retries AND the failed-completion publish flakes: we'd rather
+    # nack (→ Pub/Sub dead-letters it as a backstop) than ack a job the API
+    # never heard failed.
+    msg = _FakePubsubMessage(_job_payload(), delivery_attempt=5)
+    model = _StubModel(raise_on_generate=GcsTransientError("flake"))
+    pub_client = _RecordingPublisherClient(
+        raise_on_publish=PublishTransientError("pubsub down")
+    )
+    handler, _storage = _build_handler(
+        model=model, publisher_client=pub_client, max_delivery_attempts=5
+    )
+
+    handler.handle(msg)
+
+    assert msg.nacks == 1 and msg.acks == 0
 
 
 def test_handle_nacks_when_completion_publish_fails_so_job_redelivers() -> None:
