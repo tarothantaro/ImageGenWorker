@@ -6,6 +6,7 @@
   "lesson": "Waiting and taking turns means everyone gets a chance to play.",
   "characters": ["GENDER_F_AGE_06_RACE_BLACK", "GENDER_M_AGE_06_RACE_WHITE"],
   "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a cheerful sunny playground beside a small red slide, standing on the far left and facing the camera with a happy, curious expression and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK} and {GENDER_M_AGE_06_RACE_WHITE} stand together near the slide ladder, smiling. Eye-level medium-wide shot, warm natural sunlight, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A playground scene at the bottom of the same red slide. The person from the input image stands on the far left, facing the camera with a slightly surprised expression and the face clearly visible. To the right, {GENDER_F_AGE_06_RACE_BLACK} and {GENDER_M_AGE_06_RACE_WHITE} crowd in close together, all of them reaching toward the slide ladder at once, eager to climb. Eye-level medium-wide shot, warm sunlight, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

@@ -1,0 +1,20 @@
+{
+  "story_type": 1,
+  "story_type_name": "life_lesson",
+  "story_number": 19,
+  "title": "Breathe Out the Storm",
+  "lesson": "When big angry feelings come, taking slow deep breaths helps you feel calm again.",
+  "characters": [
+    "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
+  ],
+  "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
+  "prompts": [
+    "Place the person from the input image into a bright playroom in the afternoon. The person from the input image sits facing the camera with a happy, focused expression and the face fully visible, stacking colourful building blocks into a tall tower. Warm indoor light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image sits facing the camera with an angry, frustrated expression and the face fully visible, fists clenched, as the colourful block tower tumbles down around them. Scattered blocks on the floor, warm playroom light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A storybook playroom scene. The person from the input image sits on the far left, facing the camera with an upset expression and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} kneels close, one hand on their own belly, calmly showing how to take a deep breath. Eye-level medium-wide shot, warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image sits on the far left with eyes gently closed and one hand on their chest taking a slow deep breath, head turned toward the camera so the face stays clearly visible, the angry frown softening. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} breathes along encouragingly. Calm warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image sits facing the camera with a calm, relieved little smile and the face fully visible, shoulders relaxed, the storm of feelings passed. Soft warm playroom light, gentle soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image sits on the far left calmly rebuilding the block tower, facing the camera with a peaceful, happy smile and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} helps place a block, smiling proudly. Warm cozy playroom, heart-warming soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
+  ]
+}

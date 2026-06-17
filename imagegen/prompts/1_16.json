@@ -1,0 +1,20 @@
+{
+  "story_type": 1,
+  "story_type_name": "life_lesson",
+  "story_number": 16,
+  "title": "Stop, Look, and Hold Hands",
+  "lesson": "Stop, look both ways, and hold a grown-up's hand to cross the road safely.",
+  "characters": [
+    "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
+  ],
+  "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
+  "prompts": [
+    "Place the person from the input image onto a city pavement near a pedestrian crossing on a clear day. The person from the input image stands on the far left, facing the camera with a cheerful expression and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} walks beside them. Eye-level medium-wide shot, bright daylight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image is on the far left at the edge of the kerb, leaning forward as if about to step toward the road, head turned toward the camera so the face stays clearly visible with a surprised expression. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} gently holds them back with a caring, watchful look. A quiet street with a parked car, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image stands on the far left at the kerb, facing the camera with an attentive expression and the face fully visible, turning their head to look both ways along the road. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} points left and right, teaching them to look. Eye-level medium-wide shot, clear daylight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image stands on the far left at the crossing, facing the camera with a patient expression and the face fully visible, waiting beside a traffic light showing a red figure. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} waits calmly holding their hand. Eye-level medium shot, bright daylight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image walks on the far left across a white zebra crossing, facing the camera with a confident smile and the face fully visible, holding hands with {GENDER_M_AGE_35_RACE_ASIAN_PARENT} who walks to the right. A green walking signal glows ahead. Eye-level medium-wide shot, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "Safely on the far pavement, the person from the input image stands on the far left, facing the camera with a proud, happy smile and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} gives a thumbs-up and a warm smile. Sunny street, heart-warming soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
+  ]
+}

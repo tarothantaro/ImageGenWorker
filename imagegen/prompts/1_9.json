@@ -6,6 +6,7 @@
   "lesson": "Helping a friend who needs you makes you both happy.",
   "characters": ["GENDER_M_AGE_06_RACE_WHITE"],
   "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a sunny playground in a green park on a cheerful morning, skipping happily near a sandbox and a set of swings. Medium shot at eye level, the person facing the camera with their face fully visible and a happy smile. Warm natural sunlight, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A storybook scene on the same sunny playground. The person from the input image stands on the far left, turned slightly toward the camera with their face clearly visible and a surprised, caring expression. On the right, {GENDER_M_AGE_06_RACE_WHITE} has gently tripped and is sitting on the grass beside a tipped-over basket, with toy blocks spilled across the ground, looking sad. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

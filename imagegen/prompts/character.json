@@ -58,7 +58,8 @@
     "BOB_BLACK":          "a chin-length black bob",
     "GREY_BUN":           "grey hair tied in a low bun",
     "BALDING_GREY":       "thinning grey hair",
-    "PUFFS_BLACK":        "black hair in two puff buns"
+    "PUFFS_BLACK":        "black hair in two puff buns",
+    "PIGTAILS_BLACK":     "black hair in two pigtails"
   },
 
   "build": {
@@ -79,7 +80,9 @@
     "CASUAL_HOME_LILAC":  "a lilac knit jumper and comfortable beige trousers",
     "CASUAL_HOME_BLUE":   "a light-blue checked shirt and grey chinos",
     "DUNGAREES_RED":      "red dungarees over a white t-shirt",
-    "TSHIRT_STRIPED":     "a striped orange t-shirt and blue shorts"
+    "TSHIRT_STRIPED":     "a striped orange t-shirt and blue shorts",
+    "DRESS_PINK_FLORAL":  "a pink dress with a small flower print",
+    "TEE_TEAL_SHORTS":    "a teal t-shirt and grey shorts"
   },
 
   "features": {
@@ -126,6 +129,14 @@
     "GENDER_M_AGE_06_RACE_WHITE": {
       "refs": {"gender": "M", "age": "06", "race": "WHITE", "hair": "SHORT_BROWN", "build": "CHILD_SMALL", "wardrobe": "TSHIRT_STRIPED", "features": "FRECKLES"},
       "description": "a 6-year-old White boy with short brown hair, a small child's frame, wearing a striped orange t-shirt and blue shorts, with light freckles across the cheeks"
+    },
+    "GENDER_F_AGE_06_RACE_ASIAN": {
+      "refs": {"gender": "F", "age": "06", "race": "ASIAN", "hair": "PIGTAILS_BLACK", "build": "CHILD_SMALL", "wardrobe": "DRESS_PINK_FLORAL", "features": "KIND_SMILE"},
+      "description": "a 6-year-old East Asian girl with black hair in two pigtails, a small child's frame, wearing a pink dress with a small flower print, with a warm, kind smile"
+    },
+    "GENDER_M_AGE_06_RACE_SOUTH_ASIAN": {
+      "refs": {"gender": "M", "age": "06", "race": "SOUTH_ASIAN", "hair": "CURLY_BLACK_SHORT", "build": "CHILD_SMALL", "wardrobe": "TEE_TEAL_SHORTS", "features": "KIND_SMILE"},
+      "description": "a 6-year-old South Asian boy with short curly black hair, a small child's frame, wearing a teal t-shirt and grey shorts, with a warm, kind smile"
     }
   }
 }

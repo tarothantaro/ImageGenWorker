@@ -6,6 +6,7 @@
   "lesson": "When you hurt someone, saying sorry helps make things better.",
   "characters": ["GENDER_M_AGE_06_RACE_WHITE"],
   "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a cosy, sunny living room with a soft rug, playing happily with colourful wooden blocks. The person from the input image stands on the far left, facing the camera at eye level with their face fully visible and a cheerful smile. On the right, {GENDER_M_AGE_06_RACE_WHITE} kneels beside a tall, neatly stacked block tower, looking proud. Eye-level medium-wide shot, warm afternoon sunlight, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A storybook scene in the same sunny living room. The person from the input image is on the far left, mid-step and reaching across, head turned toward the camera so the face stays clearly visible, with a surprised expression as their arm bumps the tall block tower. On the right, {GENDER_M_AGE_06_RACE_WHITE} sits on the rug watching as the wooden blocks tumble and scatter across the floor. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",

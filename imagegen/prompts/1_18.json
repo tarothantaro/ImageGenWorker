@@ -1,0 +1,21 @@
+{
+  "story_type": 1,
+  "story_type_name": "life_lesson",
+  "story_number": 18,
+  "title": "Better Together",
+  "lesson": "Working together as a team gets the job done and is much more fun.",
+  "characters": [
+    "GENDER_M_AGE_06_RACE_WHITE",
+    "GENDER_F_AGE_06_RACE_ASIAN"
+  ],
+  "panel_count": 6,
+  "updated_at": "2026-06-17T02:13:10Z",
+  "prompts": [
+    "Place the person from the input image onto a sunny sandy beach. The person from the input image kneels alone building a sandcastle, head turned toward the camera so the face stays clearly visible, with a determined expression. A bucket and spade beside them, bright sunlight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image kneels in the sand as part of the sandcastle wall crumbles, facing the camera with a frustrated, disappointed expression and the face fully visible. Scattered sand and a tipped bucket, sunny beach, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A storybook beach scene. The person from the input image kneels on the far left by the sandcastle, head turned toward the camera so the face stays clearly visible with a hopeful expression. On the right, {GENDER_M_AGE_06_RACE_WHITE} and {GENDER_F_AGE_06_RACE_ASIAN} walk up offering to help. Eye-level medium-wide shot, bright sunlight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image is on the far left patting sand onto a growing sandcastle, facing the camera with a focused, happy expression and the face fully visible. To the right, {GENDER_M_AGE_06_RACE_WHITE} carries a bucket of water and {GENDER_F_AGE_06_RACE_ASIAN} digs sand, all working together. Eye-level medium-wide shot, sunny beach, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image kneels on the far left beside a tall finished sandcastle with towers and a little flag, facing the camera with a proud, delighted smile and the face fully visible. To the right, {GENDER_M_AGE_06_RACE_WHITE} and {GENDER_F_AGE_06_RACE_ASIAN} admire it happily. Bright beach light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "The person from the input image stands on the far left with arms raised in celebration beside the grand sandcastle, facing the camera with a big joyful smile and the face fully visible. To the right, {GENDER_M_AGE_06_RACE_WHITE} and {GENDER_F_AGE_06_RACE_ASIAN} cheer together. Golden seaside light, heart-warming soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
+  ]
+}
