@@ -57,13 +57,25 @@ def test_story_doc_tolerates_missing_optional_fields() -> None:
 
 
 def test_bindings_resolve_real_templates() -> None:
-    """Guards the worker's template->story binding (template 4 -> story 1_1)."""
+    """Guards the per-story binding convention: each ``templates/<type>_<n>``
+    binds story ``<type>_<n>`` (template id == story id), so the catalog sync
+    writes one ``templates/{id}`` doc per prompt. Legacy template 4 still binds
+    story 1_1 for back-compat; template 3 ("custom") binds no story."""
     mod = _load()
     bindings = dict(mod._bindings(None))
 
-    assert "4" in bindings, "template 4 must bind a story"
-    assert bindings["4"]["title"] == "Kindness Comes Back Around"
-    assert bindings["4"]["story_type"] == 1
+    # Every prompts/<id>.json has a matching templates/<id> that binds it.
+    assert "1_1" in bindings
+    assert bindings["1_1"]["title"] == "Kindness Comes Back Around"
+    assert bindings["1_1"]["story_type"] == 1
+    assert bindings["1_1"]["story_number"] == 1
+    # The full life-lesson catalog (1_1..1_21) is present and each carries a
+    # non-empty title — its story id == its template id.
+    story_ids = {b for b in bindings if b.startswith("1_")}
+    assert story_ids == {f"1_{n}" for n in range(1, 22)}
+    assert all(bindings[s]["title"] for s in story_ids)
+
+    # Legacy template 4 still binds story 1_1 (back-compat).
     assert bindings["4"]["story_number"] == 1
     # Template 3 ("custom") binds no story and is skipped.
     assert "3" not in bindings
@@ -71,5 +83,6 @@ def test_bindings_resolve_real_templates() -> None:
 
 def test_bindings_filter_by_template() -> None:
     mod = _load()
-    bindings = dict(mod._bindings("4"))
-    assert set(bindings) == {"4"}
+    bindings = dict(mod._bindings("1_5"))
+    assert set(bindings) == {"1_5"}
+    assert bindings["1_5"]["title"] == "Tidy-Up Time"

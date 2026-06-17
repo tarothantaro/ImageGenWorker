@@ -1,0 +1,146 @@
+{
+    "id": "1_17",
+    "name": "storybook-ab",
+    "workflow_id": "2",
+    "story": "1_17",
+    "panels": [
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410683
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P0_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P0_V2"
+            }
+        ],
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410684
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P1_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P1_V2"
+            }
+        ],
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410685
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P2_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P2_V2"
+            }
+        ],
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410686
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P3_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P3_V2"
+            }
+        ],
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410687
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P4_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P4_V2"
+            }
+        ],
+        [
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "image": "USER_ID_STORY_ID_INPUT_1.png"
+            },
+            {
+                "text": ""
+            },
+            {
+                "value": 6
+            },
+            {
+                "noise_seed": 771062815410688
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P5_V1"
+            },
+            {
+                "filename_prefix": "USER_ID_STORY_ID_P5_V2"
+            }
+        ]
+    ]
+}
