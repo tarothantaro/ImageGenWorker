@@ -57,7 +57,8 @@
     "CURLY_BLACK_SHORT":  "short curly black hair",
     "BOB_BLACK":          "a chin-length black bob",
     "GREY_BUN":           "grey hair tied in a low bun",
-    "BALDING_GREY":       "thinning grey hair"
+    "BALDING_GREY":       "thinning grey hair",
+    "PUFFS_BLACK":        "black hair in two puff buns"
   },
 
   "build": {
@@ -74,7 +75,11 @@
     "BUSINESS_GREY_SUIT": "a charcoal-grey business suit with a white shirt",
     "SCHOOL_UNIFORM_BLUE":"a navy school uniform with a white collared shirt",
     "SUMMER_DRESS_YELLOW":"a light yellow summer dress",
-    "HOODIE_GREEN":       "a forest-green hoodie and black joggers"
+    "HOODIE_GREEN":       "a forest-green hoodie and black joggers",
+    "CASUAL_HOME_LILAC":  "a lilac knit jumper and comfortable beige trousers",
+    "CASUAL_HOME_BLUE":   "a light-blue checked shirt and grey chinos",
+    "DUNGAREES_RED":      "red dungarees over a white t-shirt",
+    "TSHIRT_STRIPED":     "a striped orange t-shirt and blue shorts"
   },
 
   "features": {
@@ -105,6 +110,22 @@
     "GENDER_F_AGE_30_RACE_BLACK": {
       "refs": {"gender": "F", "age": "30", "race": "BLACK", "hair": "CURLY_BLACK_SHORT", "build": "SLIM_TALL", "wardrobe": "SUMMER_DRESS_YELLOW", "features": "KIND_SMILE"},
       "description": "a 30-year-old Black woman with short curly black hair, a slim build and tall stature, wearing a light yellow summer dress, with a warm, kind smile"
+    },
+    "GENDER_F_AGE_35_RACE_ASIAN_PARENT": {
+      "refs": {"gender": "F", "age": "35", "race": "ASIAN", "hair": "LONG_BLACK_STRAIGHT", "build": "AVERAGE_MEDIUM", "wardrobe": "CASUAL_HOME_LILAC", "features": "KIND_SMILE"},
+      "description": "a 35-year-old East Asian woman with long straight black hair, an average build and medium height, wearing a lilac knit jumper and comfortable beige trousers, with a warm, kind smile"
+    },
+    "GENDER_M_AGE_35_RACE_ASIAN_PARENT": {
+      "refs": {"gender": "M", "age": "35", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "AVERAGE_MEDIUM", "wardrobe": "CASUAL_HOME_BLUE", "features": "KIND_SMILE"},
+      "description": "a 35-year-old East Asian man with short, neatly combed black hair, an average build and medium height, wearing a light-blue checked shirt and grey chinos, with a warm, kind smile"
+    },
+    "GENDER_F_AGE_06_RACE_BLACK": {
+      "refs": {"gender": "F", "age": "06", "race": "BLACK", "hair": "PUFFS_BLACK", "build": "CHILD_SMALL", "wardrobe": "DUNGAREES_RED", "features": "KIND_SMILE"},
+      "description": "a 6-year-old Black girl with black hair in two puff buns, a small child's frame, wearing red dungarees over a white t-shirt, with a warm, kind smile"
+    },
+    "GENDER_M_AGE_06_RACE_WHITE": {
+      "refs": {"gender": "M", "age": "06", "race": "WHITE", "hair": "SHORT_BROWN", "build": "CHILD_SMALL", "wardrobe": "TSHIRT_STRIPED", "features": "FRECKLES"},
+      "description": "a 6-year-old White boy with short brown hair, a small child's frame, wearing a striped orange t-shirt and blue shorts, with light freckles across the cheeks"
     }
   }
 }

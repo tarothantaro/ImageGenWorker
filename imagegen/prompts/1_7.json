@@ -1,0 +1,17 @@
+{
+  "story_type": 1,
+  "story_type_name": "life_lesson",
+  "story_number": 7,
+  "title": "The Magic Words",
+  "lesson": "Kind words like \"please\" and \"thank you\" make people smile.",
+  "characters": ["GENDER_F_AGE_70_RACE_ASIAN"],
+  "panel_count": 6,
+  "prompts": [
+    "Place the person from the input image into a cozy, sunny home kitchen, sitting at a wooden table. Medium shot at eye level, the person facing the camera with their face fully visible and a cheerful expression. In the background to the right, {GENDER_F_AGE_70_RACE_ASIAN} stands by the counter holding a plate of cookies, smiling. Warm morning light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A cozy home kitchen scene. The person from the input image stands on the far left, facing the camera with their face clearly visible and wide, eager eyes fixed on a plate of cookies, one hand lifting toward it. On the right, {GENDER_F_AGE_70_RACE_ASIAN} holds the plate of cookies and watches with a gentle, patient smile. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A cozy home kitchen scene. The person from the input image stands on the far left, facing the camera with their face clearly visible and a warm, polite, expectant smile, hands gently clasped together as if saying \"please\". On the right, {GENDER_F_AGE_70_RACE_ASIAN} holds the plate of cookies and beams happily. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A cozy home kitchen scene. The person from the input image stands on the far left, facing the camera with their face fully visible and a delighted smile, reaching out with both hands to receive a cookie. On the right, {GENDER_F_AGE_70_RACE_ASIAN} leans in and happily holds out the plate, offering a cookie. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A cozy home kitchen scene. The person from the input image stands on the far left, facing the camera with their face clearly visible and a big, joyful smile, holding a cookie close to their chest with both hands as if saying \"thank you\". On the right, {GENDER_F_AGE_70_RACE_ASIAN} stands with one hand on her heart, smiling warmly. Eye-level medium-wide shot, warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
+    "A cozy home kitchen scene. The person from the input image stands on the far left, facing the camera with their face fully visible and a happy, contented smile, sharing the plate of cookies. On the right, {GENDER_F_AGE_70_RACE_ASIAN} stands close beside them, smiling warmly as the two enjoy a happy moment together. Eye-level medium-wide shot, soft golden light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
+  ]
+}
