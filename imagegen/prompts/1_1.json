@@ -4,9 +4,11 @@
   "story_number": 1,
   "title": "Kindness Comes Back Around",
   "lesson": "A small act of kindness returns to you when you least expect it.",
-  "characters": ["GENDER_F_AGE_70_RACE_ASIAN", "GENDER_M_AGE_25_RACE_ASIAN"],
+  "characters": [
+    "GENDER_F_AGE_70_RACE_ASIAN",
+    "GENDER_M_AGE_25_RACE_ASIAN"
+  ],
   "panel_count": 6,
-  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a bright suburban neighbourhood on a sunny morning, walking along a tree-lined pavement. Medium shot at eye level, the person facing the camera with their face fully visible. Warm natural sunlight, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A storybook scene on the same sunny pavement. The person from the input image stands on the far left, turned slightly toward the camera with their face clearly visible and a concerned expression. On the right, {GENDER_F_AGE_70_RACE_ASIAN} has dropped a torn paper grocery bag, oranges rolling across the ground. Eye-level medium-wide shot, warm light, storybook style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
@@ -14,5 +16,6 @@
     "The person from the input image walks on the far left carrying two grocery bags, facing the camera with a kind smile and the face fully visible. {GENDER_F_AGE_70_RACE_ASIAN} walks beside them on the right, gesturing toward a small house with a blue door. Late-morning sunlight, warm storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Place the person from the input image alone at a roadside bus stop during sudden rain, with no umbrella, hunching slightly but facing the camera so the face remains clearly visible. Overcast grey light, rain streaks, reflective wet pavement, storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "At the same rainy bus stop, the person from the input image stands on the far left, facing the camera with a surprised, grateful expression and the face fully visible. On the right, {GENDER_M_AGE_25_RACE_ASIAN} holds a large umbrella over both of them and smiles warmly. Soft rain with warm light breaking through the clouds, heart-warming storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
-  ]
+  ],
+  "version": 1
 }

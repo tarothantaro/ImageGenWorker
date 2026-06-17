@@ -8,7 +8,6 @@
     "GENDER_F_AGE_35_RACE_ASIAN_PARENT"
   ],
   "panel_count": 6,
-  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a cozy living room in the afternoon, bouncing a red ball near a wooden shelf that holds a blue flower vase. Medium shot at eye level, the person facing the camera with their face fully visible and a playful expression. Warm indoor light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Transform the scene: the blue flower vase has just fallen from the shelf and shattered on the wooden floor, scattered ceramic pieces and a little spilled water. The person from the input image stands facing the camera with both hands over their mouth and a shocked expression, face clearly visible. Same cozy living room, warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
@@ -16,5 +15,6 @@
     "A storybook scene in the same living room. The person from the input image stands on the far left, facing the camera with an honest, slightly nervous expression and the face fully visible, one hand pointing toward the broken vase on the floor. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} listens with a calm, understanding look. Eye-level medium-wide shot, warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image is on the far left, kneeling to pick up the ceramic pieces but with the head turned toward the camera so the face stays clearly visible, with a softer expression. {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels to the right, helping gather the pieces and smiling gently. Same living room, warm reassuring light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image stands on the far left, facing the camera with a relieved, happy smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} rests a hand warmly on their shoulder. A fresh flower sits in a new cup on the shelf behind them. Warm golden light, heart-warming soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
-  ]
+  ],
+  "version": 1
 }

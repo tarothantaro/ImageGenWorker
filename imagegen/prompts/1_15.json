@@ -10,7 +10,6 @@
     "GENDER_F_AGE_06_RACE_ASIAN"
   ],
   "panel_count": 6,
-  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image at the front gate of a friendly school on a bright morning. The person from the input image stands on the far left holding a small backpack, facing the camera with a nervous, uncertain expression and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} holds their hand reassuringly. Eye-level medium-wide shot, soft morning light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image stands on the far left, facing the camera with a brave little smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels and gestures encouragingly toward the school doors. Warm morning light at the school gate, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
@@ -18,5 +17,6 @@
     "The person from the input image takes a brave step alone into the bright classroom, facing the camera with a determined little smile and the face clearly visible, waving goodbye over one shoulder. Cheerful classroom with posters and toys, warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The person from the input image sits on the far left at a craft table, facing the camera with a happy, relaxed smile and the face fully visible, holding a colourful paper drawing. On the right, {GENDER_F_AGE_06_RACE_ASIAN} sits beside them sharing crayons. Bright classroom, warm light, soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "At the end of the day, the person from the input image runs on the far left toward the school gate, facing the camera with a big joyful smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels with open arms, proud and delighted. Golden afternoon light, heart-warming soft storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
-  ]
+  ],
+  "version": 1
 }

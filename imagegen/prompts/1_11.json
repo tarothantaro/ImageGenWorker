@@ -4,9 +4,10 @@
   "story_number": 11,
   "title": "Brave at Bedtime",
   "lesson": "The dark isn't scary when you feel cozy and safe; you can be brave.",
-  "characters": ["GENDER_M_AGE_35_RACE_ASIAN_PARENT"],
+  "characters": [
+    "GENDER_M_AGE_35_RACE_ASIAN_PARENT"
+  ],
   "panel_count": 6,
-  "updated_at": "2026-06-17T02:13:10Z",
   "prompts": [
     "Place the person from the input image into a cozy child's bedroom in the evening, sitting up on a comfy bed and hugging a small teddy bear, looking a little unsure about the dark. Medium shot at eye level, the person facing the camera with their face fully visible and well-lit. A soft warm glow fills the room, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A storybook scene in the same cozy bedroom at bedtime. The person from the input image sits on the far left on the comfy bed, turned toward the camera with their face clearly visible and a slightly worried expression, still holding the teddy bear. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} kneels beside the bed reaching toward a small night-light, smiling warmly and reassuringly. Eye-level medium-wide shot, gentle warm light, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
@@ -14,5 +15,6 @@
     "Place the person from the input image alone in the cozy bedroom, lying back on the pillow with the teddy bear beside them, the head turned toward the camera so the face stays clearly visible and softly lit by the warm night-light. The room is cozy and warm, the child feeling calmer, gentle eye-level medium shot, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Place the person from the input image alone in the cozy bedroom at bedtime, snuggling down under the blanket and hugging the teddy bear with a small brave smile, the head turned toward the camera so the face stays clearly visible and warmly lit by the glowing night-light. Cozy warm evening light, gentle eye-level medium shot, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Place the person from the input image alone in the cozy bedroom, resting peacefully on the pillow with the teddy bear tucked close and a content, peaceful expression, no longer afraid of the dark. The head is turned toward the camera so the face stays clearly visible, softly and warmly lit by the glowing night-light. Cozy warm evening glow, gentle eye-level medium shot, soft, bright storybook illustration style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
-  ]
+  ],
+  "version": 1
 }
