@@ -155,6 +155,8 @@ A dedicated service account `imagegen-worker@<project>.iam.gserviceaccount.com` 
 
 No `roles/storage.admin`, no Firestore access, no broader Pub/Sub access. Even with a fully compromised worker the blast radius is the input/output GCS prefixes for in-flight jobs. The worker cannot read other users' data, cannot delete inputs, and cannot write to Firestore directly.
 
+> The story-catalog sync (§8.4) is an **operator** action, not the worker runtime: it writes story display metadata into the API server's `templates/` collection over the *operator's* ADC (Firestore admin), so it does not loosen this boundary. The worker SA stays Firestore-less.
+
 A JSON key for this service account is provisioned via `gcloud iam service-accounts keys create` and consumed by the container as a Docker secret (§10.3). It is **never** baked into the image.
 
 ## 5. Message Schemas
@@ -358,6 +360,10 @@ imagegen-worker/
 ├── docker-compose.dev.yml     # development (emulators)
 ├── scripts/
 │   └── init-emulators.sh      # creates topics/subs in pubsub-emulator
+├── deploy/                    # per-stage bring-up (deploy/stages/<dev|preprod|prod>/) — §9, §10
+├── operation/                 # day-2 ops on a running stage (vs deploy/ which stands one up)
+│   ├── sync_story_catalog.py  # shared: write bound-story metadata → templates/{id} (§8.4)
+│   └── stages/<stage>/sync_story_catalog.sh  # per-stage wrapper (sources deploy/stages/<stage>/env.sh)
 └── tests/                     # see TESTING.md
 ```
 
@@ -485,6 +491,30 @@ Already in the design (../Application/DESIGN.md §8). The publisher of `job-comp
 ### 8.3 `app/workers/queued_reconciler.py`
 
 A periodic task (Cloud Scheduler → HTTP target on the API server, every 60s) that scans `stories(status='queued', created_at < now - 60s)` for stories whose Pub/Sub message never landed and republishes them. Bounded scan, naturally idempotent: any duplicate that results is caught by the result processor's two-tier dedup (§6.4).
+
+### 8.4 Story-catalog sync (`operation/sync_story_catalog.py`)
+
+The worker owns story *content* — the prompt sets (`imagegen/prompts/<type>_<number>.json`, carrying `story_type` / `story_number` / `title` / `lesson` / `version`) and the template→story binding (`imagegen/templates/<id>/config.json` → `"story"`). The Create card in the app needs to show that story's real title + lesson, which the API server serves from its `templates/{id}` doc via `GET /api/v1/templates/{id}` (../Application/DESIGN.md §5).
+
+`operation/sync_story_catalog.py` closes that loop: for every template config that binds a story, it loads the bound prompt and writes `{ story_type, story_type_name, story_number, title, lesson, story_version }` onto `templates/{template_id}` with `merge=True` — augmenting (never clobbering) the seed-owned `required_credits` / `output_count` half. Idempotent.
+
+It's an **operation** script (`operation/stages/<stage>/`), mirroring `../Application`'s "operation vs deploy" split: each per-stage wrapper sources that stage's canonical `deploy/stages/<stage>/env.sh` for the project, then runs the shared Python.
+
+| Stage | Target Firestore | Auth |
+|---|---|---|
+| `dev` | Application local stack's emulator (`FIRESTORE_EMULATOR_HOST`, host :8200) | none |
+| `preprod` | real `tarostory-preprod` | operator ADC (Firestore admin) — *not* the worker SA (§4.3) |
+| `prod` | real `tarostory-prod` | operator ADC (Firestore admin) — *not* the worker SA (§4.3) |
+
+Firestore is an extra (`pip install -e .[catalog]`), kept out of `runtime` so the worker container stays lean. Usage:
+
+```
+operation/sync_story_catalog.sh <dev|preprod|prod> [--template ID] [--dry-run]
+# or the per-stage wrapper directly:
+operation/stages/dev/sync_story_catalog.sh --dry-run
+```
+
+The catalog template MUST stay in lockstep with the bound prompt (the same lockstep §7.2 already requires between the template config and the prompt set): re-running the sync after editing a prompt is what republishes the new title/lesson to the client.
 
 ## 9. Development Environment
 

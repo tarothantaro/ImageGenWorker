@@ -19,6 +19,12 @@ test = [
     "pytest>=8",
     "pytest-cov>=5",
 ]
+# Only the operation/ catalog-sync script needs Firestore (it writes story
+# metadata into the API server's templates/ collection). Kept out of `runtime`
+# so the worker container stays lean.
+catalog = [
+    "google-cloud-firestore>=2.16",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
