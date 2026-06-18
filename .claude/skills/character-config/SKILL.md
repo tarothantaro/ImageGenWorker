@@ -31,23 +31,35 @@ schema_version    file version
 runtime           the placeholder/replace contract (doc only)
 _recipe           how a `description` is composed (render_order + template + rules)
 dimensions        gender / age / race  — the tokens encoded in a placeholder NAME
+                  (each gender/age value carries an `avoid` list, see below)
 hair build wardrobe features   reusable fragment libraries (the modular parts)
-age_restrictions  fragment keys reserved to child_only / adult_only age groups
+restrictions      fragment keys reserved to a demographic group (child_only /
+                  adult_only / masc_only / fem_only)
 characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
 ```
 
-### `age_restrictions` (consumed at runtime by the random fallback)
+### `restrictions` + `avoid` (consumed at runtime by the random fallback)
 
 When a `GENDER_..._AGE_..._RACE_...` token has **no** `characters` entry,
 `workflow.py` composes a look on the fly and picks the hair/build/wardrobe/
-features fragments **at random**. `age_restrictions.child_only` /
-`adult_only` list the fragment keys reserved to one age group so that draw stays
-plausible — a child (`dimensions.age[a].child == true`) never rolls an
-`adult_only` fragment (a business suit, stubble, a grey bun) and an adult never
-rolls a `child_only` one (a school uniform, pigtails). A key listed under
-**neither** group suits both ages. This is the one runtime-read field besides
-`characters[*].description`. When you add a fragment whose look is clearly child-
-or adult-specific, list it here too; otherwise leave it out (it stays age-neutral).
+features fragments **at random**. Two fields keep that draw plausible (the only
+runtime-read fields besides `characters[*].description`):
+
+- `restrictions.<group>.<table>` lists the fragment keys reserved to a
+  demographic group — `child_only`, `adult_only`, `masc_only`, `fem_only`.
+- each `dimensions.gender[g]` and `dimensions.age[a]` value carries an `avoid`
+  list naming the groups that demographic must skip (`M` avoids `fem_only`, `F`
+  avoids `masc_only`, `NB` avoids both; children avoid `adult_only`, adults
+  avoid `child_only`).
+
+At compose time the draw drops every key reserved to any group the character
+avoids. So a child never rolls a business suit/stubble, a man never a dress/
+pigtails, a non-binary character neither. A key listed under **no** group suits
+everyone; a key may sit in **several** groups (a beard is `masc_only` *and*
+`adult_only`). If a whole table is filtered away, the restriction is ignored for
+that table rather than yielding nothing. When you add a fragment whose look is
+clearly age- or gender-specific, list it under the matching group(s); otherwise
+leave it out (it stays neutral and is eligible for everyone).
 
 Modularity = the fragment libraries (`hair`, `build`, `wardrobe`, `features`) and
 `dimensions` are **shared building blocks**. A character is assembled by

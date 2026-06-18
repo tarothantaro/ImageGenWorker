@@ -5,7 +5,7 @@
   "runtime": {
     "placeholder_format": "{<TOKEN>}",
     "resolution": "Strip the curly braces from a placeholder found in a prompt string, look up characters[<TOKEN>].description, and substitute it in. This is the same flat string-replace mechanism workflow.py already uses for USER_ID / STORY_ID. characters[*].description is the ONLY field read at runtime; everything else in this file is authoring metadata.",
-    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). The hair/build/wardrobe/features fragments are then picked at RANDOM (a fresh look per job, identical across that job's panels), constrained by `age_restrictions` so a child never draws an adult-only fragment and vice versa. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
+    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). The hair/build/wardrobe/features fragments are then picked at RANDOM (a fresh look per job, identical across that job's panels), filtered by `restrictions`: each dimension value lists under `avoid` the restriction groups it must skip, so a child never draws an adult-only fragment, a man never a feminine one, a non-binary character neither, etc. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
     "example": "{GENDER_M_AGE_30_RACE_ASIAN}  ->  characters['GENDER_M_AGE_30_RACE_ASIAN'].description"
   },
 
@@ -23,21 +23,21 @@
 
   "dimensions": {
     "gender": {
-      "M":  {"noun": "man",    "noun_child": "boy",   "pronoun": "he"},
-      "F":  {"noun": "woman",  "noun_child": "girl",  "pronoun": "she"},
-      "NB": {"noun": "person", "noun_child": "child", "pronoun": "they"}
+      "M":  {"noun": "man",    "noun_child": "boy",   "pronoun": "he",   "avoid": ["fem_only"]},
+      "F":  {"noun": "woman",  "noun_child": "girl",  "pronoun": "she",  "avoid": ["masc_only"]},
+      "NB": {"noun": "person", "noun_child": "child", "pronoun": "they", "avoid": ["masc_only", "fem_only"]}
     },
     "age": {
-      "06": {"phrase": "a 6-year-old",  "child": true},
-      "08": {"phrase": "an 8-year-old", "child": true},
-      "12": {"phrase": "a 12-year-old", "child": true},
-      "16": {"phrase": "a 16-year-old", "child": true},
-      "25": {"phrase": "a 25-year-old", "child": false},
-      "30": {"phrase": "a 30-year-old", "child": false},
-      "35": {"phrase": "a 35-year-old", "child": false},
-      "45": {"phrase": "a 45-year-old", "child": false},
-      "60": {"phrase": "a 60-year-old", "child": false},
-      "70": {"phrase": "an elderly",    "child": false}
+      "06": {"phrase": "a 6-year-old",  "child": true,  "avoid": ["adult_only"]},
+      "08": {"phrase": "an 8-year-old", "child": true,  "avoid": ["adult_only"]},
+      "12": {"phrase": "a 12-year-old", "child": true,  "avoid": ["adult_only"]},
+      "16": {"phrase": "a 16-year-old", "child": true,  "avoid": ["adult_only"]},
+      "25": {"phrase": "a 25-year-old", "child": false, "avoid": ["child_only"]},
+      "30": {"phrase": "a 30-year-old", "child": false, "avoid": ["child_only"]},
+      "35": {"phrase": "a 35-year-old", "child": false, "avoid": ["child_only"]},
+      "45": {"phrase": "a 45-year-old", "child": false, "avoid": ["child_only"]},
+      "60": {"phrase": "a 60-year-old", "child": false, "avoid": ["child_only"]},
+      "70": {"phrase": "an elderly",    "child": false, "avoid": ["child_only"]}
     },
     "race": {
       "ASIAN":          {"adj": "East Asian"},
@@ -55,11 +55,21 @@
     "SHORT_BROWN":        "short brown hair",
     "LONG_BLACK_STRAIGHT":"long straight black hair",
     "CURLY_BLACK_SHORT":  "short curly black hair",
+    "SHORT_BLONDE":       "short blonde hair",
+    "AFRO_SHORT":         "short natural afro hair",
+    "PONYTAIL_BROWN":     "brown hair in a high ponytail",
+    "SPIKY_BLACK":        "short spiky black hair",
     "BOB_BLACK":          "a chin-length black bob",
+    "LONG_WAVY_BROWN":    "long wavy brown hair",
+    "BRAIDS_LONG":        "long hair in neat braids",
     "GREY_BUN":           "grey hair tied in a low bun",
     "BALDING_GREY":       "thinning grey hair",
+    "BUZZ_CUT":           "a closely cropped buzz cut",
+    "LOW_FADE_BLACK":     "black hair in a low fade",
+    "MAN_BUN_DARK":       "dark hair tied in a man bun",
     "PUFFS_BLACK":        "black hair in two puff buns",
-    "PIGTAILS_BLACK":     "black hair in two pigtails"
+    "PIGTAILS_BLACK":     "black hair in two pigtails",
+    "TWO_BRAIDS_BROWN":   "brown hair in two braids"
   },
 
   "build": {
@@ -67,44 +77,76 @@
     "SLIM_TALL":      "a slim build and tall stature",
     "PETITE":         "a petite build",
     "STOCKY":         "a stocky, solid build",
-    "CHILD_SMALL":    "a small child's frame"
+    "ATHLETIC_TONED": "an athletic, toned build",
+    "HEAVYSET":       "a heavyset, broad build",
+    "LANKY_LEAN":     "a lanky, lean frame",
+    "CHILD_SMALL":    "a small child's frame",
+    "CHILD_SLIGHT":   "a slight, small frame",
+    "CHILD_STURDY":   "a sturdy little frame"
   },
 
   "wardrobe": {
     "CASUAL_TEE_JEANS":   "a plain navy crew-neck t-shirt and dark blue jeans",
-    "CARDIGAN_FLORAL":    "a soft beige cardigan over a floral blouse and a long grey skirt",
-    "BUSINESS_GREY_SUIT": "a charcoal-grey business suit with a white shirt",
-    "SCHOOL_UNIFORM_BLUE":"a navy school uniform with a white collared shirt",
-    "SUMMER_DRESS_YELLOW":"a light yellow summer dress",
     "HOODIE_GREEN":       "a forest-green hoodie and black joggers",
+    "DENIM_JACKET_TEE":   "a blue denim jacket over a white t-shirt",
+    "TRACKSUIT_GREY":     "a grey zip-up tracksuit",
+    "BUSINESS_GREY_SUIT": "a charcoal-grey business suit with a white shirt",
     "CASUAL_HOME_LILAC":  "a lilac knit jumper and comfortable beige trousers",
     "CASUAL_HOME_BLUE":   "a light-blue checked shirt and grey chinos",
+    "SWEATER_BURGUNDY":   "a burgundy knit sweater and dark trousers",
+    "CARDIGAN_FLORAL":    "a soft beige cardigan over a floral blouse and a long grey skirt",
+    "SUMMER_DRESS_YELLOW":"a light yellow summer dress",
+    "BLOUSE_SKIRT_WHITE": "a white blouse and a pleated navy skirt",
+    "WRAP_DRESS_GREEN":   "an emerald-green wrap dress",
+    "SARI_BLUE":          "a deep blue sari with gold trim",
+    "FLANNEL_PLAID":      "a red plaid flannel shirt and blue jeans",
+    "POLO_KHAKI":         "a navy polo shirt and khaki chinos",
+    "SCHOOL_UNIFORM_BLUE":"a navy school uniform with a white collared shirt",
     "DUNGAREES_RED":      "red dungarees over a white t-shirt",
     "TSHIRT_STRIPED":     "a striped orange t-shirt and blue shorts",
+    "TEE_TEAL_SHORTS":    "a teal t-shirt and grey shorts",
+    "RAINCOAT_RED_KID":   "a bright red raincoat and yellow boots",
+    "OVERALLS_BLUE_KID":  "blue denim overalls over a yellow t-shirt",
     "DRESS_PINK_FLORAL":  "a pink dress with a small flower print",
-    "TEE_TEAL_SHORTS":    "a teal t-shirt and grey shorts"
+    "PINAFORE_POLKA":     "a polka-dot pinafore dress"
   },
 
   "features": {
-    "STUBBLE":         "light stubble",
     "GLASSES_ROUND":   "round wire-frame glasses",
+    "GLASSES_SQUARE":  "square dark-framed glasses",
     "FRECKLES":        "light freckles across the cheeks",
     "KIND_SMILE":      "a warm, kind smile",
+    "DIMPLES":         "soft dimples",
+    "GAP_TEETH":       "a friendly gap-toothed smile",
+    "BEAUTY_MARK":     "a small beauty mark on one cheek",
+    "ROSY_CHEEKS":     "round rosy cheeks",
+    "STUBBLE":         "light stubble",
+    "FULL_BEARD":      "a full dark beard",
+    "NEAT_MUSTACHE":   "a neat mustache",
     "WRINKLES_GENTLE": "gentle smile lines"
   },
 
-  "age_restrictions": {
-    "_comment": "Fragment keys reserved to one age group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw excludes keys reserved to the OTHER age group: a child (dimensions.age[a].child == true) skips `adult_only`, an adult skips `child_only`. A key in neither list suits both ages. If every option in a table is reserved away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly child- or adult-specific.",
+  "restrictions": {
+    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid): a child avoids `adult_only`, an adult `child_only`, a man `fem_only`, a woman `masc_only`, a non-binary character both gendered groups. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
     "child_only": {
-      "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK"],
-      "build":    ["CHILD_SMALL"],
-      "wardrobe": ["SCHOOL_UNIFORM_BLUE", "DUNGAREES_RED", "TSHIRT_STRIPED", "DRESS_PINK_FLORAL", "TEE_TEAL_SHORTS"]
+      "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],
+      "build":    ["CHILD_SMALL", "CHILD_SLIGHT", "CHILD_STURDY"],
+      "wardrobe": ["SCHOOL_UNIFORM_BLUE", "DUNGAREES_RED", "TSHIRT_STRIPED", "TEE_TEAL_SHORTS", "RAINCOAT_RED_KID", "OVERALLS_BLUE_KID", "DRESS_PINK_FLORAL", "PINAFORE_POLKA"]
     },
     "adult_only": {
-      "hair":     ["GREY_BUN", "BALDING_GREY"],
-      "build":    ["AVERAGE_MEDIUM", "SLIM_TALL", "PETITE", "STOCKY"],
-      "wardrobe": ["CARDIGAN_FLORAL", "BUSINESS_GREY_SUIT", "CASUAL_HOME_LILAC", "CASUAL_HOME_BLUE"],
-      "features": ["STUBBLE", "WRINKLES_GENTLE"]
+      "hair":     ["GREY_BUN", "BALDING_GREY", "MAN_BUN_DARK"],
+      "build":    ["AVERAGE_MEDIUM", "SLIM_TALL", "PETITE", "STOCKY", "ATHLETIC_TONED", "HEAVYSET", "LANKY_LEAN"],
+      "wardrobe": ["BUSINESS_GREY_SUIT", "CASUAL_HOME_LILAC", "CASUAL_HOME_BLUE", "SWEATER_BURGUNDY", "CARDIGAN_FLORAL", "BLOUSE_SKIRT_WHITE", "WRAP_DRESS_GREEN", "SARI_BLUE", "FLANNEL_PLAID", "POLO_KHAKI"],
+      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "WRINKLES_GENTLE"]
+    },
+    "masc_only": {
+      "hair":     ["BALDING_GREY", "BUZZ_CUT", "LOW_FADE_BLACK", "MAN_BUN_DARK"],
+      "wardrobe": ["FLANNEL_PLAID", "POLO_KHAKI"],
+      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE"]
+    },
+    "fem_only": {
+      "hair":     ["BOB_BLACK", "LONG_WAVY_BROWN", "BRAIDS_LONG", "GREY_BUN", "PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],
+      "wardrobe": ["CARDIGAN_FLORAL", "SUMMER_DRESS_YELLOW", "BLOUSE_SKIRT_WHITE", "WRAP_DRESS_GREEN", "SARI_BLUE", "DRESS_PINK_FLORAL", "PINAFORE_POLKA"]
     }
   },
 

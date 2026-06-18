@@ -148,11 +148,15 @@ def _compose_random_character(
         {age} {ethnicity} {gender_noun} with {hair}, {build},
             wearing {wardrobe}[, with {features}]
 
-    The draw is **age-aware**: a child-age token never rolls a fragment the
-    ``age_restrictions`` table reserves to adults (a business suit, stubble, a
-    grey bun …), and an adult-age token never rolls a child-only one. A fragment
-    in neither list suits both ages; if every option in a table is reserved to
-    the other age group, the restriction is ignored rather than yielding nothing.
+    The draw is **age- and gender-aware**: each fragment table is filtered
+    before the random pick to the keys this character may use. Every dimension
+    value (the matched age and gender entry) lists under ``avoid`` the
+    ``restrictions`` groups whose fragments it must skip — a child avoids
+    ``adult_only`` (a business suit, stubble, a grey bun …), a man avoids
+    ``fem_only`` (a dress, pigtails …), a non-binary character avoids both
+    gendered groups, and so on. A fragment in no avoided group suits everyone;
+    if a table is emptied entirely, its filter is dropped rather than yielding
+    nothing.
 
     Returns ``None`` when ``token`` isn't shaped like a character config, or
     names a gender / age / race the ``dimensions`` table doesn't define — the
@@ -171,20 +175,22 @@ def _compose_random_character(
     if not (gender and age and race):
         return None
 
-    is_child = bool(age.get("child"))
-    # Fragment keys character.json reserves to the *other* age group — excluded
-    # from this character's draw. A key listed under neither group suits both.
-    reserved_to_other = data.get("age_restrictions", {}).get(
-        "adult_only" if is_child else "child_only", {}
-    )
+    # The restriction groups this character must skip, gathered from its age and
+    # gender (e.g. a child woman avoids ``adult_only`` + ``masc_only``).
+    restrictions = data.get("restrictions", {})
+    avoid_groups = list(gender.get("avoid", [])) + list(age.get("avoid", []))
 
     def pick(table_name: str) -> str | None:
         table = data.get(table_name, {})
         if not table:
             return None
-        excluded = set(reserved_to_other.get(table_name, []))
+        excluded = {
+            key
+            for group in avoid_groups
+            for key in restrictions.get(group, {}).get(table_name, [])
+        }
         candidates = sorted(key for key in table if key not in excluded)
-        if not candidates:  # every option reserved to the other age → use all
+        if not candidates:  # whole table filtered away → ignore the filter
             candidates = sorted(table)
         return str(table[rng.choice(candidates)])
 
@@ -193,7 +199,7 @@ def _compose_random_character(
     wardrobe = pick("wardrobe")
     features = pick("features")
 
-    noun = gender.get("noun_child") if is_child else gender.get("noun")
+    noun = gender.get("noun_child") if age.get("child") else gender.get("noun")
     text = f"{age['phrase']} {race['adj']} {noun}"
     look: list[str] = []
     if hair:

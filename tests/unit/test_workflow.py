@@ -443,74 +443,119 @@ def test_compose_varies_across_seeds() -> None:
     assert len(looks) > 1
 
 
-# A character.json whose look tables mix child-only, adult-only and age-neutral
-# fragments, with the partition declared in ``age_restrictions``.
-_AGE_TAGGED_CHARACTER_JSON: dict[str, Any] = {
+# A character.json whose look tables mix child/adult and masc/fem/neutral
+# fragments. Each gender/age value carries an ``avoid`` list; the keys reserved
+# to each group live under ``restrictions`` — the schema workflow.py filters on.
+_TAGGED_CHARACTER_JSON: dict[str, Any] = {
     "dimensions": {
-        "gender": {"M": {"noun": "man", "noun_child": "boy"}},
+        "gender": {
+            "M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]},
+            "F": {"noun": "woman", "noun_child": "girl", "avoid": ["masc_only"]},
+            "NB": {
+                "noun": "person",
+                "noun_child": "child",
+                "avoid": ["masc_only", "fem_only"],
+            },
+        },
         "age": {
-            "30": {"phrase": "a 30-year-old", "child": False},
-            "06": {"phrase": "a 6-year-old", "child": True},
+            "30": {"phrase": "a 30-year-old", "child": False, "avoid": ["child_only"]},
+            "06": {"phrase": "a 6-year-old", "child": True, "avoid": ["adult_only"]},
         },
         "race": {"ASIAN": {"adj": "East Asian"}},
     },
-    "hair": {"NEUTRAL_HAIR": "neutral hair"},
+    "hair": {"PLAIN_HAIR": "plain hair", "A_BUN": "a neat bun", "A_BUZZ": "a buzz cut"},
     "build": {"CHILD_SMALL": "a small frame", "ADULT_TALL": "a tall build"},
     "wardrobe": {
         "SCHOOL": "a school uniform",
         "SUIT": "a business suit",
-        "ANY_TEE": "a plain tee",
+        "A_DRESS": "a floral dress",
+        "A_FLANNEL": "a plaid flannel shirt",
+        "A_TEE": "a plain tee",
     },
-    "features": {"KIND": "a warm smile"},
-    "age_restrictions": {
+    "features": {"A_SMILE": "a warm smile", "A_BEARD": "a full beard"},
+    "restrictions": {
         "child_only": {"build": ["CHILD_SMALL"], "wardrobe": ["SCHOOL"]},
-        "adult_only": {"build": ["ADULT_TALL"], "wardrobe": ["SUIT"]},
+        "adult_only": {
+            "build": ["ADULT_TALL"],
+            "wardrobe": ["SUIT"],
+            "features": ["A_BEARD"],
+        },
+        "masc_only": {
+            "hair": ["A_BUZZ"],
+            "wardrobe": ["A_FLANNEL"],
+            "features": ["A_BEARD"],
+        },
+        "fem_only": {"hair": ["A_BUN"], "wardrobe": ["A_DRESS"]},
     },
 }
 
 
-def test_compose_child_token_never_draws_adult_only_fragments() -> None:
-    looks = [
-        _compose_random_character(
-            "GENDER_M_AGE_06_RACE_ASIAN", _AGE_TAGGED_CHARACTER_JSON, random.Random(s)
-        )
-        for s in range(40)
+def _looks(token: str, n: int = 40) -> list[str]:
+    return [
+        _compose_random_character(token, _TAGGED_CHARACTER_JSON, random.Random(seed))
+        for seed in range(n)
     ]
+
+
+def test_compose_child_token_never_draws_adult_only_fragments() -> None:
+    looks = _looks("GENDER_M_AGE_06_RACE_ASIAN")
     # CHILD_SMALL is the only non-adult build → always chosen for a child.
     assert all("a small frame" in look for look in looks)
     assert all("a tall build" not in look for look in looks)
-    # The adult-only suit is never rolled; the child + neutral wardrobe both are.
-    assert all("a business suit" not in look for look in looks)
+    assert all("a business suit" not in look for look in looks)  # adult-only
     assert any("a school uniform" in look for look in looks)
-    assert any("a plain tee" in look for look in looks)
 
 
 def test_compose_adult_token_never_draws_child_only_fragments() -> None:
-    looks = [
-        _compose_random_character(
-            "GENDER_M_AGE_30_RACE_ASIAN", _AGE_TAGGED_CHARACTER_JSON, random.Random(s)
-        )
-        for s in range(40)
-    ]
+    looks = _looks("GENDER_M_AGE_30_RACE_ASIAN")
     assert all("a tall build" in look for look in looks)
     assert all("a small frame" not in look for look in looks)
-    assert all("a school uniform" not in look for look in looks)
+    assert all("a school uniform" not in look for look in looks)  # child-only
     assert any("a business suit" in look for look in looks)
-    assert any("a plain tee" in look for look in looks)
+
+
+def test_compose_woman_token_never_draws_masc_only_fragments() -> None:
+    looks = _looks("GENDER_F_AGE_30_RACE_ASIAN")
+    assert all("a buzz cut" not in look for look in looks)  # masc-only hair
+    assert all("a plaid flannel shirt" not in look for look in looks)  # masc wardrobe
+    assert all("a full beard" not in look for look in looks)  # masc feature
+    assert any("a neat bun" in look for look in looks)  # fem hair is fine
+    assert any("a floral dress" in look for look in looks)  # fem wardrobe is fine
+
+
+def test_compose_man_token_never_draws_fem_only_fragments() -> None:
+    looks = _looks("GENDER_M_AGE_30_RACE_ASIAN")
+    assert all("a neat bun" not in look for look in looks)  # fem-only hair
+    assert all("a floral dress" not in look for look in looks)  # fem-only wardrobe
+    assert any("a buzz cut" in look for look in looks)  # masc hair is fine
+    assert any("a full beard" in look for look in looks)  # masc feature is fine
+
+
+def test_compose_nonbinary_token_draws_only_unisex_fragments() -> None:
+    looks = _looks("GENDER_NB_AGE_30_RACE_ASIAN")
+    # NB avoids both gendered groups → only the neutral hair survives.
+    assert all("plain hair" in look for look in looks)
+    assert all("a buzz cut" not in look for look in looks)  # masc
+    assert all("a neat bun" not in look for look in looks)  # fem
+    assert all("a floral dress" not in look for look in looks)  # fem
+    assert all("a plaid flannel shirt" not in look for look in looks)  # masc
+    assert all("a full beard" not in look for look in looks)  # masc
 
 
 def test_compose_ignores_restriction_when_it_empties_a_table() -> None:
-    """If every option in a table is reserved to the other age group, the
+    """If every option in a table is reserved away from the character, the
     restriction is dropped for that table rather than yielding nothing."""
     data = {
         "dimensions": {
-            "gender": {"M": {"noun": "man", "noun_child": "boy"}},
-            "age": {"06": {"phrase": "a 6-year-old", "child": True}},
+            "gender": {"M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]}},
+            "age": {
+                "06": {"phrase": "a 6-year-old", "child": True, "avoid": ["adult_only"]}
+            },
             "race": {"ASIAN": {"adj": "East Asian"}},
         },
         # Both builds are adult-only, but the subject is a child → fall back.
         "build": {"ADULT_A": "build a", "ADULT_B": "build b"},
-        "age_restrictions": {"adult_only": {"build": ["ADULT_A", "ADULT_B"]}},
+        "restrictions": {"adult_only": {"build": ["ADULT_A", "ADULT_B"]}},
     }
 
     text = _compose_random_character(
