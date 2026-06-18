@@ -306,9 +306,6 @@ class ComfyUIModel:
                     prepared,
                     panel,
                     placeholders=placeholders,
-                    prompt=None,
-                    steps=None,
-                    seed=None,
                     client_id=f"{story_id}-{panel_index}",
                 )
             except ComfyUIBadRequest as exc:
@@ -358,20 +355,10 @@ class ComfyUIModel:
         panel: list[dict[str, Any]],
         *,
         placeholders: dict[str, str],
-        prompt: str | None,
-        steps: int | None,
-        seed: int | None,
         client_id: str,
     ) -> tuple[list[bytes], float]:
         start = self._clock()
-        workflow = self._builder.render(
-            prepared,
-            panel,
-            placeholders=placeholders,
-            prompt=prompt,
-            steps=steps,
-            seed=seed,
-        )
+        workflow = self._builder.render(prepared, panel, placeholders=placeholders)
         prefixes = self._builder.output_prefixes(workflow)
 
         # Open the WebSocket *before* queuing, so we don't miss early events,

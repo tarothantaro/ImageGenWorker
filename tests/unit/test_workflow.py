@@ -229,7 +229,7 @@ def test_prepare_story_prompt_count_mismatch_raises(tmp_path: Path) -> None:
         builder.prepare("t")
 
 
-def test_prepare_story_panel_without_text_field_raises(tmp_path: Path) -> None:
+def test_prepare_story_panel_without_prompt_placeholder_raises(tmp_path: Path) -> None:
     builder = _write_assets(
         tmp_path,
         template={"workflow_id": "w", "story": "s", "panels": [[{"image": "a.png"}]]},
@@ -239,14 +239,14 @@ def test_prepare_story_panel_without_text_field_raises(tmp_path: Path) -> None:
         characters={},
     )
 
-    with pytest.raises(UnsupportedTemplateError, match="no 'text' field"):
+    with pytest.raises(UnsupportedTemplateError, match=r"no \{PROMPT\} placeholder"):
         builder.prepare("t")
 
 
 def test_prepare_story_resolves_known_tokens_and_leaves_unknown(tmp_path: Path) -> None:
     builder = _write_assets(
         tmp_path,
-        template={"workflow_id": "w", "story": "s", "panels": [[{"text": ""}]]},
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": "{PROMPT}"}]]},
         workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
         workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
         story={"prompts": ["{HERO} meets {UNKNOWN}"]},
@@ -319,7 +319,11 @@ def test_prepare_composes_random_look_for_unenumerated_token(tmp_path: Path) -> 
         template={
             "workflow_id": "w",
             "story": "s",
-            "panels": [[{"text": ""}], [{"text": ""}], [{"text": ""}]],
+            "panels": [
+                [{"text": "{PROMPT}"}],
+                [{"text": "{PROMPT}"}],
+                [{"text": "{PROMPT}"}],
+            ],
         },
         workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
         workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
@@ -354,7 +358,7 @@ def test_prepare_enumerated_description_wins_over_random_composition(
     be composed — the authored look stays byte-for-byte stable."""
     builder = _write_assets(
         tmp_path,
-        template={"workflow_id": "w", "story": "s", "panels": [[{"text": ""}]]},
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": "{PROMPT}"}]]},
         workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
         workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
         story={"prompts": ["Here is {GENDER_F_AGE_30_RACE_ASIAN}."]},
@@ -608,7 +612,7 @@ def test_compose_ignores_restriction_when_it_empties_a_table() -> None:
 # --- render: happy -----------------------------------------------------------
 
 
-def test_render_applies_overrides_and_placeholders(
+def test_render_applies_panel_values_and_placeholders(
     real_builder: WorkflowBuilder,
 ) -> None:
     prepared = real_builder.prepare("1")
@@ -617,14 +621,8 @@ def test_render_applies_overrides_and_placeholders(
         prepared,
         prepared.panels[0],
         placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
-        prompt="a teacher between two kids",
-        steps=8,
-        seed=42,
     )
 
-    assert workflow[_NODE_PROMPT]["inputs"]["text"] == "a teacher between two kids"
-    assert workflow[_NODE_STEPS]["inputs"]["value"] == 8
-    assert workflow[_NODE_SEED]["inputs"]["noise_seed"] == 42
     # Image filename is substituted to the per-story upload name (no remap).
     assert workflow[_NODE_INPUT_IMAGE]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert workflow[_NODE_SOURCE_FACE]["inputs"]["image"] == "u1_s1_INPUT_1.png"
@@ -633,21 +631,20 @@ def test_render_applies_overrides_and_placeholders(
     assert workflow[_NODE_SAVE_V2]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
 
 
-def test_render_without_overrides_keeps_template_defaults(
+def test_render_keeps_template_defaults_and_unbound_prompt_sentinel(
     real_builder: WorkflowBuilder,
 ) -> None:
+    # No story bound → the prompt field still carries the {PROMPT} sentinel
+    # (it is only replaced when prepare() is given a story_ref).
     prepared = real_builder.prepare("1")
 
     workflow = real_builder.render(
         prepared,
         prepared.panels[0],
         placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
-        prompt=None,
-        steps=None,
-        seed=None,
     )
 
-    assert workflow[_NODE_PROMPT]["inputs"]["text"] == ""
+    assert workflow[_NODE_PROMPT]["inputs"]["text"] == "{PROMPT}"
     assert workflow[_NODE_STEPS]["inputs"]["value"] == 6
     assert workflow[_NODE_SEED]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
 
@@ -675,22 +672,8 @@ def test_render_uses_each_panels_own_values(tmp_path: Path) -> None:
     )
     prepared = builder.prepare("t")
 
-    first = builder.render(
-        prepared,
-        prepared.panels[0],
-        placeholders={},
-        prompt=None,
-        steps=None,
-        seed=None,
-    )
-    second = builder.render(
-        prepared,
-        prepared.panels[1],
-        placeholders={},
-        prompt=None,
-        steps=None,
-        seed=None,
-    )
+    first = builder.render(prepared, prepared.panels[0], placeholders={})
+    second = builder.render(prepared, prepared.panels[1], placeholders={})
 
     assert first["1"]["inputs"]["text"] == "scene one"
     assert first["2"]["inputs"]["noise_seed"] == 11
@@ -702,26 +685,19 @@ def test_render_does_not_mutate_the_base_workflow(
     real_builder: WorkflowBuilder,
 ) -> None:
     prepared = real_builder.prepare("1")
+    placeholders = {"USER_ID": "u", "STORY_ID": "s"}
 
-    first = real_builder.render(
-        prepared,
-        prepared.panels[0],
-        placeholders={"USER_ID": "u", "STORY_ID": "s"},
-        prompt=None,
-        steps=None,
-        seed=1,
-    )
-    second = real_builder.render(
-        prepared,
-        prepared.panels[0],
-        placeholders={"USER_ID": "u", "STORY_ID": "s"},
-        prompt=None,
-        steps=None,
-        seed=2,
-    )
+    first = real_builder.render(prepared, prepared.panels[0], placeholders=placeholders)
+    second = real_builder.render(prepared, prepared.panels[1], placeholders=placeholders)
 
-    assert first[_NODE_SEED]["inputs"]["noise_seed"] == 1
-    assert second[_NODE_SEED]["inputs"]["noise_seed"] == 2
+    # Each rendered panel carries its own template seed …
+    assert first[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410683
+    assert second[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410684
+    # … and the shared base workflow is never mutated (deep-copied per render).
+    assert (
+        prepared.base_workflow[_NODE_SEED]["inputs"]["noise_seed"]
+        == _TEMPLATE_DEFAULT_SEED
+    )
 
 
 # --- render: malformed assets → UnsupportedTemplateError ---------------------
@@ -737,14 +713,7 @@ def test_render_raises_when_workflow_missing_a_config_node(tmp_path: Path) -> No
     prepared = builder.prepare("t")
 
     with pytest.raises(UnsupportedTemplateError, match="no node '999'"):
-        builder.render(
-            prepared,
-            prepared.panels[0],
-            placeholders={},
-            prompt=None,
-            steps=None,
-            seed=None,
-        )
+        builder.render(prepared, prepared.panels[0], placeholders={})
 
 
 def test_render_raises_when_node_lacks_the_paneled_input(tmp_path: Path) -> None:
@@ -757,14 +726,7 @@ def test_render_raises_when_node_lacks_the_paneled_input(tmp_path: Path) -> None
     prepared = builder.prepare("t")
 
     with pytest.raises(UnsupportedTemplateError, match="no input 'missing_field'"):
-        builder.render(
-            prepared,
-            prepared.panels[0],
-            placeholders={},
-            prompt=None,
-            steps=None,
-            seed=None,
-        )
+        builder.render(prepared, prepared.panels[0], placeholders={})
 
 
 # --- final_output_prefix -----------------------------------------------------

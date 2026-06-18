@@ -232,11 +232,11 @@ def _write_multi_panel_template(
     panel_rows = [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"text": text},
+            {"text": "{PROMPT}"},
             {"noise_seed": seed},
             {"filename_prefix": "USER_ID_STORY_ID_V2"},
         ]
-        for text, seed in panels
+        for _text, seed in panels
     ]
     (tpl_root / "1" / "config.json").write_text(
         json.dumps({"id": "1", "workflow_id": "w", "panels": panel_rows})

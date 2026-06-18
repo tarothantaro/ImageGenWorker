@@ -1,21 +1,55 @@
 {
     "id": "2",
-    "name": "qwen-edit-two-input",
+    "name": "qwen-edit-six-panels-two-versions",
     "workflow_id": "2",
     "panels": [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"image": "USER_ID_STORY_ID_INPUT_2.png"},
-            {"prompt": "Using the person in image 1 and the reference in image 2, blend them into a single cohesive portrait."},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
             {"seed": 771062815410683},
-            {"filename_prefix": "USER_ID_STORY_ID_P0"}
+            {"filename_prefix": "USER_ID_STORY_ID_P0_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P0_V2"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"image": "USER_ID_STORY_ID_INPUT_2.png"},
-            {"prompt": "Place the person from image 1 into the scene from image 2, keeping their face clearly visible."},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
             {"seed": 771062815410684},
-            {"filename_prefix": "USER_ID_STORY_ID_P1"}
+            {"filename_prefix": "USER_ID_STORY_ID_P1_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P1_V2"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410685},
+            {"filename_prefix": "USER_ID_STORY_ID_P2_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P2_V2"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410686},
+            {"filename_prefix": "USER_ID_STORY_ID_P3_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P3_V2"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410687},
+            {"filename_prefix": "USER_ID_STORY_ID_P4_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P4_V2"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410688},
+            {"filename_prefix": "USER_ID_STORY_ID_P5_V1"},
+            {"filename_prefix": "USER_ID_STORY_ID_P5_V2"}
         ]
     ]
 }

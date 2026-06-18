@@ -64,6 +64,15 @@ from .failure_classification import UnsupportedTemplateError
 # ``..._V1`` (pre-face-swap) and ``..._V2`` (face-restored). We collect V2.
 FINAL_OUTPUT_SUFFIX = "_V2"
 
+# Sentinel a story-bound template's prompt field carries to mark *where* the
+# per-panel story prompt is injected. ``prepare`` replaces it (per panel) with
+# the resolved prompt. Keying off this placeholder — rather than a hard-coded
+# field name like ``text`` — lets the prompt land in whatever input the node
+# actually exposes (``text`` on ``CLIPTextEncode``, ``prompt`` on
+# ``TextEncodeQwenImageEditPlus``, …); the field name lives in the template, not
+# in this module.
+PROMPT_PLACEHOLDER = "{PROMPT}"
+
 # A supporting-character placeholder encodes its *fixed* traits in the token
 # itself — ``GENDER_<g>_AGE_<a>_RACE_<r>`` — plus an optional trailing
 # ``_<suffix>`` that only disambiguates two otherwise-identical configs (e.g.
@@ -324,14 +333,19 @@ class WorkflowBuilder:
         story_ref: str,
         panels: list[list[dict[str, Any]]],
     ) -> None:
-        """Fill each panel's CLIPTextEncode ``text`` from the bound story's prompts.
+        """Inject the bound story's per-panel prompts at each panel's ``{PROMPT}``.
 
         ``prompts/<story_ref>.json`` carries a ``prompts`` array — one prompt per
         panel, in order. Character ``{TOKEN}`` placeholders are resolved here
         against ``prompts/character.json`` (static across a job, so resolve once
-        at load), leaving ``USER_ID`` / ``STORY_ID`` for :meth:`render`. A prompt/
-        panel count mismatch, a panel with no ``text`` field, or a missing
-        prompts/character asset is a deploy bug → :class:`UnsupportedTemplateError`.
+        at load), leaving ``USER_ID`` / ``STORY_ID`` for :meth:`render`.
+
+        The resolved prompt replaces the :data:`PROMPT_PLACEHOLDER` sentinel
+        wherever it appears in the panel's field *values* — so which node input
+        receives it (``text``, ``prompt``, …) is decided by the template, not by
+        a field name baked into this module. A prompt/panel count mismatch, a
+        panel that carries no ``{PROMPT}`` placeholder, or a missing prompts/
+        character asset is a deploy bug → :class:`UnsupportedTemplateError`.
         """
         story = self._load_json(self._prompts_root / f"{story_ref}.json")
         prompts = story.get("prompts", [])
@@ -343,13 +357,19 @@ class WorkflowBuilder:
 
         characters = self._character_substitutions([str(p) for p in prompts])
         for panel_index, (panel, prompt) in enumerate(zip(panels, prompts)):
-            text_field = next((fields for fields in panel if "text" in fields), None)
-            if text_field is None:
+            resolved = _substitute(str(prompt), characters)
+            injected = False
+            for fields in panel:
+                for key, value in fields.items():
+                    if isinstance(value, str) and PROMPT_PLACEHOLDER in value:
+                        fields[key] = value.replace(PROMPT_PLACEHOLDER, resolved)
+                        injected = True
+            if not injected:
                 raise UnsupportedTemplateError(
                     f"template {template_id!r} story {story_ref!r}: panel "
-                    f"{panel_index} has no 'text' field to receive a prompt"
+                    f"{panel_index} has no {PROMPT_PLACEHOLDER} placeholder to "
+                    "receive a prompt"
                 )
-            text_field["text"] = _substitute(str(prompt), characters)
 
     def _character_substitutions(self, prompts: list[str]) -> dict[str, str]:
         """Map every character ``{TOKEN}`` in ``prompts`` to a description.
@@ -396,33 +416,22 @@ class WorkflowBuilder:
         panel: list[dict[str, Any]],
         *,
         placeholders: dict[str, str],
-        prompt: str | None,
-        steps: int | None,
-        seed: int | None,
     ) -> dict[str, Any]:
         """Return a fresh API-format workflow with ``panel``'s values applied.
 
-        Order of operations per node field (mirrors the legacy service):
+        For each ``(config node, panel entry)`` pair the entry's ``{field:
+        value}`` items are written into that node's ``inputs`` — the field name
+        comes straight from the template, so nothing here is keyed to a specific
+        input (``text`` / ``noise_seed`` / …). ``USER_ID`` / ``STORY_ID`` (and any
+        other ``placeholders``) are then substituted into the string values; the
+        per-panel prompt was already injected at :meth:`prepare` (see
+        :meth:`_apply_story_prompts`). Each panel keeps its own ``noise_seed`` /
+        ``filename_prefix`` — the base workflow is deep-copied, so rendering one
+        panel never bleeds into another.
 
-        1. start from the panel default,
-        2. apply the request override if one targets that field name
-           (``text``→prompt, ``value``/``steps``→steps, ``noise_seed``→seed),
-        3. substitute ``USER_ID`` / ``STORY_ID`` placeholders in string values.
-
-        ``None`` overrides are skipped so the panel default stands — in
-        particular a ``None`` ``seed`` keeps each panel's own ``noise_seed``.
-        The base workflow is deep-copied, so callers may render every panel
-        without runs bleeding into each other.
+        Raises :class:`UnsupportedTemplateError` if the workflow lacks a config
+        node, or a node lacks an input the panel names.
         """
-        overrides: dict[str, Any] = {}
-        if prompt is not None:
-            overrides["text"] = prompt
-        if steps is not None:
-            overrides["value"] = steps
-            overrides["steps"] = steps
-        if seed is not None:
-            overrides["noise_seed"] = seed
-
         workflow = copy.deepcopy(prepared.base_workflow)
         for node_config, fields in zip(prepared.config_nodes, panel):
             node_id = str(node_config["id"])
@@ -432,13 +441,12 @@ class WorkflowBuilder:
                     f"workflow {prepared.workflow_id!r} has no node {node_id!r}"
                 )
             inputs = node.setdefault("inputs", {})
-            for field, default in fields.items():
+            for field, value in fields.items():
                 if field not in inputs:
                     raise UnsupportedTemplateError(
                         f"node {node_id!r} ({node.get('class_type')}) has no "
                         f"input {field!r}"
                     )
-                value = overrides.get(field, default)
                 inputs[field] = _substitute(value, placeholders)
 
         return workflow

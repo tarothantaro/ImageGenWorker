@@ -45,17 +45,18 @@ imagegen/
   across panels, first-seen order — one input photo per slot, uploaded under the
   substituted filename (so no separate remap);
 - if a `story_ref` (job `type`/`id`, e.g. `"1_1"`) or the template's own
-  `"story"` field is set, fills each panel's `text` field from
-  `prompts/<story_ref>.json` and resolves `{TOKEN}` characters.
+  `"story"` field is set, replaces each panel's **`{PROMPT}` sentinel** with that
+  panel's prompt from `prompts/<story_ref>.json` (resolving `{TOKEN}` characters
+  first). The prompt lands in whatever field holds `{PROMPT}` — the field name
+  (`text`, `prompt`, …) is the template's choice, not baked into `workflow.py`.
 
-`render(prepared, panel, placeholders, prompt, steps, seed)`:
+`render(prepared, panel, placeholders)`:
 - deep-copies the skeleton, then for each `(config_node, panel_entry)` pair writes
-  every `panel_entry` field into that node's `inputs` (the field **must already
-  exist** in `inputs`, else `UnsupportedTemplateError`);
-- applies request overrides **by field name**: `prompt → "text"`,
-  `steps → "value"`/`"steps"`, `seed → "noise_seed"`; a `None` override leaves the
-  panel default (so each panel keeps its own seed/prompt);
+  every `panel_entry` field into that node's `inputs` **verbatim** (the field
+  **must already exist** in `inputs`, else `UnsupportedTemplateError`) — there is
+  no field-name special-casing here;
 - substitutes `USER_ID` / `STORY_ID` (and `{INPUT_<n>_AGE}`) in string values.
+  Each panel keeps its own seed / `filename_prefix` from the template.
 
 `output_prefixes(workflow)` = every `SaveImage.filename_prefix`, sorted by a
 trailing `_V<n>` (prefixes without one sort first as variant 0). The model emits
@@ -114,25 +115,31 @@ needs **API format**. Two ways to get there:
    `USER_ID_STORY_ID_INPUT_<n>.png` convention for image slots (the model uploads
    the job's photos under those names; fewer photos than slots → the last is
    reused). Give each `SaveImage` a `USER_ID_STORY_ID_P<panel>` prefix and each
-   panel its own seed.
+   panel its own seed. For a **story-bound** template, set the prompt field's
+   value to `"{PROMPT}"` (the sentinel `prepare` fills per panel).
 
 ### Field-name gotchas (these bite)
 
 - The field key in a panel entry **must be the node's real input name.** It
   differs by node: prompt is `text` on `CLIPTextEncode` but `prompt` on
   `TextEncodeQwenImageEditPlus`; seed is `noise_seed` on `RandomNoise` but `seed`
-  on `KSampler`; steps is `value` on a `PrimitiveInt`.
-- **Story binding only targets `text`.** `prepare`'s story-prompt injection and
-  `render`'s `prompt`/`seed`/`steps` request-overrides are wired to the field
-  names `text` / `noise_seed` / `value`+`steps`. A graph whose prompt input is
-  `prompt` (like Qwen's `TextEncodeQwenImageEditPlus`) **won't** receive
-  story-set prompts or a request prompt override without a `workflow.py` change —
-  so such a template either bakes its prompt per-panel (as workflow/template 2
-  does) or you extend the renderer's override map. Note this explicitly when you
-  build it.
+  on `KSampler`; steps is `value` on a `PrimitiveInt`. `render` writes the panel's
+  fields verbatim, so the key just has to match — no name is special-cased in
+  `.py`.
+- **Story prompts inject at the `{PROMPT}` sentinel**, not a fixed field name.
+  Put `"{PROMPT}"` as the value of whichever field is the prompt input (`text`,
+  `prompt`, …); `prepare` replaces it per panel with the story's prompt. A
+  story-bound panel that carries **no** `{PROMPT}` raises `UnsupportedTemplateError`.
+  (A non-story template just bakes a literal prompt instead.)
 - The live worker hardcodes `_RENDER_TEMPLATE_ID = "1"` (`imagegen/model.py`), so
   a new `templates/<id>` is **not** automatically used in production — it ships in
   the asset library until the model is pointed at it. Call that out to the user.
+- **Face-swap variants (V1/V2):** to return both a pre- and post-face-swap image
+  (as workflows 1 and 2 do), append the ReActor chain — `ReActorOptions` →
+  `ReActorFaceSwapOpt` (`input_image` = the decode output, `source_image` = the
+  input-photo `LoadImage`) → `ReActorRestoreFace` → a second `SaveImage`. Suffix
+  the two prefixes `_V1` / `_V2`; `output_prefixes` orders them and the model
+  emits one variant per `SaveImage`.
 
 ## Test it
 
@@ -164,9 +171,16 @@ reference) and a `SaveImage` (`9`).
   (external `83`) to both text encoders; the unconnected `image3`/`value` pins
   were dropped, leaving `170:168`'s `value:false`. The subgraph output
   (`170:158` VAEDecode) was wired straight into `SaveImage 9`.
+- **Face-swap parity:** the ReActor chain from workflow 1 was added — node `9`
+  saves the raw Qwen edit as `_V1`, and `121` (`ReActorFaceSwapOpt`,
+  `source_image` = the input photo `41`) → `120` (`ReActorRestoreFace`) → `119`
+  saves the face-restored `_V2`. So a panel yields two variants, like workflow 1.
 - **config.json overrides** (positional): `41` LoadImage, `83` LoadImage,
-  `170:151` TextEncodeQwenImageEditPlus, `170:169` KSampler, `9` SaveImage.
-- **template panels** fill `image`/`image`/`prompt`/`seed`/`filename_prefix`.
-  Because the prompt input is `prompt` (not `text`), the prompts are baked
-  per-panel rather than story-bound — see the gotcha above.
-- One `SaveImage` → one variant per panel (no ReActor V1/V2 face-swap here).
+  `170:151` TextEncodeQwenImageEditPlus, `170:169` KSampler, `9` SaveImage (V1),
+  `119` SaveImage (V2).
+- **template panels** (6, story parity) fill
+  `image`/`image`/`prompt`/`seed`/`filename_prefix`×2. The prompt field is named
+  `prompt`, and it still receives story prompts because its value is the
+  `{PROMPT}` sentinel — proof the injection is field-name-agnostic.
+- Built to full parity but **kept parallel**: `_RENDER_TEMPLATE_ID` stays `"1"`,
+  so flipping the worker to Qwen-Edit later is a one-line change.
