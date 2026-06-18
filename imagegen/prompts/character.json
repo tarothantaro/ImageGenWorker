@@ -28,14 +28,14 @@
       "NB": {"noun": "person", "noun_child": "child", "pronoun": "they", "avoid": ["masc_only", "fem_only"]}
     },
     "age": {
-      "06": {"phrase": "a 6-year-old",  "child": true,  "avoid": ["adult_only"]},
-      "08": {"phrase": "an 8-year-old", "child": true,  "avoid": ["adult_only"]},
-      "12": {"phrase": "a 12-year-old", "child": true,  "avoid": ["adult_only"]},
-      "16": {"phrase": "a 16-year-old", "child": true,  "avoid": ["adult_only"]},
-      "25": {"phrase": "a 25-year-old", "child": false, "avoid": ["child_only"]},
-      "30": {"phrase": "a 30-year-old", "child": false, "avoid": ["child_only"]},
-      "35": {"phrase": "a 35-year-old", "child": false, "avoid": ["child_only"]},
-      "45": {"phrase": "a 45-year-old", "child": false, "avoid": ["child_only"]},
+      "06": {"phrase": "a 6-year-old",  "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "08": {"phrase": "an 8-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "12": {"phrase": "a 12-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "16": {"phrase": "a 16-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "25": {"phrase": "a 25-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "30": {"phrase": "a 30-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "35": {"phrase": "a 35-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "45": {"phrase": "a 45-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
       "60": {"phrase": "a 60-year-old", "child": false, "avoid": ["child_only"]},
       "70": {"phrase": "an elderly",    "child": false, "avoid": ["child_only"]}
     },
@@ -64,6 +64,7 @@
     "BRAIDS_LONG":        "long hair in neat braids",
     "GREY_BUN":           "grey hair tied in a low bun",
     "BALDING_GREY":       "thinning grey hair",
+    "SHORT_GREY":         "short, neat grey hair",
     "BUZZ_CUT":           "a closely cropped buzz cut",
     "LOW_FADE_BLACK":     "black hair in a low fade",
     "MAN_BUN_DARK":       "dark hair tied in a man bun",
@@ -127,17 +128,21 @@
   },
 
   "restrictions": {
-    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid): a child avoids `adult_only`, an adult `child_only`, a man `fem_only`, a woman `masc_only`, a non-binary character both gendered groups. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
+    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid). Age is a THREE-way band, not binary: a child (06-16) avoids both `adult_only` and `elderly_only`; a middle adult (25-45) avoids `child_only` and `elderly_only`; only an elderly character (60, 70) may draw `elderly_only` looks (grey/thinning hair, smile lines) on top of `adult_only` — so a 25-year-old never rolls a grey bun. Gender: a man avoids `fem_only`, a woman `masc_only`, a non-binary character both. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only; thinning grey hair is masc_only AND elderly_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
     "child_only": {
       "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],
       "build":    ["CHILD_SMALL", "CHILD_SLIGHT", "CHILD_STURDY"],
       "wardrobe": ["SCHOOL_UNIFORM_BLUE", "DUNGAREES_RED", "TSHIRT_STRIPED", "TEE_TEAL_SHORTS", "RAINCOAT_RED_KID", "OVERALLS_BLUE_KID", "DRESS_PINK_FLORAL", "PINAFORE_POLKA"]
     },
     "adult_only": {
-      "hair":     ["GREY_BUN", "BALDING_GREY", "MAN_BUN_DARK"],
+      "hair":     ["MAN_BUN_DARK"],
       "build":    ["AVERAGE_MEDIUM", "SLIM_TALL", "PETITE", "STOCKY", "ATHLETIC_TONED", "HEAVYSET", "LANKY_LEAN"],
       "wardrobe": ["BUSINESS_GREY_SUIT", "CASUAL_HOME_LILAC", "CASUAL_HOME_BLUE", "SWEATER_BURGUNDY", "CARDIGAN_FLORAL", "BLOUSE_SKIRT_WHITE", "WRAP_DRESS_GREEN", "SARI_BLUE", "FLANNEL_PLAID", "POLO_KHAKI"],
-      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "WRINKLES_GENTLE"]
+      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE"]
+    },
+    "elderly_only": {
+      "hair":     ["GREY_BUN", "BALDING_GREY", "SHORT_GREY"],
+      "features": ["WRINKLES_GENTLE"]
     },
     "masc_only": {
       "hair":     ["BALDING_GREY", "BUZZ_CUT", "LOW_FADE_BLACK", "MAN_BUN_DARK"],

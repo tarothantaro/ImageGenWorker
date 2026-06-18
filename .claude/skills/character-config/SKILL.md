@@ -34,7 +34,7 @@ dimensions        gender / age / race  — the tokens encoded in a placeholder N
                   (each gender/age value carries an `avoid` list, see below)
 hair build wardrobe features   reusable fragment libraries (the modular parts)
 restrictions      fragment keys reserved to a demographic group (child_only /
-                  adult_only / masc_only / fem_only)
+                  adult_only / elderly_only / masc_only / fem_only)
 characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
 ```
 
@@ -46,20 +46,25 @@ features fragments **at random**. Two fields keep that draw plausible (the only
 runtime-read fields besides `characters[*].description`):
 
 - `restrictions.<group>.<table>` lists the fragment keys reserved to a
-  demographic group — `child_only`, `adult_only`, `masc_only`, `fem_only`.
+  demographic group — `child_only`, `adult_only`, `elderly_only`, `masc_only`,
+  `fem_only`.
 - each `dimensions.gender[g]` and `dimensions.age[a]` value carries an `avoid`
   list naming the groups that demographic must skip (`M` avoids `fem_only`, `F`
-  avoids `masc_only`, `NB` avoids both; children avoid `adult_only`, adults
-  avoid `child_only`).
+  avoids `masc_only`, `NB` avoids both). **Age is a three-way band, not binary:**
+  children (06–16) avoid `adult_only` *and* `elderly_only`; middle adults
+  (25–45) avoid `child_only` *and* `elderly_only`; only the elderly (60, 70)
+  avoid just `child_only`, so they alone unlock `elderly_only` looks (grey/
+  thinning hair, smile lines) on top of `adult_only`.
 
 At compose time the draw drops every key reserved to any group the character
-avoids. So a child never rolls a business suit/stubble, a man never a dress/
-pigtails, a non-binary character neither. A key listed under **no** group suits
-everyone; a key may sit in **several** groups (a beard is `masc_only` *and*
-`adult_only`). If a whole table is filtered away, the restriction is ignored for
-that table rather than yielding nothing. When you add a fragment whose look is
-clearly age- or gender-specific, list it under the matching group(s); otherwise
-leave it out (it stays neutral and is eligible for everyone).
+avoids. So a child never rolls a business suit/stubble, a 25-year-old never a
+grey bun, a man never a dress/pigtails, a non-binary character neither. A key
+listed under **no** group suits everyone; a key may sit in **several** groups (a
+beard is `masc_only` *and* `adult_only`; thinning grey hair is `masc_only` *and*
+`elderly_only`). If a whole table is filtered away, the restriction is ignored
+for that table rather than yielding nothing. When you add a fragment whose look
+is clearly age- or gender-specific, list it under the matching group(s);
+otherwise leave it out (it stays neutral and is eligible for everyone).
 
 Modularity = the fragment libraries (`hair`, `build`, `wardrobe`, `features`) and
 `dimensions` are **shared building blocks**. A character is assembled by

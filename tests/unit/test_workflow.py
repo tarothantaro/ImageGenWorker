@@ -458,12 +458,29 @@ _TAGGED_CHARACTER_JSON: dict[str, Any] = {
             },
         },
         "age": {
-            "30": {"phrase": "a 30-year-old", "child": False, "avoid": ["child_only"]},
-            "06": {"phrase": "a 6-year-old", "child": True, "avoid": ["adult_only"]},
+            # Three-way age band: child / middle adult / elderly. Only the
+            # elderly age may draw ``elderly_only`` fragments (grey hair); a
+            # child and a middle adult both avoid them.
+            "30": {
+                "phrase": "a 30-year-old",
+                "child": False,
+                "avoid": ["child_only", "elderly_only"],
+            },
+            "06": {
+                "phrase": "a 6-year-old",
+                "child": True,
+                "avoid": ["adult_only", "elderly_only"],
+            },
+            "70": {"phrase": "an elderly", "child": False, "avoid": ["child_only"]},
         },
         "race": {"ASIAN": {"adj": "East Asian"}},
     },
-    "hair": {"PLAIN_HAIR": "plain hair", "A_BUN": "a neat bun", "A_BUZZ": "a buzz cut"},
+    "hair": {
+        "PLAIN_HAIR": "plain hair",
+        "A_BUN": "a neat bun",
+        "A_BUZZ": "a buzz cut",
+        "A_GREY": "short grey hair",
+    },
     "build": {"CHILD_SMALL": "a small frame", "ADULT_TALL": "a tall build"},
     "wardrobe": {
         "SCHOOL": "a school uniform",
@@ -486,6 +503,7 @@ _TAGGED_CHARACTER_JSON: dict[str, Any] = {
             "features": ["A_BEARD"],
         },
         "fem_only": {"hair": ["A_BUN"], "wardrobe": ["A_DRESS"]},
+        "elderly_only": {"hair": ["A_GREY"]},
     },
 }
 
@@ -512,6 +530,27 @@ def test_compose_adult_token_never_draws_child_only_fragments() -> None:
     assert all("a small frame" not in look for look in looks)
     assert all("a school uniform" not in look for look in looks)  # child-only
     assert any("a business suit" in look for look in looks)
+
+
+def test_compose_middle_adult_token_never_draws_elderly_only_fragments() -> None:
+    # Age is a three-way band, not binary: a 30-year-old is an adult but not
+    # elderly, so it draws ``adult_only`` looks yet still avoids ``elderly_only``
+    # ones (grey hair). This is the case the old child/adult split got wrong.
+    looks = _looks("GENDER_F_AGE_30_RACE_ASIAN")
+    assert all("short grey hair" not in look for look in looks)
+    assert any("a business suit" in look for look in looks)  # adult-only is fine
+
+
+def test_compose_child_token_never_draws_elderly_only_fragments() -> None:
+    looks = _looks("GENDER_M_AGE_06_RACE_ASIAN")
+    assert all("short grey hair" not in look for look in looks)
+
+
+def test_compose_elderly_token_may_draw_elderly_only_fragments() -> None:
+    # Only the elderly band unlocks ``elderly_only`` looks; the neutral grey
+    # hair is reserved to no gender group, so any elderly character can roll it.
+    looks = _looks("GENDER_F_AGE_70_RACE_ASIAN")
+    assert any("short grey hair" in look for look in looks)
 
 
 def test_compose_woman_token_never_draws_masc_only_fragments() -> None:

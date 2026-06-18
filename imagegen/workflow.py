@@ -151,9 +151,12 @@ def _compose_random_character(
     The draw is **age- and gender-aware**: each fragment table is filtered
     before the random pick to the keys this character may use. Every dimension
     value (the matched age and gender entry) lists under ``avoid`` the
-    ``restrictions`` groups whose fragments it must skip — a child avoids
-    ``adult_only`` (a business suit, stubble, a grey bun …), a man avoids
-    ``fem_only`` (a dress, pigtails …), a non-binary character avoids both
+    ``restrictions`` groups whose fragments it must skip. Age is a three-way
+    band, not binary — a child avoids ``adult_only`` *and* ``elderly_only`` (a
+    business suit, a grey bun …); a middle adult avoids ``child_only`` *and*
+    ``elderly_only`` (so a 25-year-old never rolls grey/thinning hair); only the
+    elderly avoid ``child_only`` alone, unlocking ``elderly_only`` looks. A man
+    avoids ``fem_only`` (a dress, pigtails …), a non-binary character avoids both
     gendered groups, and so on. A fragment in no avoided group suits everyone;
     if a table is emptied entirely, its filter is dropped rather than yielding
     nothing.
@@ -176,7 +179,8 @@ def _compose_random_character(
         return None
 
     # The restriction groups this character must skip, gathered from its age and
-    # gender (e.g. a child woman avoids ``adult_only`` + ``masc_only``).
+    # gender (e.g. a child woman avoids ``adult_only`` + ``elderly_only`` +
+    # ``masc_only``).
     restrictions = data.get("restrictions", {})
     avoid_groups = list(gender.get("avoid", [])) + list(age.get("avoid", []))
 
