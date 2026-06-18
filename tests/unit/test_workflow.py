@@ -9,6 +9,7 @@ for the multi-panel and malformed-asset branches. No ComfyUI, no network.
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,12 @@ import pytest
 
 import imagegen
 from imagegen.failure_classification import UnsupportedTemplateError
-from imagegen.workflow import FINAL_OUTPUT_SUFFIX, WorkflowBuilder
+from imagegen.workflow import (
+    FINAL_OUTPUT_SUFFIX,
+    WorkflowBuilder,
+    _compose_random_character,
+    _resolve_race_key,
+)
 
 _PKG = Path(imagegen.__file__).resolve().parent
 _WORKFLOW_ROOT = _PKG / "workflows"
@@ -53,6 +59,8 @@ def _write_assets(
     story: dict[str, Any] | None = None,
     story_id: str = "s",
     characters: dict[str, Any] | None = None,
+    character_json: dict[str, Any] | None = None,
+    rng: random.Random | None = None,
 ) -> WorkflowBuilder:
     wf_root = tmp_path / "workflows"
     tpl_root = tmp_path / "templates"
@@ -68,15 +76,19 @@ def _write_assets(
         (wf_root / workflow_id / "config.json").write_text(json.dumps(workflow_config))
     if workflow is not None:
         (wf_root / workflow_id / "workflow.json").write_text(json.dumps(workflow))
-    if story is not None or characters is not None:
+    if story is not None or characters is not None or character_json is not None:
         prompts_root.mkdir(parents=True, exist_ok=True)
     if story is not None:
         (prompts_root / f"{story_id}.json").write_text(json.dumps(story))
-    if characters is not None:
+    # ``character_json`` writes the full file (dimensions + look tables) verbatim;
+    # ``characters`` is the shorthand for just the enumerated ``characters`` map.
+    if character_json is not None:
+        (prompts_root / "character.json").write_text(json.dumps(character_json))
+    elif characters is not None:
         (prompts_root / "character.json").write_text(
             json.dumps({"characters": characters})
         )
-    return WorkflowBuilder(wf_root, tpl_root, prompts_root)
+    return WorkflowBuilder(wf_root, tpl_root, prompts_root, rng=rng)
 
 
 # --- prepare: happy ----------------------------------------------------------
@@ -249,6 +261,186 @@ def test_prepare_story_resolves_known_tokens_and_leaves_unknown(tmp_path: Path) 
 
     text = next(f["text"] for f in prepared.panels[0] if "text" in f)
     assert text == "a brave knight meets {UNKNOWN}"
+
+
+# --- prepare: random look for un-enumerated character tokens -----------------
+
+# A character.json whose look tables each hold exactly one option, so a composed
+# look is fully determined (independent of the rng) and can be asserted exactly.
+# ``GENDER_F_AGE_30_RACE_ASIAN`` is enumerated; every other config is composed.
+_SINGLE_LOOK_CHARACTER_JSON: dict[str, Any] = {
+    "dimensions": {
+        "gender": {
+            "M": {"noun": "man", "noun_child": "boy"},
+            "F": {"noun": "woman", "noun_child": "girl"},
+        },
+        "age": {
+            "30": {"phrase": "a 30-year-old", "child": False},
+            "08": {"phrase": "an 8-year-old", "child": True},
+        },
+        "race": {
+            "ASIAN": {"adj": "East Asian"},
+            "SOUTH_ASIAN": {"adj": "South Asian"},
+        },
+    },
+    "hair": {"H": "short black hair"},
+    "build": {"B": "an average build"},
+    "wardrobe": {"W": "a blue shirt"},
+    "features": {"F": "a kind smile"},
+    "characters": {
+        "GENDER_F_AGE_30_RACE_ASIAN": {"description": "the enumerated woman"},
+    },
+}
+
+# Multi-option look tables for exercising the *randomness* of the draw.
+_MULTI_LOOK_CHARACTER_JSON: dict[str, Any] = {
+    "dimensions": {
+        "gender": {"M": {"noun": "man", "noun_child": "boy"}},
+        "age": {"30": {"phrase": "a 30-year-old", "child": False}},
+        "race": {"ASIAN": {"adj": "East Asian"}},
+    },
+    "hair": {f"H{i}": f"hair{i}" for i in range(8)},
+    "build": {f"B{i}": f"build{i}" for i in range(8)},
+    "wardrobe": {f"W{i}": f"wear{i}" for i in range(8)},
+    "features": {f"F{i}": f"feat{i}" for i in range(8)},
+}
+
+_COMPOSED_SINGLE_LOOK = (
+    "a 30-year-old East Asian man with short black hair, "
+    "an average build, wearing a blue shirt, with a kind smile"
+)
+
+
+def test_prepare_composes_random_look_for_unenumerated_token(tmp_path: Path) -> None:
+    """A character token with no enumerated description gets a look composed from
+    the modular tables — once per job, so it is identical in every panel."""
+    builder = _write_assets(
+        tmp_path,
+        template={
+            "workflow_id": "w",
+            "story": "s",
+            "panels": [[{"text": ""}], [{"text": ""}], [{"text": ""}]],
+        },
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={
+            "prompts": [
+                "Panel A with {GENDER_M_AGE_30_RACE_ASIAN}.",
+                "Panel B near {GENDER_M_AGE_30_RACE_ASIAN}.",
+                "Panel C beside {GENDER_M_AGE_30_RACE_ASIAN}.",
+            ]
+        },
+        character_json=_SINGLE_LOOK_CHARACTER_JSON,
+        rng=random.Random(0),
+    )
+
+    prepared = builder.prepare("t")
+
+    texts = [
+        next(f["text"] for f in panel if "text" in f) for panel in prepared.panels
+    ]
+    assert all("{GENDER" not in text for text in texts)
+    assert texts == [
+        f"Panel A with {_COMPOSED_SINGLE_LOOK}.",
+        f"Panel B near {_COMPOSED_SINGLE_LOOK}.",
+        f"Panel C beside {_COMPOSED_SINGLE_LOOK}.",
+    ]
+
+
+def test_prepare_enumerated_description_wins_over_random_composition(
+    tmp_path: Path,
+) -> None:
+    """An enumerated description is used verbatim even though the token *could*
+    be composed — the authored look stays byte-for-byte stable."""
+    builder = _write_assets(
+        tmp_path,
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": ""}]]},
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={"prompts": ["Here is {GENDER_F_AGE_30_RACE_ASIAN}."]},
+        character_json=_SINGLE_LOOK_CHARACTER_JSON,
+        rng=random.Random(0),
+    )
+
+    prepared = builder.prepare("t")
+
+    text = next(f["text"] for f in prepared.panels[0] if "text" in f)
+    assert text == "Here is the enumerated woman."
+
+
+def test_compose_uses_child_noun_and_multiword_race() -> None:
+    text = _compose_random_character(
+        "GENDER_F_AGE_08_RACE_SOUTH_ASIAN", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+    )
+    assert text == (
+        "an 8-year-old South Asian girl with short black hair, "
+        "an average build, wearing a blue shirt, with a kind smile"
+    )
+
+
+def test_compose_resolves_race_with_trailing_disambiguator() -> None:
+    # ``..._RACE_ASIAN_PARENT`` resolves to the ASIAN race adjective; the
+    # ``_PARENT`` suffix only keeps the token distinct from the plain config.
+    text = _compose_random_character(
+        "GENDER_M_AGE_30_RACE_ASIAN_PARENT", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+    )
+    assert text == _COMPOSED_SINGLE_LOOK
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "INPUT_1_AGE",  # not a character config at all
+        "USER_ID",
+        "GENDER_X_AGE_30_RACE_ASIAN",  # gender not in dimensions
+        "GENDER_M_AGE_99_RACE_ASIAN",  # age not in dimensions
+        "GENDER_M_AGE_30_RACE_MARTIAN",  # race matches no key
+    ],
+)
+def test_compose_returns_none_for_non_character_or_unknown_dims(token: str) -> None:
+    assert (
+        _compose_random_character(token, _SINGLE_LOOK_CHARACTER_JSON, random.Random(0))
+        is None
+    )
+
+
+def test_compose_omits_look_segments_when_tables_absent() -> None:
+    """With no hair/build/wardrobe/features tables, the look + features clauses
+    are dropped — the description is still grammatical."""
+    data = {
+        "dimensions": {
+            "gender": {"M": {"noun": "man", "noun_child": "boy"}},
+            "age": {"30": {"phrase": "a 30-year-old", "child": False}},
+            "race": {"ASIAN": {"adj": "East Asian"}},
+        }
+    }
+    text = _compose_random_character(
+        "GENDER_M_AGE_30_RACE_ASIAN", data, random.Random(0)
+    )
+    assert text == "a 30-year-old East Asian man"
+
+
+def test_resolve_race_key_longest_match_or_none() -> None:
+    table = {"ASIAN": {}, "SOUTH_ASIAN": {}}
+    assert _resolve_race_key("SOUTH_ASIAN", table) == "SOUTH_ASIAN"
+    assert _resolve_race_key("ASIAN_PARENT", table) == "ASIAN"
+    assert _resolve_race_key("MARTIAN", table) is None
+
+
+def test_compose_is_reproducible_under_a_fixed_seed() -> None:
+    token = "GENDER_M_AGE_30_RACE_ASIAN"
+    first = _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7))
+    second = _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7))
+    assert first == second
+
+
+def test_compose_varies_across_seeds() -> None:
+    token = "GENDER_M_AGE_30_RACE_ASIAN"
+    looks = {
+        _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(seed))
+        for seed in range(12)
+    }
+    assert len(looks) > 1
 
 
 # --- render: happy -----------------------------------------------------------

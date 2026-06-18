@@ -2,8 +2,11 @@
 
 Ports the customization logic from the legacy ImageGenCp ``WorkflowService``
 (``../ImageGenCp/src/services/workflow.py``) into the stateless worker. This
-module is *pure*: no network, no ComfyUI, no clock — just JSON loading and
-field substitution. That keeps it unit-testable without a running container.
+module does no network / ComfyUI / clock I/O — just JSON loading and field
+substitution — which keeps it unit-testable without a running container. Its
+one source of nondeterminism is the random *look* it rolls for un-enumerated
+character tokens (see :func:`_compose_random_character`); that draw goes
+through an injectable ``rng`` so tests can pin it.
 
 Vocabulary (unchanged from the legacy service):
 
@@ -25,8 +28,13 @@ Vocabulary (unchanged from the legacy service):
   ``"story"`` field. Those prompts may contain character ``{TOKEN}``
   placeholders (e.g. ``{GENDER_F_AGE_70_RACE_ASIAN}``) which :meth:`prepare`
   resolves against ``prompts/character.json`` so the same generated character
-  looks identical across every panel of the story. ``USER_ID`` / ``STORY_ID``
-  are still resolved later, at :meth:`render` time, since they are per-job.
+  looks identical across every panel of the story. A character token that has
+  *no* enumerated description (only the ``GENDER_<g>_AGE_<a>_RACE_<r>`` config
+  baked into the token) instead gets a look composed on the fly — the hair,
+  build, wardrobe and features picked at random from ``character.json``'s
+  modular tables, once per job so it too stays identical across the panels.
+  ``USER_ID`` / ``STORY_ID`` are still resolved later, at :meth:`render` time,
+  since they are per-job.
 
 Image filenames in a panel carry ``USER_ID`` / ``STORY_ID`` placeholders
 (e.g. ``USER_ID_STORY_ID_INPUT_1.png``). After substitution they become the
@@ -43,6 +51,7 @@ from __future__ import annotations
 
 import copy
 import json
+import random
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -54,6 +63,19 @@ from .failure_classification import UnsupportedTemplateError
 # hold the *final* image we return to the caller. workflows/1 emits two:
 # ``..._V1`` (pre-face-swap) and ``..._V2`` (face-restored). We collect V2.
 FINAL_OUTPUT_SUFFIX = "_V2"
+
+# A supporting-character placeholder encodes its *fixed* traits in the token
+# itself — ``GENDER_<g>_AGE_<a>_RACE_<r>`` — plus an optional trailing
+# ``_<suffix>`` that only disambiguates two otherwise-identical configs (e.g.
+# ``..._RACE_ASIAN_PARENT``). Everything past gender/age/race is the character's
+# *look* (hair, build, wardrobe, features), filled in at random when the token
+# carries no enumerated description in character.json.
+_CHARACTER_TOKEN_RE = re.compile(
+    r"^GENDER_(?P<gender>[A-Z]+)_AGE_(?P<age>[A-Z0-9]+)_RACE_(?P<race>[A-Z_]+)$"
+)
+# Any ``{TOKEN}`` in a prompt string. Used to discover which character tokens a
+# story references so the un-enumerated ones can be composed.
+_PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
 
 @dataclass(frozen=True)
@@ -89,6 +111,87 @@ def _substitute(value: Any, placeholders: dict[str, str]) -> Any:
     return value
 
 
+def _distinct_tokens(prompts: list[str]) -> list[str]:
+    """Every ``{TOKEN}`` across ``prompts``, deduped in first-seen order."""
+    seen: list[str] = []
+    for prompt in prompts:
+        for token in _PLACEHOLDER_RE.findall(prompt):
+            if token not in seen:
+                seen.append(token)
+    return seen
+
+
+def _resolve_race_key(race: str, race_table: dict[str, Any]) -> str | None:
+    """Longest key in ``race_table`` that the token's race segment names.
+
+    Race keys carry underscores (``SOUTH_ASIAN``) and a token may append a
+    disambiguator (``..._RACE_ASIAN_PARENT`` → race segment ``ASIAN_PARENT``),
+    so the segment is matched as a key prefix rather than an exact key. Returns
+    ``None`` when nothing matches.
+    """
+    candidates = [
+        key for key in race_table if race == key or race.startswith(f"{key}_")
+    ]
+    return max(candidates, key=len) if candidates else None
+
+
+def _compose_random_character(
+    token: str, data: dict[str, Any], rng: random.Random
+) -> str | None:
+    """Compose a description for a ``GENDER_<g>_AGE_<a>_RACE_<r>`` character token.
+
+    The fixed traits (gender / age / race) are read from the token; the hair,
+    build, wardrobe and features are drawn **at random** from ``character.json``'s
+    modular tables and assembled with the same recipe the enumerated
+    descriptions use::
+
+        {age} {ethnicity} {gender_noun} with {hair}, {build},
+            wearing {wardrobe}[, with {features}]
+
+    Returns ``None`` when ``token`` isn't shaped like a character config, or
+    names a gender / age / race the ``dimensions`` table doesn't define — the
+    caller then leaves the placeholder untouched rather than failing the job.
+    """
+    match = _CHARACTER_TOKEN_RE.match(token)
+    if match is None:
+        return None
+
+    dimensions = data.get("dimensions", {})
+    gender = dimensions.get("gender", {}).get(match["gender"])
+    age = dimensions.get("age", {}).get(match["age"])
+    race_table = dimensions.get("race", {})
+    race_key = _resolve_race_key(match["race"], race_table)
+    race = race_table.get(race_key) if race_key is not None else None
+    if not (gender and age and race):
+        return None
+
+    def pick(table_name: str) -> str | None:
+        table = data.get(table_name, {})
+        if not table:
+            return None
+        return str(table[rng.choice(sorted(table))])
+
+    hair = pick("hair")
+    build = pick("build")
+    wardrobe = pick("wardrobe")
+    features = pick("features")
+
+    noun = gender.get("noun_child") if age.get("child") else gender.get("noun")
+    text = f"{age['phrase']} {race['adj']} {noun}"
+    look: list[str] = []
+    if hair:
+        look.append(f"with {hair}")
+    if build:
+        look.append(build)
+    if wardrobe:
+        look.append(f"wearing {wardrobe}")
+    if look:
+        text += " " + ", ".join(look)
+    if features:
+        text += f", with {features}"
+    return text
+
+
 class WorkflowBuilder:
     """Loads workflow/template assets and renders submit-ready prompts."""
 
@@ -97,6 +200,8 @@ class WorkflowBuilder:
         workflow_root: Path,
         template_root: Path,
         prompts_root: Path | None = None,
+        *,
+        rng: random.Random | None = None,
     ) -> None:
         self._workflow_root = workflow_root
         self._template_root = template_root
@@ -108,6 +213,11 @@ class WorkflowBuilder:
             if prompts_root is not None
             else template_root.parent / "prompts"
         )
+        # Rolls the look of un-enumerated character tokens. A single instance is
+        # reused across the builder's lifetime (one worker process) so each job
+        # gets a fresh look while every panel of one job stays consistent.
+        # Tests inject a seeded ``Random`` to pin the draw.
+        self._rng = rng if rng is not None else random.Random()
 
     # -- loading ----------------------------------------------------------
 
@@ -204,7 +314,7 @@ class WorkflowBuilder:
                 f"prompts but the template has {len(panels)} panels"
             )
 
-        characters = self._load_character_map()
+        characters = self._character_substitutions([str(p) for p in prompts])
         for panel_index, (panel, prompt) in enumerate(zip(panels, prompts)):
             text_field = next((fields for fields in panel if "text" in fields), None)
             if text_field is None:
@@ -214,22 +324,42 @@ class WorkflowBuilder:
                 )
             text_field["text"] = _substitute(str(prompt), characters)
 
-    def _load_character_map(self) -> dict[str, str]:
-        """Map each ``{TOKEN}`` placeholder to its description from character.json.
+    def _character_substitutions(self, prompts: list[str]) -> dict[str, str]:
+        """Map every character ``{TOKEN}`` in ``prompts`` to a description.
 
         ``prompts/character.json`` is the shared library of generated supporting
-        characters (owned by the ``character-config`` skill). Only the runtime
-        ``characters[*].description`` field is consumed. Tokens with no entry are
-        simply not in the map, so the caller's substitution leaves them
-        untouched (visible in the rendered prompt rather than failing the job).
+        characters (owned by the ``character-config`` skill). Tokens are resolved
+        by two paths, in precedence order:
+
+        1. **Enumerated** — ``characters[TOKEN].description`` is used verbatim, so
+           an authored character's look stays byte-for-byte identical across every
+           panel *and* every job.
+        2. **Composed** — a token shaped like ``GENDER_<g>_AGE_<a>_RACE_<r>`` but
+           with no enumerated description gets a look composed on the fly: the
+           gender / age / race come from the token (the "config in the
+           placeholder"); the hair, build, wardrobe and features are picked at
+           random from the modular tables (see :func:`_compose_random_character`).
+           Each distinct token is composed once here, so its random look is the
+           same in every panel of this job.
+
+        Tokens that are neither enumerated nor a valid character config (e.g.
+        ``{INPUT_1_AGE}``, ``{USER_ID}``, an unknown name) are left out of the
+        map, so the caller's substitution passes them through untouched.
         """
         data = self._load_json(self._prompts_root / "character.json")
-        placeholders: dict[str, str] = {}
+        substitutions: dict[str, str] = {}
         for token, entry in data.get("characters", {}).items():
             description = entry.get("description") if isinstance(entry, dict) else None
             if description:
-                placeholders[f"{{{token}}}"] = str(description)
-        return placeholders
+                substitutions[f"{{{token}}}"] = str(description)
+        for token in _distinct_tokens(prompts):
+            braced = f"{{{token}}}"
+            if braced in substitutions:
+                continue  # enumerated description already won
+            composed = _compose_random_character(token, data, self._rng)
+            if composed is not None:
+                substitutions[braced] = composed
+        return substitutions
 
     # -- rendering --------------------------------------------------------
 
