@@ -9,7 +9,7 @@ dependencies = [
     # so this pins a raw commit of the sibling ../ImageGenContract clone. Bump this
     # SHA (and push that commit) whenever the local contract repo gains changes the
     # worker depends on — see CLAUDE.md "Contract pin".
-    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@f09ffa722a8287b81d929d9b1760dce6d65c46fc",
+    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@8c66c0b4ffc3fd13da915ad2e4c498b92838e1fb",
 ]
 
 [project.optional-dependencies]
