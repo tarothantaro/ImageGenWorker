@@ -131,7 +131,7 @@ needs **API format**. Two ways to get there:
   `prompt`, …); `prepare` replaces it per panel with the story's prompt. A
   story-bound panel that carries **no** `{PROMPT}` raises `UnsupportedTemplateError`.
   (A non-story template just bakes a literal prompt instead.)
-- The live worker hardcodes `_RENDER_TEMPLATE_ID = "1"` (`imagegen/model.py`), so
+- The live worker hardcodes `_RENDER_TEMPLATE_ID = "2"` (`imagegen/model.py`), so
   a new `templates/<id>` is **not** automatically used in production — it ships in
   the asset library until the model is pointed at it. Call that out to the user.
 - **Face-swap variants (V1/V2):** to return both a pre- and post-face-swap image
@@ -182,5 +182,5 @@ reference) and a `SaveImage` (`9`).
   `image`/`image`/`prompt`/`seed`/`filename_prefix`×2. The prompt field is named
   `prompt`, and it still receives story prompts because its value is the
   `{PROMPT}` sentinel — proof the injection is field-name-agnostic.
-- Built to full parity but **kept parallel**: `_RENDER_TEMPLATE_ID` stays `"1"`,
-  so flipping the worker to Qwen-Edit later is a one-line change.
+- Built to full parity and now **live**: `_RENDER_TEMPLATE_ID = "2"`, so the worker
+  renders every story through Qwen-Image-Edit-2511 (`workflows/2` + `templates/2`).

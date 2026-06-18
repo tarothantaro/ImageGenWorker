@@ -30,6 +30,7 @@ from imagegen.failure_classification import (
     UnsupportedTemplateError,
 )
 from imagegen.model import (
+    _RENDER_TEMPLATE_ID,
     ComfyUIBadRequest,
     ComfyUIExecutionError,
     ComfyUIModel,
@@ -71,7 +72,7 @@ def _generate(model: ComfyUIModel, **overrides: Any) -> list[Any]:
     return list(model.generate(**kwargs))
 
 
-# --- happy path (templates/1 — 6 panels, 2 variants each) --------------------
+# --- happy path (templates/2 — 6 panels, 2 variants each) --------------------
 
 
 def test_generate_yields_all_panel_variants() -> None:
@@ -80,7 +81,7 @@ def test_generate_yields_all_panel_variants() -> None:
 
     panels = _generate(model)
 
-    # templates/1 has 6 panels; each run saves two variants (V1, V2) → 12 outputs
+    # templates/2 has 6 panels; each run saves two variants (V1, V2) → 12 outputs
     # from 6 ComfyUI submissions.
     assert len(panels) == 12
     assert all(p.image == make_png(1024, 736) for p in panels)
@@ -101,18 +102,18 @@ def test_generate_sends_expected_workflow_parameters() -> None:
 
     _generate(model)
 
-    # Panel 0: the story's first prompt fills text; steps/seed/prefix come from
-    # the template (no per-job overrides anymore).
+    # Panel 0: the story's first prompt fills the positive encoder; seed/prefix
+    # come from the template (no per-job overrides anymore). Node ids are
+    # workflow 2's (Qwen-Image-Edit-2511) — see templates/2 + workflows/2.
     first = fake.submitted[0].prompt
-    assert first["68:6"]["inputs"]["text"].startswith(
+    assert first["170:151"]["inputs"]["prompt"].startswith(
         "Place the person from the input image"
     )
-    assert first["68:90"]["inputs"]["value"] == 6
-    assert first["46"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert first["122"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert first["123"]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
+    assert first["41"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
+    assert first["83"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
+    assert first["9"]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
     assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
-    assert first["68:25"]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
+    assert first["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
     assert fake.submitted[0].client_id == "s1-0"
 
 
@@ -123,7 +124,7 @@ def test_generate_fills_input_age_placeholder_in_prompt() -> None:
     _generate(model, input_ages=["2-year-old"])
 
     first = fake.submitted[0].prompt
-    assert first["68:6"]["inputs"]["text"].startswith(
+    assert first["170:151"]["inputs"]["prompt"].startswith(
         "Place the 2-year-old person from the input image"
     )
 
@@ -137,10 +138,10 @@ def test_generate_drops_age_placeholder_when_no_age_given() -> None:
     _generate(model, input_ages=[None])
 
     first = fake.submitted[0].prompt
-    assert first["68:6"]["inputs"]["text"].startswith(
+    assert first["170:151"]["inputs"]["prompt"].startswith(
         "Place the person from the input image"
     )
-    assert "{INPUT_1_AGE}" not in first["68:6"]["inputs"]["text"]
+    assert "{INPUT_1_AGE}" not in first["170:151"]["inputs"]["prompt"]
 
 
 def test_generate_uploads_input_under_its_substituted_filename() -> None:
@@ -149,7 +150,7 @@ def test_generate_uploads_input_under_its_substituted_filename() -> None:
 
     _generate(model)
 
-    # One image slot in templates/1 → one upload, under the per-story filename.
+    # One image slot in templates/2 → one upload, under the per-story filename.
     assert len(fake.uploads) == 1
     assert fake.uploads[0] == ("u1_s1_INPUT_1.png", PNG)
 
@@ -171,11 +172,10 @@ def test_generate_uses_template_seed_and_story_prompt() -> None:
     _generate(model)
 
     submitted = fake.submitted[0].prompt
-    assert submitted["68:25"]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
-    assert submitted["68:6"]["inputs"]["text"].startswith(
+    assert submitted["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
+    assert submitted["170:151"]["inputs"]["prompt"].startswith(
         "Place the person from the input image"
     )
-    assert submitted["68:90"]["inputs"]["value"] == 6
 
 
 def test_generate_consumes_realtime_ws_stream_until_done() -> None:
@@ -218,15 +218,16 @@ def _write_multi_panel_template(
 ) -> tuple[Path, Path, Path]:
     """A 3-node template/workflow (text + seed + _V2 SaveImage) with N panels.
 
-    Named ``templates/1`` (the fixed render template) + ``prompts/1_1.json``
-    (the story whose prompts fill the panels' text). Each panel keeps its own
-    ``noise_seed``; the story prompts overwrite the inline placeholder text.
+    Named ``templates/<_RENDER_TEMPLATE_ID>`` (the fixed render template the model
+    asks for) + ``prompts/1_1.json`` (the story whose prompts fill the panels'
+    text). Each panel keeps its own ``noise_seed``; the story prompts overwrite
+    the inline placeholder text.
     """
     wf_root = tmp_path / "workflows"
     tpl_root = tmp_path / "templates"
     prompts_root = tmp_path / "prompts"
     (wf_root / "w").mkdir(parents=True)
-    (tpl_root / "1").mkdir(parents=True)
+    (tpl_root / _RENDER_TEMPLATE_ID).mkdir(parents=True)
     prompts_root.mkdir(parents=True)
 
     panel_rows = [
@@ -238,8 +239,8 @@ def _write_multi_panel_template(
         ]
         for _text, seed in panels
     ]
-    (tpl_root / "1" / "config.json").write_text(
-        json.dumps({"id": "1", "workflow_id": "w", "panels": panel_rows})
+    (tpl_root / _RENDER_TEMPLATE_ID / "config.json").write_text(
+        json.dumps({"id": _RENDER_TEMPLATE_ID, "workflow_id": "w", "panels": panel_rows})
     )
     (wf_root / "w" / "config.json").write_text(
         json.dumps(

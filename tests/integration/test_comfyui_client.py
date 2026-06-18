@@ -113,7 +113,7 @@ def _generate(base_url: str, **overrides: object) -> list[Any]:
 def test_real_transport_streams_to_completion(mock_comfyui: str) -> None:
     panels = _generate(mock_comfyui)
 
-    # templates/1: 6 panels × 2 saved variants (V1, V2) → 12 outputs.
+    # templates/2: 6 panels × 2 saved variants (V1, V2) → 12 outputs.
     assert len(panels) == 12
     assert all(p.width == 1024 and p.height == 736 for p in panels)
     assert all(p.image[:8] == b"\x89PNG\r\n\x1a\n" for p in panels)

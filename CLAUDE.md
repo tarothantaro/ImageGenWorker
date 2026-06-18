@@ -52,7 +52,7 @@ API server → Pub/Sub image-gen-jobs → [worker pulls] → ComfyUI (HTTP+WS)
          ↓ output PNGs → GCS → Pub/Sub job-completed → API server /internal/jobs/completed
 ```
 
-The job event is a thin selector — `{schema_version, story_id, user_id, request_id, type, id, input_images:[{photo_id, position}]}`. No image bytes, no gcs_uri: the worker downloads inputs by the deterministic name `gs://$GCS_BUCKET/<user_id>_<story_id>_input_<position>.png` and writes outputs to `gs://$GCS_BUCKET/<user_id>/<story_id>/outputs/<index>.png`. `type`/`id` pick the prompt set `prompts/<type>_<id>.json`, rendered through `templates/1`.
+The job event is a thin selector — `{schema_version, story_id, user_id, request_id, type, id, input_images:[{photo_id, position}]}`. No image bytes, no gcs_uri: the worker downloads inputs by the deterministic name `gs://$GCS_BUCKET/<user_id>_<story_id>_input_<position>.png` and writes outputs to `gs://$GCS_BUCKET/<user_id>/<story_id>/outputs/<index>.png`. `type`/`id` pick the prompt set `prompts/<type>_<id>.json`, rendered through the live render template (`templates/2`; `_RENDER_TEMPLATE_ID` in `model.py`).
 
 Per-panel streaming: for an N-panel story the worker publishes N non-terminal `panel_completed` events (one per panel as it finishes) followed by one terminal `completed`. The API side is expected to stream these to the client. The job is only ack'd after the terminal event.
 
@@ -86,15 +86,15 @@ Assets ship as package data (`pyproject.toml [tool.setuptools.package-data]`):
 
 ```
 imagegen/
-├── workflows/1/workflow.json   # ComfyUI API-format graph (the only workflow)
-├── workflows/1/config.json     # positional node list (what the template may override)
-├── templates/1/config.json     # the only render template: 6 per-panel field presets
+├── workflows/{1,2}/workflow.json  # ComfyUI API-format graphs (1 = Flux, 2 = Qwen-Image-Edit-2511)
+├── workflows/{1,2}/config.json    # positional node list (what the template may override)
+├── templates/{1,2}/config.json    # render templates: 6 per-panel field presets each
 └── prompts/
     ├── character.json          # {TOKEN} → description for supporting characters
     └── <type>_<id>.json        # story prompts — owned by the `story-prompts` skill
 ```
 
-There is **one** workflow (`workflows/1`) and **one** render template (`templates/1`, 6 panels). The job's `type`/`id` select which `prompts/<type>_<id>.json` set fills the panels' `text` — `templates/1` no longer binds a story inline. `prepare(template_id, story_ref)` loads + validates the template and applies that prompt set; `.render()` applies per-panel values + `USER_ID`/`STORY_ID` substitution. `{TOKEN}` character placeholders resolve at `prepare()` from `character.json`; `USER_ID`/`STORY_ID` at `render()` per job. Panel count = `len(prompts)` (must equal the template's 6).
+Two parallel render templates ship (`templates/1`+`workflows/1` = Flux; `templates/2`+`workflows/2` = Qwen-Image-Edit-2511), each 6 panels. The live worker renders **every** story through `_RENDER_TEMPLATE_ID = "2"` (`model.py`); template 1 stays in the asset library as the legacy/alternate. The job's `type`/`id` select which `prompts/<type>_<id>.json` set fills the panels' `text` — the template no longer binds a story inline. `prepare(template_id, story_ref)` loads + validates the template and applies that prompt set; `.render()` applies per-panel values + `USER_ID`/`STORY_ID` substitution. `{TOKEN}` character placeholders resolve at `prepare()` from `character.json`; `USER_ID`/`STORY_ID` at `render()` per job. Panel count = `len(prompts)` (must equal the template's 6).
 
 Workflow 1 saves two variants per panel run: `_V1` (pre-face-swap) and `_V2` (face-restored). The model yields both as separate `PanelResult`s and owns the storybook layout (`index`/`panel_index`/`variant`/`total`) — a 6-panel story with 2 variants = 12 outputs. The job carries no `output_count`/`variants_per_panel`.
 

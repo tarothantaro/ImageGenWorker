@@ -65,7 +65,7 @@ _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180.0
 # The single render template every story uses (DESIGN.md §7.2). Its panels carry
 # the per-scene seeds + filename prefixes; the job's prompt set fills the text.
-_RENDER_TEMPLATE_ID = "1"
+_RENDER_TEMPLATE_ID = "2"
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 

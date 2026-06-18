@@ -82,7 +82,7 @@ def _all_completions(client: RecordingPublisherClient) -> list[CompletionMessage
 
 
 def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
-    # templates/1 has 6 panels; each ComfyUI run saves two variants (V1, V2) →
+    # templates/2 has 6 panels; each ComfyUI run saves two variants (V1, V2) →
     # 12 outputs. The prompt set (type=1, id=1) fills the panels' text.
     msg = FakePubsubMessage(_job_payload())
     storage = FakeStorageClient()
@@ -115,7 +115,7 @@ def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
 
 
 def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
-    # templates/1 is the storybook A/B template: 6 panels, each saving V1 + V2 →
+    # templates/2 is the storybook A/B template: 6 panels, each saving V1 + V2 →
     # 12 outputs. The model tags each output panel_index = index // 2, variant
     # = index % 2.
     msg = FakePubsubMessage(_job_payload())
