@@ -1,0 +1,21 @@
+{
+    "id": "2",
+    "name": "qwen-edit-two-input",
+    "workflow_id": "2",
+    "panels": [
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_2.png"},
+            {"prompt": "Using the person in image 1 and the reference in image 2, blend them into a single cohesive portrait."},
+            {"seed": 771062815410683},
+            {"filename_prefix": "USER_ID_STORY_ID_P0"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"image": "USER_ID_STORY_ID_INPUT_2.png"},
+            {"prompt": "Place the person from image 1 into the scene from image 2, keeping their face clearly visible."},
+            {"seed": 771062815410684},
+            {"filename_prefix": "USER_ID_STORY_ID_P1"}
+        ]
+    ]
+}

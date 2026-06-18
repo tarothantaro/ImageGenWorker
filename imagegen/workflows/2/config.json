@@ -1,0 +1,26 @@
+{
+    "id": "2",
+    "name": "qwen_image_edit_2511",
+    "nodes": [
+        {
+            "id": 41,
+            "type": "LoadImage"
+        },
+        {
+            "id": 83,
+            "type": "LoadImage"
+        },
+        {
+            "id": "170:151",
+            "type": "TextEncodeQwenImageEditPlus"
+        },
+        {
+            "id": "170:169",
+            "type": "KSampler"
+        },
+        {
+            "id": 9,
+            "type": "SaveImage"
+        }
+    ]
+}
