@@ -48,7 +48,6 @@ GCP_PROJECT_ID=tarostory-staging MAX_CONCURRENCY=8 deploy/stages/prod/deploy.sh
 ```
 
 See `stages/dev/README.md` and `stages/prod/README.md` for the per-stage detail,
-including the dev **local-contract bridge** (the worker emits `panel_completed`,
-which the pinned `image-gen-contract` ref predates — dev installs the sibling
-`../ImageGenContract` clone until that contract is published and the pins are
-bumped).
+including the **contract pin** (`image-gen-contract` is unpublished and pinned to
+a raw commit of the local `../ImageGenContract` clone — push and bump that pin
+whenever the contract changes; see CLAUDE.md "Contract pin").

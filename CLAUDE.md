@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git workflow
+
+Commit directly to the currently checked-out branch (normally `main`). **Do not create new branches** — even when committing on the default branch — unless explicitly asked. This applies to the sibling repos worked on together (`../ImageGenContract`, `../Application`) too.
+
 ## Commands
 
 ```bash
@@ -123,3 +127,7 @@ After editing prompts or character tokens, re-run the appropriate `operation/sta
 - `MAX_DELIVERY_ATTEMPTS` must mirror the subscription's `dead_letter_policy.max_delivery_attempts` (default 5). Mismatch silently changes when the handler converts transients to terminal failures.
 - The worker SA (`imagegen-worker@<project>.iam.gserviceaccount.com`) has no Firestore access. The `operation/sync_story_catalog.py` script runs under operator ADC, not the worker SA.
 - Message wire format is defined in the sibling repo `../ImageGenContract`. Both repos import `from image_gen_contract import JobMessage, ...` — no local copy of the schema.
+
+### Contract pin
+
+The worker runs only on this local machine, so `image-gen-contract` is **not published as a versioned release** — `pyproject.toml` pins a raw commit of the sibling `../ImageGenContract` clone and the Docker build (`pip install`) fetches that exact commit from GitHub. **Whenever you change the local `../ImageGenContract` repo and the worker depends on it, push that commit to GitHub and bump the pin SHA in `pyproject.toml` to the new contract HEAD.** A pin that lags behind the local HEAD means the build bakes a contract the current worker code rejects. The commit must be reachable from a pushed branch/tag (an unreferenced SHA isn't fetchable), so push before you bump. `../Application` carries its own pin to the same contract — bump it separately when the API side needs the change.

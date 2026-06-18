@@ -96,31 +96,14 @@ services:
       MAX_DELIVERY_ATTEMPTS: ${MAX_DELIVERY_ATTEMPTS}
       MODEL_VERSION: ${MODEL_VERSION}
       LOG_LEVEL: ${LOG_LEVEL}
-    # TEMPORARY local-contract bridge. The image bakes image-gen-contract at the
-    # ref pyproject.toml pins (7ee0c64), which PREDATES the worker's incremental
-    # `panel_completed` publishing — so against the pinned contract the worker
-    # raises on every job (status enum + panel_index/total_panels rejected). The
-    # commit that adds panel_completed lives in the sibling ../ImageGenContract
-    # clone but is NOT yet pushed to GitHub, so the pin can't be bumped to it.
-    # Until that contract is published and the pins (here + ../Application) are
-    # bumped — coordinated with the API-side panel_completed handling the worker
-    # DESIGN.md §6.4 flags as a cross-repo TODO — dev runs as root and force-
-    # reinstalls the local contract over the baked one before starting. Remove
-    # `user`, `command`, and the /contract mount once the pin is current.
-    user: root
-    command:
-      # Copy out of the read-only mount first — setuptools needs a writable tree
-      # to (re)build egg-info — then install over the baked contract and run.
-      - sh
-      - -c
-      - "cp -r /contract /tmp/contract-src && pip install --no-deps --force-reinstall /tmp/contract-src >/tmp/contract-install.log 2>&1 && exec python -m imagegen.main"
+    # The image installs image-gen-contract at the commit pyproject.toml pins,
+    # which now tracks the local ../ImageGenContract HEAD (pushed so the build can
+    # fetch it). Keep that pin current — see CLAUDE.md "Contract pin".
     volumes:
       # Hot-reload pure-Python changes without a rebuild (DESIGN.md §9.3). The
       # local /app/imagegen shadows the installed copy; restart the worker to
       # pick up edits: `docker compose ... restart imagegen-worker`.
       - ../../../imagegen:/app/imagegen:ro
-      # Sibling ImageGenContract clone — see the bridge note above.
-      - ../../../../ImageGenContract:/contract:ro
     networks:
       - default
       - appstack

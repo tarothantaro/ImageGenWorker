@@ -5,7 +5,11 @@ description = "Stateless image-generation worker that pulls jobs from Pub/Sub."
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
-    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@9d2dd1de5ad804af6bfa77ac96a874e0160d1a90",
+    # Local-only worker: there is no published/versioned release of the contract,
+    # so this pins a raw commit of the sibling ../ImageGenContract clone. Bump this
+    # SHA (and push that commit) whenever the local contract repo gains changes the
+    # worker depends on — see CLAUDE.md "Contract pin".
+    "image-gen-contract @ git+https://github.com/tarothantaro/ImageGenContract@f09ffa722a8287b81d929d9b1760dce6d65c46fc",
 ]
 
 [project.optional-dependencies]

@@ -67,18 +67,12 @@ Everything is overridable inline. Notable knobs:
   `local_default`; check `docker network ls`).
 - `GCS_BUCKET` — bucket `smoke.py` seeds/reads (default `tarostory-local-images`).
 
-## ⚠️ Temporary local-contract bridge
+## Contract pin
 
-The worker emits incremental `panel_completed` events, but the
-`image-gen-contract` ref pinned in `pyproject.toml` (`7ee0c64`) **predates** that
-status — so against the baked contract the worker raises on every job. The
-commit that adds `panel_completed` lives in the sibling `../ImageGenContract`
-clone but **is not yet pushed to GitHub**, so the pin can't be bumped to it.
-
-Until the contract is published and the pins (here **and** in `../Application`)
-are bumped — coordinated with the API-side `panel_completed` handling DESIGN.md
-§6.4 flags as a cross-repo TODO — the dev worker service runs as root and
-force-reinstalls the sibling contract over the baked one at startup (the same
-sibling source `tests/run_tests.sh` already installs). Remove the `user`,
-`command`, and `/contract` mount from `docker-compose.yml` once the pin is
-current.
+The worker has **no published/versioned `image-gen-contract` release** — it runs
+only on this machine, so `pyproject.toml` pins a raw commit of the sibling
+`../ImageGenContract` clone, and the dev image installs the contract from that
+pushed commit at build time (no runtime bridge). Whenever the local contract repo
+gains changes the worker depends on, **push that commit and bump the pin** to the
+new contract HEAD — see CLAUDE.md "Contract pin". (`../Application` pins the same
+contract separately; bump it too when its API code needs the change.)
