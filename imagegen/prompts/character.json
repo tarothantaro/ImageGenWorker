@@ -5,7 +5,7 @@
   "runtime": {
     "placeholder_format": "{<TOKEN>}",
     "resolution": "Strip the curly braces from a placeholder found in a prompt string, look up characters[<TOKEN>].description, and substitute it in. This is the same flat string-replace mechanism workflow.py already uses for USER_ID / STORY_ID. characters[*].description is the ONLY field read at runtime; everything else in this file is authoring metadata.",
-    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). Enumerate the character explicitly under `characters` whenever it appears in a story, so its look/dress stays byte-for-byte identical across every panel.",
+    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). The hair/build/wardrobe/features fragments are then picked at RANDOM (a fresh look per job, identical across that job's panels), constrained by `age_restrictions` so a child never draws an adult-only fragment and vice versa. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
     "example": "{GENDER_M_AGE_30_RACE_ASIAN}  ->  characters['GENDER_M_AGE_30_RACE_ASIAN'].description"
   },
 
@@ -91,6 +91,21 @@
     "FRECKLES":        "light freckles across the cheeks",
     "KIND_SMILE":      "a warm, kind smile",
     "WRINKLES_GENTLE": "gentle smile lines"
+  },
+
+  "age_restrictions": {
+    "_comment": "Fragment keys reserved to one age group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw excludes keys reserved to the OTHER age group: a child (dimensions.age[a].child == true) skips `adult_only`, an adult skips `child_only`. A key in neither list suits both ages. If every option in a table is reserved away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly child- or adult-specific.",
+    "child_only": {
+      "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK"],
+      "build":    ["CHILD_SMALL"],
+      "wardrobe": ["SCHOOL_UNIFORM_BLUE", "DUNGAREES_RED", "TSHIRT_STRIPED", "DRESS_PINK_FLORAL", "TEE_TEAL_SHORTS"]
+    },
+    "adult_only": {
+      "hair":     ["GREY_BUN", "BALDING_GREY"],
+      "build":    ["AVERAGE_MEDIUM", "SLIM_TALL", "PETITE", "STOCKY"],
+      "wardrobe": ["CARDIGAN_FLORAL", "BUSINESS_GREY_SUIT", "CASUAL_HOME_LILAC", "CASUAL_HOME_BLUE"],
+      "features": ["STUBBLE", "WRINKLES_GENTLE"]
+    }
   },
 
   "characters": {

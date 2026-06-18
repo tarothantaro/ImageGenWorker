@@ -32,8 +32,22 @@ runtime           the placeholder/replace contract (doc only)
 _recipe           how a `description` is composed (render_order + template + rules)
 dimensions        gender / age / race  — the tokens encoded in a placeholder NAME
 hair build wardrobe features   reusable fragment libraries (the modular parts)
+age_restrictions  fragment keys reserved to child_only / adult_only age groups
 characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
 ```
+
+### `age_restrictions` (consumed at runtime by the random fallback)
+
+When a `GENDER_..._AGE_..._RACE_...` token has **no** `characters` entry,
+`workflow.py` composes a look on the fly and picks the hair/build/wardrobe/
+features fragments **at random**. `age_restrictions.child_only` /
+`adult_only` list the fragment keys reserved to one age group so that draw stays
+plausible — a child (`dimensions.age[a].child == true`) never rolls an
+`adult_only` fragment (a business suit, stubble, a grey bun) and an adult never
+rolls a `child_only` one (a school uniform, pigtails). A key listed under
+**neither** group suits both ages. This is the one runtime-read field besides
+`characters[*].description`. When you add a fragment whose look is clearly child-
+or adult-specific, list it here too; otherwise leave it out (it stays age-neutral).
 
 Modularity = the fragment libraries (`hair`, `build`, `wardrobe`, `features`) and
 `dimensions` are **shared building blocks**. A character is assembled by

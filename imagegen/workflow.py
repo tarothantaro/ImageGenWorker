@@ -148,6 +148,12 @@ def _compose_random_character(
         {age} {ethnicity} {gender_noun} with {hair}, {build},
             wearing {wardrobe}[, with {features}]
 
+    The draw is **age-aware**: a child-age token never rolls a fragment the
+    ``age_restrictions`` table reserves to adults (a business suit, stubble, a
+    grey bun …), and an adult-age token never rolls a child-only one. A fragment
+    in neither list suits both ages; if every option in a table is reserved to
+    the other age group, the restriction is ignored rather than yielding nothing.
+
     Returns ``None`` when ``token`` isn't shaped like a character config, or
     names a gender / age / race the ``dimensions`` table doesn't define — the
     caller then leaves the placeholder untouched rather than failing the job.
@@ -165,18 +171,29 @@ def _compose_random_character(
     if not (gender and age and race):
         return None
 
+    is_child = bool(age.get("child"))
+    # Fragment keys character.json reserves to the *other* age group — excluded
+    # from this character's draw. A key listed under neither group suits both.
+    reserved_to_other = data.get("age_restrictions", {}).get(
+        "adult_only" if is_child else "child_only", {}
+    )
+
     def pick(table_name: str) -> str | None:
         table = data.get(table_name, {})
         if not table:
             return None
-        return str(table[rng.choice(sorted(table))])
+        excluded = set(reserved_to_other.get(table_name, []))
+        candidates = sorted(key for key in table if key not in excluded)
+        if not candidates:  # every option reserved to the other age → use all
+            candidates = sorted(table)
+        return str(table[rng.choice(candidates)])
 
     hair = pick("hair")
     build = pick("build")
     wardrobe = pick("wardrobe")
     features = pick("features")
 
-    noun = gender.get("noun_child") if age.get("child") else gender.get("noun")
+    noun = gender.get("noun_child") if is_child else gender.get("noun")
     text = f"{age['phrase']} {race['adj']} {noun}"
     look: list[str] = []
     if hair:
