@@ -192,6 +192,32 @@ def _png_dimensions(data: bytes) -> tuple[int, int]:
     return width, height
 
 
+def _age_placeholders(input_ages: list[str | None] | None) -> dict[str, str]:
+    """Build the per-input age substitutions for the prompt set.
+
+    The bound story's prompts carry ``{INPUT_<n>_AGE}`` tokens (1-indexed by
+    input position) introducing the subject, e.g. *"Place the {INPUT_1_AGE}
+    person from the input image"*. The API server computes each age string
+    (``"2-year-old"`` / ``"23-month-old"``) from the user's selected role.
+
+    When an age is present the token is replaced with it. When it's missing
+    (an age-less / legacy job) we drop the token **and** the single space that
+    follows it, so the prompt reads naturally (*"Place the person ..."*) rather
+    than carrying a literal placeholder or a double space.
+    """
+    placeholders: dict[str, str] = {}
+    for index, age in enumerate(input_ages or []):
+        token = f"{{INPUT_{index + 1}_AGE}}"
+        if age:
+            placeholders[token] = age
+        else:
+            # The space-suffixed key must be tried first (dict order is honoured
+            # by ``_substitute``) so the trailing space is consumed.
+            placeholders[f"{token} "] = ""
+            placeholders[token] = ""
+    return placeholders
+
+
 # --- the model ---------------------------------------------------------------
 
 
@@ -223,6 +249,7 @@ class ComfyUIModel:
         prompt_type: int,
         prompt_id: int,
         input_images: list[bytes],
+        input_ages: list[str | None] | None = None,
     ) -> Iterator[PanelResult]:
         """Validate + upload eagerly, then return a per-panel result iterator.
 
@@ -231,6 +258,11 @@ class ComfyUIModel:
         caller sees them immediately. Per-panel ComfyUI failures surface as the
         iterator is consumed. The job's ``type``/``id`` select the prompt set
         ``prompts/<type>_<id>.json`` rendered through ``templates/1``.
+
+        ``input_ages`` carries the age string for each input (in the same
+        position order as ``input_images``), filling the prompt set's
+        ``{INPUT_<n>_AGE}`` tokens; a ``None`` entry (or an omitted list) drops
+        the corresponding token.
         """
         _validate_input_images(input_images)
         story_ref = f"{prompt_type}_{prompt_id}"
@@ -238,6 +270,7 @@ class ComfyUIModel:
         prepared = self._builder.prepare(_RENDER_TEMPLATE_ID, story_ref)
 
         placeholders = {"USER_ID": user_id, "STORY_ID": story_id}
+        placeholders.update(_age_placeholders(input_ages))
         try:
             self._upload_inputs(prepared, input_images, placeholders)
         except ComfyUIBadRequest as exc:

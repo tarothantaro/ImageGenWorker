@@ -62,6 +62,10 @@ def _generate(model: ComfyUIModel, **overrides: Any) -> list[Any]:
         "prompt_type": 1,
         "prompt_id": 1,
         "input_images": [PNG],
+        # The handler always forwards a per-input list; default to a single
+        # age-less entry so the {INPUT_1_AGE} token is dropped (the natural
+        # baseline). Individual tests override to exercise a real age.
+        "input_ages": [None],
     }
     kwargs.update(overrides)
     return list(model.generate(**kwargs))
@@ -110,6 +114,33 @@ def test_generate_sends_expected_workflow_parameters() -> None:
     assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
     assert first["68:25"]["inputs"]["noise_seed"] == _TEMPLATE_DEFAULT_SEED
     assert fake.submitted[0].client_id == "s1-0"
+
+
+def test_generate_fills_input_age_placeholder_in_prompt() -> None:
+    fake = FakeComfyUI()
+    model = _model(fake)
+
+    _generate(model, input_ages=["2-year-old"])
+
+    first = fake.submitted[0].prompt
+    assert first["68:6"]["inputs"]["text"].startswith(
+        "Place the 2-year-old person from the input image"
+    )
+
+
+def test_generate_drops_age_placeholder_when_no_age_given() -> None:
+    fake = FakeComfyUI()
+    model = _model(fake)
+
+    # No input_ages → the {INPUT_1_AGE} token and its trailing space vanish, so
+    # the prompt reads naturally rather than carrying a literal placeholder.
+    _generate(model, input_ages=[None])
+
+    first = fake.submitted[0].prompt
+    assert first["68:6"]["inputs"]["text"].startswith(
+        "Place the person from the input image"
+    )
+    assert "{INPUT_1_AGE}" not in first["68:6"]["inputs"]["text"]
 
 
 def test_generate_uploads_input_under_its_substituted_filename() -> None:

@@ -182,15 +182,18 @@ def test_prepare_injects_story_prompts_and_resolves_characters(
     prepared = real_builder.prepare("1", "1_1")
 
     assert prepared.panel_count == 6
-    # Panel 0 is solo (no token): the story prompt is injected verbatim.
+    # Panel 0 is solo (no character token): the story prompt is injected as-is,
+    # still carrying the per-job {INPUT_1_AGE} token (resolved at render time,
+    # like USER_ID/STORY_ID — not at prepare time).
     panel0_text = next(f["text"] for f in prepared.panels[0] if "text" in f)
-    assert panel0_text.startswith("Place the person from the input image")
+    assert panel0_text.startswith("Place the {INPUT_1_AGE} person from the input image")
     # Panel 1 references {GENDER_F_AGE_70_RACE_ASIAN}: resolved to its
-    # description, with no leftover placeholder braces.
+    # description here. The only braces left are the render-time {INPUT_1_AGE}.
     panel1_text = next(f["text"] for f in prepared.panels[1] if "text" in f)
-    assert "{" not in panel1_text and "}" not in panel1_text
+    assert "{GENDER" not in panel1_text
     assert "elderly East Asian woman" in panel1_text
     assert "the far left" in panel1_text
+    assert "{INPUT_1_AGE}" in panel1_text
 
 
 def test_prepare_story_prompt_count_mismatch_raises(tmp_path: Path) -> None:

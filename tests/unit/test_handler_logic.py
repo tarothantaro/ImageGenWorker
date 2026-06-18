@@ -103,6 +103,7 @@ class _StubModel:
         prompt_type: int,
         prompt_id: int,
         input_images: list[bytes],
+        input_ages: list[str | None],
     ) -> Any:
         # Mirrors the real model: validate eagerly (raise here), then return an
         # iterator of one panel per output image. The model owns the storybook
@@ -113,6 +114,7 @@ class _StubModel:
             "prompt_type": prompt_type,
             "prompt_id": prompt_id,
             "input_images": input_images,
+            "input_ages": input_ages,
         }
         if self.raise_on_generate is not None:
             raise self.raise_on_generate
@@ -265,6 +267,26 @@ def test_handle_happy_path_uploads_outputs_and_acks() -> None:
         "gs://bkt/u1/s1/outputs/0.png",
         "gs://bkt/u1/s1/outputs/1.png",
     }
+
+
+def test_handle_passes_input_ages_in_position_order() -> None:
+    # Inputs are declared out of order (position 1 then 0) and carry ages; the
+    # handler sorts by position and forwards the ages in that same order so the
+    # model can fill the prompt set's {INPUT_<n>_AGE} tokens.
+    payload = _job_payload()
+    payload["input_images"] = [
+        {"photo_id": "ph_1", "position": 1, "age": "5-year-old"},
+        {"photo_id": "ph_0", "position": 0, "age": "23-month-old"},
+    ]
+    msg = _FakePubsubMessage(payload)
+    model = _StubModel(images=[b"out0", b"out1"])
+    handler, _storage = _build_handler(
+        model=model, publisher_client=_RecordingPublisherClient()
+    )
+
+    handler.handle(msg)
+
+    assert model.seen_kwargs["input_ages"] == ["23-month-old", "5-year-old"]
 
 
 def test_handle_acks_invalid_message_without_running_model() -> None:

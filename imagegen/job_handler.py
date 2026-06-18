@@ -86,6 +86,7 @@ class ImageGenModel(Protocol):
         prompt_type: int,
         prompt_id: int,
         input_images: list[bytes],
+        input_ages: list[str | None],
     ) -> Iterable[PanelResult]: ...
 
 
@@ -168,6 +169,9 @@ class JobHandler:
             )
             for p in ordered
         ]
+        # Per-input age strings, same order as input_bytes — fills the prompt
+        # set's {INPUT_<n>_AGE} tokens (DESIGN.md §5.1, contract JobInputImage).
+        input_ages = [p.age for p in ordered]
 
         panels = self._model.generate(
             story_id=job.story_id,
@@ -175,6 +179,7 @@ class JobHandler:
             prompt_type=job.type,
             prompt_id=job.id,
             input_images=input_bytes,
+            input_ages=input_ages,
         )
 
         # One ComfyUI run per panel. Upload + publish each image as it lands, then
