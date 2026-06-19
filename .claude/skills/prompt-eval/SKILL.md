@@ -105,7 +105,20 @@ Read `manifest.json`, then for **each panel** Read its **V2** PNG — the entrie
 where `variant_label == "V2"` (the face-restored, delivered image) — and score it
 against that panel's `resolved_prompt` and the rubric below. Judge every panel on
 V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
-— never grade from the prompt text alone. The `resolved_prompt` is the **actual
+— never grade from the prompt text alone.
+
+**Ground every panel in the pixels before you score it.** First write a one-line
+literal description of what the V2 image *actually shows*: how many people are in
+it and their **left-to-right order naming who is left-most** (e.g. "L→R: child,
+elderly woman"), plus what — if anything — is over or touching the protagonist's
+face. Score the spatial criteria (Far-left, Face-visible, Scale) from *that*
+description, not from what the prompt intended. The prompt says where people
+*should* be; only the pixels say where they *are* — when they disagree, grade the
+pixels. **Do not record a `partial`/`fail` on any criterion without quoting the
+specific thing in the image that fails it** ("umbrella covers the upper third of
+the face"); if you can't point to it, it passes. These spatial/obstruction calls
+are the easiest to hallucinate from the prompt — re-look at the image before
+writing `fail`. The `resolved_prompt` is the **actual
 prompt sent to ComfyUI** when `prompt_source == "worker_log"` — grade the image
 against exactly that text (it already has the real age word, e.g. "4-year-old",
 substituted in). When debugging a defect, the entry's `prompt_log` file holds the
@@ -115,7 +128,7 @@ full rendered workflow that produced the image.
 
 | Criterion | What to check |
 |---|---|
-| **Protagonist far-left** | The input-photo person is the **left-most** figure in any **multi-person** panel. NA for a solo panel. A non-left protagonist is a real defect, not a nitpick. |
+| **Protagonist far-left** | The input-photo person is the **left-most** figure in any **multi-person** panel — "left-most" = nearest the **left edge of the image as you view it** (viewer's left, not the subject's). NA for a solo panel. A non-left protagonist is a real defect, not a nitpick. |
 | **Face ≥70% visible** | The protagonist faces the camera with the face unobstructed — at least ~70% of the face shown. No back/deep-profile views, nothing covering it (hands, hats, masks, props, other people). |
 | **Realism** | Reads as a real photograph — plausible anatomy (hands, limbs, faces), natural lighting/shadows/perspective, correct count of fingers/people. No cartoon/CGI/uncanny render, warps, duplicated or fused bodies, or garbled text. |
 | **Scale & depth** | Each person's size is consistent with their depth in the scene — figures nearer the camera are larger, those farther back are smaller, following perspective. No figure rendered giant or miniature for its position, and the protagonist isn't shrunk/enlarged relative to the rest of the cast. |
@@ -127,6 +140,14 @@ Score each criterion **pass / partial / fail** (NA where it doesn't apply) with 
 one-line evidence note.
 
 ### 4. Write the report
+
+Derive the **Summary** counts and the **Verdict** mechanically from the per-panel
+lines you just wrote — do not re-judge from memory. Every issue named in the
+Verdict or "Top issues" must trace to a panel line you scored `partial`/`fail` for
+that exact criterion: never cite a panel as failing a check its own line passed
+(e.g. don't say "drifts off-left in P6" if Panel 6's Far-left line is `pass`). If
+the per-panel lines show no `fail` and only minor `partial`s, the verdict is
+`✅ ship`, not `⚠️ revise`.
 
 Write markdown to the `report_path` from the manifest
 (`<out_dir>/report.md`). Structure:
@@ -151,6 +172,7 @@ Write markdown to the `report_path` from the manifest
 ## Panels (V2)
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
+- Frame: <what the pixels show — #people, L→R order naming who is left-most, anything over the protagonist's face>
 - Far-left: NA (solo) | pass | **fail** — <evidence>
 - Face ≥70% visible: pass | **fail** — <evidence>
 - Realism: pass | **fail** — <evidence>
