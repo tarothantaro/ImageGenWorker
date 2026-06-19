@@ -25,6 +25,16 @@ mypy imagegen/
 PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
     --url http://localhost:8188 --input tests/assets/test.jpg --out /tmp/smoke_out
 
+# Local batch generate + eval + review (live ComfyUI on :8188; no GCS/Pub/Sub).
+# See the `local-batch-eval` skill for the full generate→grade→review loop.
+PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/generate_stories.py \
+    --input tests/assets/leo.jpg --age "4-year-old" --run-dir eval_runs/latest
+PYTHONPATH=. ~/python_env/torch-env/bin/python \
+    .claude/skills/prompt-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
+    --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
+    --out eval_runs/latest/eval/1_1__1_1            # then judge via prompt-eval rubric
+~/python_env/torch-env/bin/python tools/review_app/server.py --run-dir eval_runs/latest
+
 # Story catalog sync (writes story metadata → API server's Firestore templates/ collection)
 operation/stages/dev/sync_story_catalog.sh [--dry-run]
 operation/stages/preprod/sync_story_catalog.sh [--template ID] [--dry-run]
@@ -120,6 +130,13 @@ The two Claude Code skills in `.claude/skills/` own specific files:
 - **`character-config`** — edits `imagegen/prompts/character.json` (the generated supporting cast)
 
 After editing prompts or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons to the API server's Firestore `templates/` collection.
+
+### Evaluating generated outputs
+
+Two more skills (no file ownership — they read + grade):
+
+- **`prompt-eval`** — judges already-generated panel images against their prompts with the vision model and writes a per-story `report.md`. Its `fetch_outputs.py` reads outputs from the **Application stack's GCS by default**, or from a **local dir tree** when given `--local-root` / `LOCAL_OUTPUT_ROOT` (same `<user>/<story>/outputs/<i>.png` layout).
+- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `scripts/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + V1/V2 images + eval) for review. `eval_runs/` is gitignored.
 
 ### Key invariants
 

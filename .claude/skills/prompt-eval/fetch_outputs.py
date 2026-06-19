@@ -37,6 +37,16 @@ fake-gcs is published on :4443):
 ``--story`` is the prompt-file stem (the worker ``type_id``). ``--story-id`` is
 the GCS path component (the Application's job/story id) — they are *not* the same
 thing, which is why both are required for a download.
+
+Output source is **configurable**. By default the script reads from the
+Application local stack's fake-gcs (the flow above). Pass ``--local-root`` (or set
+``LOCAL_OUTPUT_ROOT``) to instead read PNGs straight off the local filesystem in
+the very same ``<user>/<story>/outputs/<index>.png`` layout — this is what the
+``local-batch-eval`` skill uses when the worker is driven directly from
+*this* repo (``scripts/generate_stories.py``) with no Application stack and no
+GCS in the loop. Everything downstream (the index→panel/variant math, the prompt
+log join, the manifest) is identical; only the bytes come from disk instead of
+GCS.
 """
 
 from __future__ import annotations
@@ -45,6 +55,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -58,7 +69,9 @@ _DEFAULT_LOG_DIR = _REPO_ROOT / "prompt_logs"
 _DEFAULT_BUCKET = "tarostory-local-images"
 _DEFAULT_GCS_HOST = "http://localhost:4443"
 _DEFAULT_PROJECT = "tarostory-local"
-_OUTPUT_RE = re.compile(r"^(?P<user>[^/]+)/(?P<story>[^/]+)/outputs/(?P<index>\d+)\.png$")
+_OUTPUT_RE = re.compile(
+    r"^(?P<user>[^/]+)/(?P<story>[^/]+)/outputs/(?P<index>\d+)\.png$"
+)
 _AGE_TOKEN_RE = re.compile(r"\{INPUT_\d+_AGE\}")
 
 
@@ -82,7 +95,9 @@ def _load_prompt_log(log_dir: Path, story_id: str) -> dict[int, dict]:
         try:
             record = json.loads(path.read_text())
         except (OSError, ValueError) as exc:
-            print(f"[eval] warn: could not read prompt log {path}: {exc}", file=sys.stderr)
+            print(
+                f"[eval] warn: could not read prompt log {path}: {exc}", file=sys.stderr
+            )
             continue
         idx = record.get("panel_index")
         if isinstance(idx, int):
@@ -147,12 +162,30 @@ def _variants_for_live_template() -> int:
         count = len(builder.output_prefixes(base))
         return count or 2
     except Exception as exc:  # noqa: BLE001 - best-effort; fall back gracefully
-        print(f"[eval] warn: could not derive variant count ({exc}); assuming 2",
-              file=sys.stderr)
+        print(
+            f"[eval] warn: could not derive variant count ({exc}); assuming 2",
+            file=sys.stderr,
+        )
         return 2
 
 
-# --- GCS access --------------------------------------------------------------
+# --- output source (GCS or local filesystem) ---------------------------------
+#
+# Both modes expose the same blob-like surface — ``.name`` (the
+# ``<user>/<story>/outputs/<i>.png`` object key) and ``.download_to_filename`` —
+# so the listing / download / manifest code below is source-agnostic. GCS is the
+# default (Application local stack); ``--local-root`` switches to disk.
+
+
+class _LocalBlob:
+    """A GCS-blob-like shim over a local file (name + download_to_filename)."""
+
+    def __init__(self, name: str, path: Path) -> None:
+        self.name = name
+        self._path = path
+
+    def download_to_filename(self, dest: str) -> None:
+        shutil.copyfile(self._path, dest)
 
 
 def _client(project: str):
@@ -162,19 +195,50 @@ def _client(project: str):
     return storage.Client(project=project, credentials=AnonymousCredentials())
 
 
-def _list_sets(bucket_name: str, project: str) -> int:
-    client = _client(project)
-    bucket = client.bucket(bucket_name)
+def _local_blobs(root: Path, prefix: str = ""):
+    """Yield ``_LocalBlob`` for every ``*.png`` under ``root`` whose relative
+    POSIX path starts with ``prefix`` (mirrors GCS prefix listing)."""
+    for path in sorted(root.rglob("*.png")):
+        name = path.relative_to(root).as_posix()
+        if name.startswith(prefix):
+            yield _LocalBlob(name, path)
+
+
+def _source_blobs(args: argparse.Namespace, prefix: str = ""):
+    """List blob-likes from the configured source (local dir or GCS bucket)."""
+    if args.local_root:
+        return _local_blobs(Path(args.local_root).expanduser(), prefix)
+    client = _client(args.project)
+    bucket = client.bucket(args.bucket)
+    return client.list_blobs(bucket, prefix=prefix or None)
+
+
+def _source_label(args: argparse.Namespace) -> str:
+    """Human-readable name of the active source, for messages + the manifest."""
+    if args.local_root:
+        return str(Path(args.local_root).expanduser())
+    return f"gs://{args.bucket}"
+
+
+def _blob_uri(args: argparse.Namespace, name: str) -> str:
+    """Provenance URI for one output (a ``gs://`` URI or a local path)."""
+    if args.local_root:
+        return str(Path(args.local_root).expanduser() / name)
+    return f"gs://{args.bucket}/{name}"
+
+
+def _list_sets(args: argparse.Namespace) -> int:
     sets: dict[tuple[str, str], int] = {}
-    for blob in client.list_blobs(bucket):
+    for blob in _source_blobs(args):
         m = _OUTPUT_RE.match(blob.name)
         if m:
             key = (m.group("user"), m.group("story"))
             sets[key] = sets.get(key, 0) + 1
+    label = _source_label(args)
     if not sets:
-        print(f"[eval] no output sets found in gs://{bucket_name}/*/*/outputs/")
+        print(f"[eval] no output sets found in {label}/*/*/outputs/")
         return 1
-    print(f"[eval] output sets in gs://{bucket_name}:")
+    print(f"[eval] output sets in {label}:")
     for (user, story), n in sorted(sets.items()):
         print(f"    --user-id {user} --story-id {story}    ({n} images)")
     return 0
@@ -194,27 +258,32 @@ def _download(args: argparse.Namespace) -> int:
     # judge grades against the real submitted prompt rather than a reconstruction.
     prompt_log = _load_prompt_log(Path(args.log_dir), args.story_id)
     if prompt_log:
-        print(f"[eval] using actual prompt log: {len(prompt_log)} panel(s) from "
-              f"{Path(args.log_dir) / args.story_id}")
+        print(
+            f"[eval] using actual prompt log: {len(prompt_log)} panel(s) from "
+            f"{Path(args.log_dir) / args.story_id}"
+        )
     else:
-        print(f"[eval] no prompt log under {Path(args.log_dir) / args.story_id}; "
-              "falling back to reconstructed prompts", file=sys.stderr)
+        print(
+            f"[eval] no prompt log under {Path(args.log_dir) / args.story_id}; "
+            "falling back to reconstructed prompts",
+            file=sys.stderr,
+        )
 
     out_dir = Path(
         args.out or f"/tmp/prompt_eval/{args.story}__{args.story_id}"
     ).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    client = _client(args.project)
-    bucket = client.bucket(args.bucket)
     prefix = f"{args.user_id}/{args.story_id}/outputs/"
     blobs = sorted(
-        (b for b in client.list_blobs(bucket, prefix=prefix) if b.name.endswith(".png")),
+        (b for b in _source_blobs(args, prefix) if b.name.endswith(".png")),
         key=lambda b: int(Path(b.name).stem),
     )
     if not blobs:
-        print(f"[eval] error: no PNGs under gs://{args.bucket}/{prefix}",
-              file=sys.stderr)
+        print(
+            f"[eval] error: no PNGs under {_source_label(args)}/{prefix}",
+            file=sys.stderr,
+        )
         print("[eval] hint: run with --list to see available sets", file=sys.stderr)
         return 3
 
@@ -241,7 +310,7 @@ def _download(args: argparse.Namespace) -> int:
                 "variant_label": f"V{variant + 1}",
                 "variant_role": "pre-face-swap" if variant == 0 else "face-restored",
                 "file": str(local),
-                "gcs": f"gs://{args.bucket}/{blob.name}",
+                "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
                 "resolved_prompt": resolved,
                 # Provenance so the judge/report knows which prompt it graded.
@@ -261,6 +330,7 @@ def _download(args: argparse.Namespace) -> int:
         "user_id": args.user_id,
         "story_id": args.story_id,
         "bucket": args.bucket,
+        "source": _source_label(args),
         "variants_per_panel": variants,
         "panel_count": len(prompts),
         # Which prompt the judge should grade against: "worker_log" means each
@@ -274,13 +344,18 @@ def _download(args: argparse.Namespace) -> int:
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
     print(f"[eval] story {args.story!r}: {spec.get('title')!r}")
-    print(f"[eval] downloaded {len(entries)} image(s) "
-          f"({len(prompts)} panels x {variants} variants) -> {out_dir}")
+    print(
+        f"[eval] downloaded {len(entries)} image(s) "
+        f"({len(prompts)} panels x {variants} variants) -> {out_dir}"
+    )
     print(f"[eval] manifest -> {out_dir / 'manifest.json'}")
     print(f"[eval] write the report to -> {out_dir / 'report.md'}")
     if len(entries) != len(prompts) * variants:
-        print(f"[eval] warn: expected {len(prompts) * variants} images, "
-              f"got {len(entries)} (set may be partial)", file=sys.stderr)
+        print(
+            f"[eval] warn: expected {len(prompts) * variants} images, "
+            f"got {len(entries)} (set may be partial)",
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -296,16 +371,32 @@ def _manifest_prompt_source(entries: list[dict]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--list", action="store_true",
-                        help="list <user>/<story> output sets in the bucket and exit")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="list <user>/<story> output sets in the bucket and exit",
+    )
     parser.add_argument("--story", help="prompt-file stem / worker type_id, e.g. 1_1")
     parser.add_argument("--user-id", help="GCS path user_id component")
     parser.add_argument("--story-id", help="GCS path story_id (the job/story id)")
-    parser.add_argument("--out", help="download dir (default /tmp/prompt_eval/<story>__<story_id>)")
-    parser.add_argument("--bucket", default=os.environ.get("GCS_BUCKET", _DEFAULT_BUCKET))
-    parser.add_argument("--project", default=os.environ.get("GCP_PROJECT_ID", _DEFAULT_PROJECT))
+    parser.add_argument(
+        "--out", help="download dir (default /tmp/prompt_eval/<story>__<story_id>)"
+    )
+    parser.add_argument(
+        "--bucket", default=os.environ.get("GCS_BUCKET", _DEFAULT_BUCKET)
+    )
+    parser.add_argument(
+        "--project", default=os.environ.get("GCP_PROJECT_ID", _DEFAULT_PROJECT)
+    )
+    parser.add_argument(
+        "--local-root",
+        default=os.environ.get("LOCAL_OUTPUT_ROOT"),
+        help="read outputs from this local dir tree (<user>/<story>/outputs/<i>.png) "
+        "instead of GCS — set when generating locally from this repo",
+    )
     parser.add_argument(
         "--log-dir",
         default=os.environ.get("PROMPT_LOG_DIR_HOST", str(_DEFAULT_LOG_DIR)),
@@ -313,14 +404,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    os.environ.setdefault("STORAGE_EMULATOR_HOST", _DEFAULT_GCS_HOST)
+    # The fake-gcs endpoint only matters in GCS mode; local mode needs no emulator
+    # (and no google-cloud-storage import).
+    if not args.local_root:
+        os.environ.setdefault("STORAGE_EMULATOR_HOST", _DEFAULT_GCS_HOST)
 
     if args.list:
-        return _list_sets(args.bucket, args.project)
+        return _list_sets(args)
 
     missing = [n for n in ("story", "user_id", "story_id") if not getattr(args, n)]
     if missing:
-        parser.error("download mode needs --" + ", --".join(m.replace("_", "-") for m in missing))
+        parser.error(
+            "download mode needs --" + ", --".join(m.replace("_", "-") for m in missing)
+        )
     return _download(args)
 
 

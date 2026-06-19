@@ -40,6 +40,19 @@ gs://tarostory-local-images/<user_id>/<story_id>/outputs/<index>.png
   delivered output, so every criterion is graded on it. (V1 is still downloaded
   for reference but not scored.)
 
+### Local mode (no Application stack)
+
+`fetch_outputs.py` reads from the Application's fake-gcs by default, but the
+output source is **configurable**. When the worker was driven directly from this
+repo — `scripts/generate_stories.py` writes the same `<user>/<story>/outputs/<i>.png`
+layout to a local run dir — pass `--local-root <run>/outputs` (or set
+`LOCAL_OUTPUT_ROOT`) and it reads the PNGs off disk instead, with no GCS / no
+emulator / no Application stack in the loop. Everything downstream (the
+index→panel/variant math, the prompt-log join, the manifest, the rubric) is
+identical. The `local-batch-eval` skill wraps this generate-then-grade loop and
+adds a review web UI; use that when asked to generate **and** evaluate the catalog
+locally.
+
 ## Workflow
 
 ### 1. Locate the output set
