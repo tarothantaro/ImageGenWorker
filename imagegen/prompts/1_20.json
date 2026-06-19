@@ -17,5 +17,13 @@
     "The {INPUT_1_AGE} person from the input image stands on the far left holding hands in a circle with friends, facing the camera with a joyful smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK}, {GENDER_M_AGE_06_RACE_WHITE} and {GENDER_F_AGE_06_RACE_ASIAN} hold hands too, all together. Colourful classroom, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image stands on the far left in a happy group hug with friends, facing the camera with a big warm smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK}, {GENDER_F_AGE_06_RACE_ASIAN} and {GENDER_M_AGE_06_RACE_SOUTH_ASIAN} hug in close, all delighted. Golden classroom light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You sat in a circle with your friends on the colourful classroom rug. Everyone was chatting happily.",
+    "One friend held up her favourite picture book to share. You watched, curious and interested.",
+    "Then you showed your favourite toy. \"This is mine!\" you said proudly. Your friends clapped.",
+    "You all looked so different from each other — and that made you laugh and smile together.",
+    "You held hands in one big circle, all of you together. Different and special, side by side.",
+    "Then came a great big group hug! Everyone is special, and that makes the best friends."
+  ],
   "version": 1
 }

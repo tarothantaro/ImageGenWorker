@@ -15,5 +15,13 @@
     "Place the {INPUT_1_AGE} person from the input image at the bottom of the same red slide, sitting on the slide having just slid down, head turned toward the camera so the face stays clearly visible, beaming with a joyful smile. They are the only person in the frame. Eye-level medium shot, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A warm playground scene beside the red slide. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with a big happy smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK} and {GENDER_M_AGE_06_RACE_WHITE} stand together laughing and playing happily, all three holding hands in a row. Golden afternoon sunlight, eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You came to the playground and saw a shiny red slide. Two friends were there too. \"Let's play!\" you said.",
+    "But everyone rushed to the ladder at once. It was too crowded, and nobody could climb.",
+    "\"Let's take turns,\" you said gently, raising your hand. Your friends nodded and stepped back.",
+    "One friend slid down first — wheee! You clapped and cheered for her.",
+    "Then it was your turn. Down you zoomed to the bottom with a great big smile!",
+    "Everyone got a turn, and everyone had fun. You all held hands, as happy as can be."
+  ],
   "version": 1
 }

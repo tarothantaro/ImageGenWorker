@@ -14,5 +14,13 @@
     "Place the {INPUT_1_AGE} person from the input image alone in the cozy bedroom at bedtime, snuggling down under the blanket and hugging the teddy bear with a small brave smile, the head turned toward the camera so the face stays clearly visible and warmly lit by the glowing night-light. Cozy warm evening light, gentle eye-level medium shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "Place the {INPUT_1_AGE} person from the input image alone in the cozy bedroom, resting peacefully on the pillow with the teddy bear tucked close and a content, peaceful expression, no longer afraid of the dark. The head is turned toward the camera so the face stays clearly visible, softly and warmly lit by the glowing night-light. Cozy warm evening glow, gentle eye-level medium shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "It was bedtime. You sat up in bed hugging your teddy, feeling unsure about the dark.",
+    "\"I'm a little bit scared,\" you said. Dad knelt down and switched on a soft, glowing night-light.",
+    "The room filled with a warm, cosy glow. Dad tucked your blanket in snug and gave you a smile.",
+    "You lay back on your pillow with teddy beside you. The dark didn't feel so scary now.",
+    "You snuggled down and gave a brave little smile. \"I can be brave,\" you whispered.",
+    "Soon you rested, calm and cosy, not afraid at all. You were safe, and you were brave."
+  ],
   "version": 1
 }

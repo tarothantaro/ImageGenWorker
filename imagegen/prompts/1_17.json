@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image sits facing the camera with eyes wide open and a delighted, surprised smile, the face fully visible, realising the food is delicious. A plate of colourful vegetables in front of them, warm dinner light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image sits on the far left happily eating from the plate, facing the camera with a joyful smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} claps softly, looking proud and pleased. Warm cozy kitchen, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "At dinner you looked at the green broccoli and orange carrots. Hmm — you weren't so sure about them.",
+    "You pushed the plate away with a frown. \"I don't want to,\" you said. Mum waited patiently.",
+    "\"Just try one little taste,\" said Mum with a kind nod. You picked up your fork with one piece.",
+    "You scrunched your eyes shut and took a tiny, brave bite. Crunch!",
+    "Then your eyes popped wide open. It was yummy! What a delicious surprise!",
+    "You happily ate up your veggies. Mum clapped, so proud. Being brave was tasty after all!"
+  ],
   "version": 1
 }

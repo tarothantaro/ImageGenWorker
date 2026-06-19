@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image sits facing the camera with a calm, relieved little smile and the face fully visible, shoulders relaxed, the storm of feelings passed. Soft warm playroom light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image sits on the far left calmly rebuilding the block tower, facing the camera with a peaceful, happy smile and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} helps place a block, smiling proudly. Warm cozy playroom, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "In the playroom you stacked your blocks into a tall, wobbly tower. Higher and higher!",
+    "Then it all tumbled down. You felt SO angry, your fists clenched up tight.",
+    "Dad knelt down beside you. \"Let's take a deep breath,\" he said, his hand on his belly.",
+    "You closed your eyes and breathed in slow... and out. The angry storm began to fade away.",
+    "Soon you felt calm again, your shoulders soft and a little smile on your face.",
+    "Feeling better, you built your tower again — this time with Dad. Deep breaths chase the storm away."
+  ],
   "version": 1
 }

@@ -14,5 +14,13 @@
     "On the same garden picnic blanket, the {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face fully visible and laughing joyfully beside a tall, colourful tower they built together. On the right, {GENDER_F_AGE_06_RACE_BLACK} laughs and claps with delight at the finished tower. Eye-level medium-wide shot, bright cheerful sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "On the same sunny garden picnic blanket at golden hour, the {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face clearly visible and a warm, contented smile, sharing a small bowl of fruit snacks beside the colourful block tower. On the right, {GENDER_F_AGE_06_RACE_BLACK} sits close, smiling happily, the two friends resting together after playing. Eye-level medium shot, soft warm evening light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You sat in the sunny garden with a big pile of colourful blocks. Building was so much fun!",
+    "A friend came over and watched. She wanted to play too, but you held your block tight.",
+    "You thought for a moment, then held one out. \"Here, you can play with me!\" you said.",
+    "Together you stacked the blocks higher and higher. Sharing made the tower grow and grow!",
+    "\"We did it!\" you both cheered. The tower was taller than ever, and you laughed and laughed.",
+    "At the end, you shared a yummy snack side by side. Playing together was the very best fun."
+  ],
   "version": 1
 }

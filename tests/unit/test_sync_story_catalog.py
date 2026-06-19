@@ -33,6 +33,7 @@ def test_story_doc_maps_prompt_fields() -> None:
         "lesson": 'Kind words like "please" and "thank you" make people smile.',
         "version": 3,
         "prompts": ["...ignored..."],
+        "texts": ["You sat at the table.", '"Please?" you asked.'],
     }
 
     doc = mod._story_doc(prompt)
@@ -44,6 +45,8 @@ def test_story_doc_maps_prompt_fields() -> None:
         "title": "The Magic Words",
         "lesson": 'Kind words like "please" and "thank you" make people smile.',
         "story_version": 3,  # prompt "version" -> "story_version"
+        # prompt "texts" (per-panel storybook narration) -> "story_text"
+        "story_text": ["You sat at the table.", '"Please?" you asked.'],
     }
 
 
@@ -53,6 +56,7 @@ def test_story_doc_tolerates_missing_optional_fields() -> None:
     assert doc["story_type"] is None
     assert doc["story_type_name"] == ""
     assert doc["story_version"] is None
+    assert doc["story_text"] == []  # missing "texts" -> empty list, not absent
 
 
 def test_bindings_resolve_real_prompts() -> None:
@@ -70,6 +74,10 @@ def test_bindings_resolve_real_prompts() -> None:
     # non-empty title.
     assert set(bindings) == {f"1_{n}" for n in range(1, 22)}
     assert all(bindings[s]["title"] for s in bindings)
+    # Every story also carries 6 per-panel storybook lines (story_text), one per
+    # prompt/panel — the `story-text` skill's output, surfaced to the catalog.
+    assert len(bindings["1_1"]["story_text"]) == 6
+    assert all(len(bindings[s]["story_text"]) == 6 for s in bindings)
 
 
 def test_bindings_filter_by_template() -> None:

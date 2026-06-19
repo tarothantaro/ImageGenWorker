@@ -11,7 +11,9 @@ one story. Each story is an array of prompts stored at
 the **same single input photo** to produce one panel image. Read
 `imagegen/prompts/README.md` first — it defines the file schema, naming, and
 story-type registry. Generated supporting characters come from
-`imagegen/prompts/character.json` (owned by the `character-config` skill).
+`imagegen/prompts/character.json` (owned by the `character-config` skill). The
+read-aloud `texts` array in the same file is owned by the `story-text` skill,
+not this one — this skill writes the image `prompts` and metadata.
 
 ## How the pipeline shapes every prompt
 

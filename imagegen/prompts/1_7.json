@@ -14,5 +14,13 @@
     "A cozy home kitchen scene. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face clearly visible and a big, joyful smile, holding a cookie close to their chest with both hands as if saying \"thank you\". On the right, {GENDER_F_AGE_70_RACE_ASIAN} stands with one hand on her heart, smiling warmly. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A cozy home kitchen scene. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a happy, contented smile, sharing the plate of cookies. On the right, {GENDER_F_AGE_70_RACE_ASIAN} stands close beside them, smiling warmly as the two enjoy a happy moment together. Eye-level medium-wide shot, soft golden light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You sat at the kitchen table. Grandma had a plate of warm cookies. Mmm, they smelled delicious!",
+    "You really, really wanted one, and you reached your hand toward the plate.",
+    "Then you remembered the magic word. \"Please may I have a cookie?\" you asked with a smile.",
+    "\"Of course you may!\" said Grandma, and she happily held out the plate.",
+    "You took a cookie and hugged it close. \"Thank you, Grandma!\" Her heart felt warm and glad.",
+    "You shared the cookies together, cosy and happy. Kind words made you both smile."
+  ],
   "version": 1
 }

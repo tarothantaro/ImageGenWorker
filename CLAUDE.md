@@ -101,7 +101,7 @@ imagegen/
 ├── templates/{1,2}/config.json    # render templates: 6 per-panel field presets each
 └── prompts/
     ├── character.json          # {TOKEN} → description for supporting characters
-    └── <type>_<id>.json        # story prompts — owned by the `story-prompts` skill
+    └── <type>_<id>.json        # story prompts (`story-prompts` skill) + read-aloud `texts` (`story-text` skill)
 ```
 
 Two parallel render templates ship (`templates/1`+`workflows/1` = Flux; `templates/2`+`workflows/2` = Qwen-Image-Edit-2511), each 6 panels. The live worker renders **every** story through `_RENDER_TEMPLATE_ID = "2"` (`model.py`); template 1 stays in the asset library as the legacy/alternate. The job's `type`/`id` select which `prompts/<type>_<id>.json` set fills the panels' `text` — the template no longer binds a story inline. `prepare(template_id, story_ref)` loads + validates the template and applies that prompt set; `.render()` applies per-panel values + `USER_ID`/`STORY_ID` substitution. `{TOKEN}` character placeholders resolve at `prepare()` from `character.json`; `USER_ID`/`STORY_ID` at `render()` per job. Panel count = `len(prompts)` (must equal the template's 6).
@@ -124,12 +124,14 @@ tests/
 
 ### Prompts / character skill boundary
 
-The two Claude Code skills in `.claude/skills/` own specific files:
+Three Claude Code skills in `.claude/skills/` own specific files (and, within
+`<type>_<id>.json`, specific fields):
 
-- **`story-prompts`** — writes/edits `imagegen/prompts/<type>_<id>.json`
+- **`story-prompts`** — writes/edits `imagegen/prompts/<type>_<id>.json` (the image `prompts` + metadata, everything but `texts`)
+- **`story-text`** — writes/edits the `texts` array of `imagegen/prompts/<type>_<id>.json` (the per-panel read-aloud storybook narration + dialog; never seen by the image model, carries no `{TOKEN}`)
 - **`character-config`** — edits `imagegen/prompts/character.json` (the generated supporting cast)
 
-After editing prompts or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons to the API server's Firestore `templates/` collection.
+After editing prompts, story text, or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons + the per-panel `story_text` to the API server's Firestore `templates/` collection.
 
 ### Evaluating generated outputs
 

@@ -14,5 +14,13 @@
     "Transform the scene: the {INPUT_1_AGE} person from the input image stands alone in a now neat and tidy bedroom, all the toys put away, the floor clear, the toy box closed and the books lined up on the shelf. The person faces the camera at eye level with their face fully visible, looking around the clean bright room with a happy expression. Cheerful morning light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A warm scene in the tidy, bright bedroom. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a proud, beaming smile, hands on hips. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} stands beside them clapping happily and looking proud. The clean room glows with warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "Uh oh — your room was a big mess! Toys, books and blocks lay all over the floor.",
+    "\"It's tidy-up time,\" said Mum, pointing to the toy box with a gentle smile.",
+    "You started picking up the blocks, one by one. \"I can do this!\" you said.",
+    "You popped your teddy in the box while Mum lined up the books. You worked together as a team.",
+    "Soon every toy was put away. Your room was neat and bright! You looked around, so happy.",
+    "\"You did it!\" Mum cheered, clapping. You stood tall and proud. A tidy room is a happy room."
+  ],
   "version": 1
 }

@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image is on the far left, kneeling to pick up the ceramic pieces but with the head turned toward the camera so the face stays clearly visible, with a softer expression. {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels to the right, helping gather the pieces and smiling gently. Same living room, warm reassuring light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with a relieved, happy smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} rests a hand warmly on their shoulder. A fresh flower sits in a new cup on the shelf behind them. Warm golden light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You were bouncing your red ball in the living room. Boing, boing — what fun!",
+    "Then crash! The blue vase fell and broke into pieces. You gasped and covered your mouth.",
+    "You looked at the broken pieces and felt worried inside. What should you do?",
+    "You found Mum and pointed to the vase. \"I broke it. I'm sorry,\" you said honestly.",
+    "\"Thank you for telling the truth,\" said Mum gently, and together you picked up the pieces.",
+    "Mum gave your shoulder a warm pat, and you smiled with relief. The truth made you feel light inside."
+  ],
   "version": 1
 }

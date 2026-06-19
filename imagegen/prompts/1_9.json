@@ -14,5 +14,13 @@
     "A scene on the same sunny playground. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a gentle smile, holding out a helping hand. On the right, {GENDER_M_AGE_06_RACE_WHITE} stands back up holding the refilled basket of toy blocks, smiling brightly and gratefully. Eye-level medium-wide shot, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a joyful smile, playing happily with toy blocks beside a friend. On the right, {GENDER_M_AGE_06_RACE_WHITE} laughs and plays alongside them in the sunny playground, both happy together. Eye-level medium-wide shot, golden afternoon sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "It was a bright morning at the park. You skipped happily past the swings and the sandbox.",
+    "Then you saw your friend trip and fall. His basket tipped, and toys spilled everywhere. He looked so sad.",
+    "\"I'll help you!\" you called, hurrying over. Your friend looked up, full of hope.",
+    "You knelt down and gathered every toy back into the basket. Your friend smiled to see you help.",
+    "You reached out your hand and helped him stand up. \"Thank you!\" he said, holding his basket again.",
+    "Then you played together in the sunshine, laughing and glad. Helping a friend made you both happy."
+  ],
   "version": 1
 }

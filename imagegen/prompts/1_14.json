@@ -15,5 +15,13 @@
     "A joyful playground scene. The {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with a big happy smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK} and {GENDER_M_AGE_06_RACE_SOUTH_ASIAN} play together with a colourful ball, everyone included. Eye-level medium-wide shot, bright sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image stands on the far left with arms around their friends, facing the camera with a warm, proud smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK} and {GENDER_M_AGE_06_RACE_SOUTH_ASIAN} grin happily beside them. Golden afternoon light on the playground, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You were at the playground, tossing a ball with your friend. Catch! You both laughed.",
+    "Then you saw a boy sitting all alone on a bench. He looked sad and left out.",
+    "You walked right over with a friendly smile. \"Come play with us!\" you said, reaching out your hand.",
+    "His face lit up, and he took your hand and stood. Now he had friends to play with!",
+    "Everyone played together with the ball. Nobody was left out, and everyone was happy.",
+    "You wrapped your arms around your friends with a proud smile. Including everyone made the best day."
+  ],
   "version": 1
 }

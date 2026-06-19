@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image sits alone gently brushing and cuddling the small brown puppy, head turned toward the camera so the face stays clearly visible, with a tender, happy expression. Cozy living room, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image sits on the far left with the healthy, happy puppy in their lap, facing the camera with a proud, joyful smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} gives a warm, approving smile. Golden afternoon light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "One morning you cuddled a little brown puppy. \"He's so soft!\" you said. Mum smiled nearby.",
+    "\"A puppy needs care every day,\" said Mum, pointing to the food and water bowls. You listened closely.",
+    "You knelt down and poured the puppy's food into the bowl. The puppy waited happily beside you.",
+    "Out in the garden, you took the puppy for a walk on the leash. Trot, trot, trot!",
+    "Back inside, you gently brushed and cuddled your puppy. He felt happy and loved.",
+    "The healthy, happy puppy snuggled in your lap. \"You take good care of him,\" said Mum. Caring is your job!"
+  ],
   "version": 1
 }

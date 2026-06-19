@@ -7,7 +7,8 @@
 #
 # The Application local stack must be up (it owns the Firestore emulator on
 # host port 8200 — see Application/server/deploy/stages/local/env.sh). The API
-# server then serves the synced title/lesson via GET /api/v1/templates/{id}.
+# server then serves the synced title/lesson plus the per-panel storybook
+# story_text (the `story-text` skill's `texts`) via GET /api/v1/templates/{id}.
 #   ./sync_story_catalog.sh                 # every bound template
 #   ./sync_story_catalog.sh --template 4
 #   ./sync_story_catalog.sh --dry-run

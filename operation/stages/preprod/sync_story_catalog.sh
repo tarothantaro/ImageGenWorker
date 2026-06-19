@@ -5,7 +5,8 @@
 # GCP_PROJECT_ID + SA_KEY_FILE, then runs the shared
 # operation/sync_story_catalog.py over the worker service account.
 #
-# The API server then serves the synced title/lesson via
+# The API server then serves the synced title/lesson plus the per-panel
+# storybook story_text (the `story-text` skill's `texts`) via
 # GET /api/v1/templates/{id}. Idempotent; merges onto the seed's catalog docs.
 #   ./sync_story_catalog.sh
 #   ./sync_story_catalog.sh --template 4

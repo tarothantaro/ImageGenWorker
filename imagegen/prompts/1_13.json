@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image kneels by the clay pot where a tiny green sprout has just appeared, head turned toward the camera so the face stays clearly visible, eyes wide with delight. A small watering can tips a gentle stream of water. Bright morning light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The {INPUT_1_AGE} person from the input image stands on the far left holding up the clay pot now with a blooming yellow flower, facing the camera with a proud, joyful smile and the face fully visible. On the right, {GENDER_F_AGE_70_RACE_ASIAN} claps and beams with pride. Warm sunny garden, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "One sunny morning in the garden, Grandma gave you a little pot and some seeds. \"Let's plant!\" she said.",
+    "You pressed a tiny seed into the soft brown soil, careful and gentle. There — all planted!",
+    "You peeked into the pot, but nothing had grown yet. \"Where's my flower?\" you said, a little sad.",
+    "\"Plants need time and care,\" said Grandma, pointing to the sky. So you gave it water and waited.",
+    "Then one day — a tiny green sprout! Your eyes went wide. \"It's growing!\" you cheered.",
+    "At last a bright yellow flower bloomed. You held it up high, so proud. Good things take time!"
+  ],
   "version": 1
 }

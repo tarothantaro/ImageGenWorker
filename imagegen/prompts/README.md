@@ -6,11 +6,12 @@ A **story** is an ordered set of prompts; each prompt is run against the **same
 single input photo** to produce one panel image, so the user's photo appears in
 every panel of the story.
 
-Two skills own this directory:
+Three skills own this directory:
 
 | Skill | Owns | Use it to |
 |---|---|---|
-| `story-prompts` | `<type>_<id>.json` | Write/edit a story's prompt array |
+| `story-prompts` | `<type>_<id>.json` (everything but `texts`) | Write/edit a story's prompt array + metadata |
+| `story-text` | the `texts` field of `<type>_<id>.json` | Write/edit a story's per-panel read-aloud storybook text |
 | `character-config` | `character.json` | Add/edit the generated supporting cast |
 
 ## Files
@@ -52,6 +53,10 @@ new categories are added (and add them to `_TYPE_NAMES`).
     "…panel 1 prompt…",
     "…panel 2 prompt…"
   ],
+  "texts": [
+    "…panel 1 storybook line…",
+    "…panel 2 storybook line…"
+  ],
   "version": 1
 }
 ```
@@ -62,6 +67,12 @@ new categories are added (and add them to `_TYPE_NAMES`).
   the payload; `prompts[i]` becomes panel *i*'s `text`. The **panel count is
   `len(prompts)`** (there is no separate `panel_count` field), and it must match
   the render template `templates/1`'s panel count (6).
+- `texts` — the per-panel **read-aloud storybook narration** (scene + dialog),
+  one string per panel and the **same length/order as `prompts`** (`texts[i]`
+  is what the reader sees on panel *i*'s page). Authored by the `story-text`
+  skill; the image pipeline never reads it — it is synced to the API catalog as
+  `story_text` (`operation/sync_story_catalog.py`) and shown alongside the
+  generated images. Unlike `prompts`, it carries **no** `{TOKEN}` placeholders.
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
 

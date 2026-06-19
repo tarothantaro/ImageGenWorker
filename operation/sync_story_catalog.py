@@ -2,14 +2,19 @@
 
 The worker owns story *content* — the prompt sets ``imagegen/prompts/<type>_<id>
 .json``. The API server keeps one catalog doc per story (``templates/<type>_<id>``,
-e.g. ``templates/1_1``) and serves its title/lesson to the client
+e.g. ``templates/1_1``) and serves its title/lesson/story text to the client
 (``GET /api/v1/templates/{id}``). This script closes that loop: for every prompt
 set it writes
 
-    story_type, story_type_name, story_number, title, lesson, story_version
+    story_type, story_type_name, story_number, title, lesson, story_version,
+    story_text
 
 onto ``templates/<type>_<id>`` with ``merge=True`` — augmenting the seed-owned
 half (required_credits/output_count/active) instead of clobbering it.
+
+``story_text`` is the per-panel storybook narration (read-aloud scene + dialog,
+one entry per panel, parallel to the prompt array) authored by the
+``story-text`` skill and stored as the prompt JSON's ``texts`` field.
 
 The prompt JSON carries ``type``/``id`` (not the legacy ``story_type``/
 ``story_number``) and no ``story_type_name``; this script maps ``type`` → its
@@ -64,6 +69,10 @@ def _story_doc(prompt: dict[str, Any]) -> dict[str, Any]:
         # The API stores the prompt's ``version`` as ``story_version`` so it
         # never collides with a future template-schema version.
         "story_version": prompt.get("version"),
+        # Per-panel storybook narration (one string per panel, parallel to the
+        # prompts). Authored by the ``story-text`` skill as the JSON ``texts``
+        # field; absent stories sync an empty list rather than a missing field.
+        "story_text": prompt.get("texts", []),
     }
 
 

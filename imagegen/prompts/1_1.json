@@ -15,5 +15,13 @@
     "Place the {INPUT_1_AGE} person from the input image alone at a roadside bus stop during sudden rain, with no umbrella, hunching slightly but facing the camera so the face remains clearly visible. Overcast grey light, rain streaks, reflective wet pavement, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "At the same rainy bus stop, the {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with a surprised, grateful expression and the face fully visible. On the right, {GENDER_M_AGE_25_RACE_ASIAN} holds a large umbrella over both of them and smiles warmly. Soft rain with warm light breaking through the clouds, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "One sunny morning, you set off down the street. The birds were singing, and you felt happy.",
+    "Up ahead, an old lady's bag tore open and oranges rolled everywhere. \"Oh no!\" you said.",
+    "You knelt down and helped pick up every single orange. \"Thank you, dear,\" the old lady smiled.",
+    "You carried her heavy bags all the way home. \"You are so kind,\" she said warmly.",
+    "A few days later, rain poured down at the bus stop. You had no umbrella and got cold and wet.",
+    "Then a kind young man held his umbrella over you. \"Stay dry!\" he smiled. Your kindness had come back to you."
+  ],
   "version": 1
 }

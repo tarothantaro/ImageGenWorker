@@ -14,5 +14,13 @@
     "The {INPUT_1_AGE} person from the input image is on the far left, kneeling on the rug but with the head turned toward the camera so the face stays clearly visible, gently helping to pick up the wooden blocks and rebuild the tower with a kind, apologetic smile. On the right, {GENDER_M_AGE_06_RACE_WHITE} kneels too, reaching for a block and beginning to smile again. Eye-level medium-wide shot, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "The same sunny living room with the wooden block tower rebuilt tall behind them. The {INPUT_1_AGE} person from the input image is on the far left, facing the camera with their face fully visible and a happy, warm smile, sharing a friendly hug. On the right, {GENDER_M_AGE_06_RACE_WHITE} hugs back, beaming with joy. Eye-level medium shot, bright cheerful sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "texts": [
+    "You were playing blocks with your friend. He had built a tall, wobbly tower. \"Look how high!\" he said.",
+    "As you reached across — crash! Your arm bumped the tower and all the blocks tumbled down.",
+    "Your friend looked at the fallen blocks and felt sad. You weren't sure what to do.",
+    "You took a deep breath. It was hard to say, but you knew the right thing to do.",
+    "\"I'm sorry,\" you said, and you helped build the tower again. Your friend started to smile.",
+    "Soon you were laughing and hugging. Saying sorry had made everything better."
+  ],
   "version": 1
 }
