@@ -1,6 +1,6 @@
 ---
 name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most, the image is realistic, and it matches the prompt (composition, clothes, age). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` skill.
+description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most with the face ≥70% visible, the image is realistic, and it matches the prompt (composition, clothes, age). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` skill.
 ---
 
 # prompt-eval
@@ -85,6 +85,7 @@ V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
 | Criterion | What to check |
 |---|---|
 | **Protagonist far-left** | The input-photo person is the **left-most** figure in any **multi-person** panel. NA for a solo panel. A non-left protagonist is a real defect, not a nitpick. |
+| **Face ≥70% visible** | The protagonist faces the camera with the face unobstructed — at least ~70% of the face shown. No back/deep-profile views, nothing covering it (hands, hats, masks, props, other people). |
 | **Realism** | Reads as a real photograph — plausible anatomy (hands, limbs, faces), natural lighting/shadows/perspective, correct count of fingers/people. No cartoon/CGI/uncanny render, warps, duplicated or fused bodies, or garbled text. |
 | **Prompt match** | The image matches the `resolved_prompt` — **composition/shot**, **clothes/wardrobe**, **age**, setting, action, props, expression. Call out each mismatch specifically. |
 | **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. |
@@ -106,6 +107,7 @@ Write markdown to the `report_path` from the manifest
 
 ## Summary
 - Protagonist far-left: <X/Y> multi-person panels
+- Face ≥70% visible: <X/Y> panels
 - Realism: <X/Y> panels
 - Prompt match: <count> pass / <count> partial / <count> fail
 - Cast & identity: <consistent?>
@@ -115,6 +117,7 @@ Write markdown to the `report_path` from the manifest
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
 - Far-left: NA (solo) | pass | **fail** — <evidence>
+- Face ≥70% visible: pass | **fail** — <evidence>
 - Realism: pass | **fail** — <evidence>
 - Prompt match: pass | partial — composition/clothes/age/… <evidence>
 - Cast & identity: NA | pass | partial — <evidence>
@@ -132,8 +135,8 @@ to paste into the prompt.
 
 ### 5. Report back
 
-Tell the user the verdict, the headline numbers (far-left, realism, prompt
-match), and the `report.md` path. If outputs were missing or the set was partial,
+Tell the user the verdict, the headline numbers (far-left, face-visible,
+realism, prompt match), and the `report.md` path. If outputs were missing or the set was partial,
 say so plainly.
 
 ## Notes
