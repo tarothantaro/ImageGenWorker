@@ -51,12 +51,44 @@ from pathlib import Path
 _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/prompt-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
+# Where the dev worker writes its per-panel actual-prompt records (PROMPT_LOG_DIR
+# host mount, deploy/stages/dev). Each story_id is a subdir of panel_NN.json.
+_DEFAULT_LOG_DIR = _REPO_ROOT / "prompt_logs"
 
 _DEFAULT_BUCKET = "tarostory-local-images"
 _DEFAULT_GCS_HOST = "http://localhost:4443"
 _DEFAULT_PROJECT = "tarostory-local"
 _OUTPUT_RE = re.compile(r"^(?P<user>[^/]+)/(?P<story>[^/]+)/outputs/(?P<index>\d+)\.png$")
 _AGE_TOKEN_RE = re.compile(r"\{INPUT_\d+_AGE\}")
+
+
+# --- actual-prompt logs ------------------------------------------------------
+
+
+def _load_prompt_log(log_dir: Path, story_id: str) -> dict[int, dict]:
+    """Return ``{panel_index: record}`` from the worker's prompt log for a story.
+
+    The dev worker writes one ``<log_dir>/<story_id>/panel_<NN>.json`` per panel,
+    holding the *actual* prompt + rendered workflow it submitted to ComfyUI
+    (``imagegen/prompt_log.py``). Reading these lets the judge grade against the
+    real prompt instead of re-deriving the substitution. Missing dir / unreadable
+    files degrade to ``{}`` so the caller falls back to reconstruction.
+    """
+    story_dir = log_dir / story_id
+    if not story_dir.is_dir():
+        return {}
+    records: dict[int, dict] = {}
+    for path in sorted(story_dir.glob("panel_*.json")):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError) as exc:
+            print(f"[eval] warn: could not read prompt log {path}: {exc}", file=sys.stderr)
+            continue
+        idx = record.get("panel_index")
+        if isinstance(idx, int):
+            record["_log_path"] = str(path)
+            records[idx] = record
+    return records
 
 
 # --- prompt resolution -------------------------------------------------------
@@ -157,6 +189,16 @@ def _download(args: argparse.Namespace) -> int:
     prompts: list[str] = spec.get("prompts", [])
     characters = _load_characters()
     variants = _variants_for_live_template()
+    # The actual prompts the worker logged for THIS run (keyed by panel index).
+    # Present only if the dev worker ran with PROMPT_LOG_DIR set — when it is, the
+    # judge grades against the real submitted prompt rather than a reconstruction.
+    prompt_log = _load_prompt_log(Path(args.log_dir), args.story_id)
+    if prompt_log:
+        print(f"[eval] using actual prompt log: {len(prompt_log)} panel(s) from "
+              f"{Path(args.log_dir) / args.story_id}")
+    else:
+        print(f"[eval] no prompt log under {Path(args.log_dir) / args.story_id}; "
+              "falling back to reconstructed prompts", file=sys.stderr)
 
     out_dir = Path(
         args.out or f"/tmp/prompt_eval/{args.story}__{args.story_id}"
@@ -184,6 +226,12 @@ def _download(args: argparse.Namespace) -> int:
         local = out_dir / f"{index:02d}_panel{panel_index + 1}_V{variant + 1}.png"
         blob.download_to_filename(str(local))
         raw = prompts[panel_index] if panel_index < len(prompts) else None
+        reconstructed = _resolve_prompt(raw, characters) if raw else None
+        # Prefer the prompt the worker actually logged for this panel; only fall
+        # back to reconstruction (token-expanded prompt file) when no log exists.
+        logged = prompt_log.get(panel_index)
+        logged_prompt = (logged or {}).get("prompt_text")
+        resolved = logged_prompt or reconstructed
         entries.append(
             {
                 "index": index,
@@ -195,7 +243,13 @@ def _download(args: argparse.Namespace) -> int:
                 "file": str(local),
                 "gcs": f"gs://{args.bucket}/{blob.name}",
                 "raw_prompt": raw,
-                "resolved_prompt": _resolve_prompt(raw, characters) if raw else None,
+                "resolved_prompt": resolved,
+                # Provenance so the judge/report knows which prompt it graded.
+                "prompt_source": "worker_log" if logged_prompt else "reconstructed",
+                "reconstructed_prompt": reconstructed,
+                "logged_prompt": logged_prompt,
+                "comfyui_prompt_id": (logged or {}).get("comfyui_prompt_id"),
+                "prompt_log": (logged or {}).get("_log_path"),
             }
         )
 
@@ -209,6 +263,10 @@ def _download(args: argparse.Namespace) -> int:
         "bucket": args.bucket,
         "variants_per_panel": variants,
         "panel_count": len(prompts),
+        # Which prompt the judge should grade against: "worker_log" means each
+        # entry's resolved_prompt is the ACTUAL prompt the worker logged; mixed/
+        # reconstructed means some/all fell back to re-deriving from the file.
+        "prompt_source": _manifest_prompt_source(entries),
         "out_dir": str(out_dir),
         "report_path": str(out_dir / "report.md"),
         "images": entries,
@@ -226,6 +284,17 @@ def _download(args: argparse.Namespace) -> int:
     return 0
 
 
+def _manifest_prompt_source(entries: list[dict]) -> str:
+    """'worker_log' if every panel used the log, 'reconstructed' if none did,
+    else 'mixed' — so the report can flag a partial/absent prompt log."""
+    sources = {e["prompt_source"] for e in entries if e.get("resolved_prompt")}
+    if sources == {"worker_log"}:
+        return "worker_log"
+    if sources == {"reconstructed"}:
+        return "reconstructed"
+    return "mixed" if sources else "none"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -237,6 +306,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", help="download dir (default /tmp/prompt_eval/<story>__<story_id>)")
     parser.add_argument("--bucket", default=os.environ.get("GCS_BUCKET", _DEFAULT_BUCKET))
     parser.add_argument("--project", default=os.environ.get("GCP_PROJECT_ID", _DEFAULT_PROJECT))
+    parser.add_argument(
+        "--log-dir",
+        default=os.environ.get("PROMPT_LOG_DIR_HOST", str(_DEFAULT_LOG_DIR)),
+        help="dir of worker actual-prompt logs (default repo-root prompt_logs/)",
+    )
     args = parser.parse_args(argv)
 
     os.environ.setdefault("STORAGE_EMULATOR_HOST", _DEFAULT_GCS_HOST)

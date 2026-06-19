@@ -49,6 +49,12 @@ class WorkerConfig:
     model_version: str = _DEFAULT_MODEL_VERSION
     comfyui_request_timeout_seconds: int = _DEFAULT_REQUEST_TIMEOUT_SECONDS
     max_delivery_attempts: int = _DEFAULT_MAX_DELIVERY_ATTEMPTS
+    # Directory the model writes a per-panel record of the *actual* prompt +
+    # rendered workflow it submits to ComfyUI (debug + the prompt-eval skill).
+    # Unset (the default) disables logging — production leaves it off; the dev
+    # stack points it at a host-mounted volume so the logs survive the container
+    # and are readable from the host (deploy/stages/dev). DESIGN.md §7.2.
+    prompt_log_dir: str | None = None
 
     @property
     def is_emulator(self) -> bool:
@@ -97,6 +103,7 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
             src.get("MAX_DELIVERY_ATTEMPTS", str(_DEFAULT_MAX_DELIVERY_ATTEMPTS)),
             "MAX_DELIVERY_ATTEMPTS",
         ),
+        prompt_log_dir=src.get("PROMPT_LOG_DIR") or None,
     )
 
 

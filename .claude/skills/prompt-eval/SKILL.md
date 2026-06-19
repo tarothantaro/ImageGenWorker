@@ -67,10 +67,24 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python \
 
 This downloads the PNGs to `/tmp/prompt_eval/<story>__<story_id>/` (override with
 `--out`) and writes `manifest.json` there. The manifest joins each downloaded
-file to its **resolved** panel prompt — `{TOKEN}` characters expanded from
-`character.json`, `{INPUT_n_AGE}` dropped — i.e. the effective sentence the model
-rendered. It also carries `title`, `lesson`, the resolved `characters` map, and
-`variants_per_panel`. Read `manifest.json` before judging.
+file to the panel prompt that produced it. For `resolved_prompt` it prefers the
+**actual prompt the worker logged** for this run — the dev worker writes one
+record per panel of the exact prompt + workflow it submitted to ComfyUI under
+`PROMPT_LOG_DIR` (host-mounted `prompt_logs/<story_id>/panel_NN.json`; see
+`imagegen/prompt_log.py` + `deploy/stages/dev`). When no log is present it falls
+back to a **reconstruction** (`{TOKEN}` characters expanded from
+`character.json`, `{INPUT_n_AGE}` dropped). Each entry records which it used via
+`prompt_source` (`worker_log` | `reconstructed`), plus `comfyui_prompt_id` and a
+`prompt_log` path for debugging; the manifest's top-level `prompt_source` is
+`worker_log` / `reconstructed` / `mixed`. It also carries `title`, `lesson`, the
+resolved `characters` map, and `variants_per_panel`. Read `manifest.json` before
+judging.
+
+> The actual-prompt log only exists if the worker generated the story with
+> `PROMPT_LOG_DIR` set (the dev stack sets it by default). Point `--log-dir` at a
+> different host dir if yours is non-standard. A `mixed`/`reconstructed`
+> `prompt_source` means you are grading against a re-derived prompt — note that
+> in the report rather than asserting it's exactly what ran.
 
 ### 3. Judge each panel (vision)
 
@@ -78,7 +92,11 @@ Read `manifest.json`, then for **each panel** Read its **V2** PNG — the entrie
 where `variant_label == "V2"` (the face-restored, delivered image) — and score it
 against that panel's `resolved_prompt` and the rubric below. Judge every panel on
 V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
-— never grade from the prompt text alone.
+— never grade from the prompt text alone. The `resolved_prompt` is the **actual
+prompt sent to ComfyUI** when `prompt_source == "worker_log"` — grade the image
+against exactly that text (it already has the real age word, e.g. "4-year-old",
+substituted in). When debugging a defect, the entry's `prompt_log` file holds the
+full rendered workflow that produced the image.
 
 **Per-panel rubric** (judged on the V2 image):
 

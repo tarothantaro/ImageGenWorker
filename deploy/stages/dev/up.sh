@@ -36,6 +36,17 @@ if ! docker network inspect "$APPSTACK_NETWORK" >/dev/null 2>&1; then
   exit 1
 fi
 
+# The worker runs as a non-root container user (uid != the host user), so a
+# bind-mounted host dir it owns by default isn't writable from inside. Pre-create
+# the prompt-log dir world-writable (dev-only debug artifacts) so the per-panel
+# actual-prompt logs actually land on the host. Path is relative to the compose
+# file, matching the volume's ${PROMPT_LOG_DIR_HOST}.
+if [ -n "${PROMPT_LOG_DIR_HOST:-}" ]; then
+  log_host="$HERE/$PROMPT_LOG_DIR_HOST"
+  mkdir -p "$log_host" && chmod 0777 "$log_host" 2>/dev/null || true
+  echo "[dev/up] prompt logs -> $log_host (PROMPT_LOG_DIR=${PROMPT_LOG_DIR:-unset})" >&2
+fi
+
 echo "[dev/up] STAGE=$STAGE GCP_PROJECT_ID=$GCP_PROJECT_ID" >&2
 echo "[dev/up] backend=$COMFYUI_BACKEND pubsub=$PUBSUB_EMULATOR_HOST gcs=$STORAGE_EMULATOR_HOST comfyui=$COMFYUI_URL" >&2
 echo "[dev/up] appstack network=$APPSTACK_NETWORK" >&2

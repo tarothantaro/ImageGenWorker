@@ -144,6 +144,37 @@ def test_generate_drops_age_placeholder_when_no_age_given() -> None:
     assert "{INPUT_1_AGE}" not in first["170:151"]["inputs"]["prompt"]
 
 
+def test_generate_writes_actual_prompt_log_per_panel(tmp_path: Path) -> None:
+    fake = FakeComfyUI()
+    model = _model(fake, prompt_log_dir=tmp_path)
+
+    _generate(model, input_ages=["4-year-old"])
+
+    # One record per panel (templates/2 = 6 panels), namespaced by story id.
+    story_dir = tmp_path / "s1"
+    records = sorted(story_dir.glob("panel_*.json"))
+    assert [p.name for p in records] == [f"panel_{i:02d}.json" for i in range(6)]
+
+    first = json.loads(records[0].read_text())
+    # The logged prompt is the ACTUAL one sent — age word substituted in.
+    assert first["prompt_text"].startswith("Place the 4-year-old person")
+    assert first["status"] == "completed"
+    assert first["story_ref"] == "1_1"
+    assert first["comfyui_prompt_id"]  # populated after queue_prompt
+    # The full rendered workflow is captured for debugging.
+    assert first["workflow"]["170:151"]["inputs"]["prompt"] == first["prompt_text"]
+
+
+def test_generate_writes_no_log_when_dir_unset() -> None:
+    fake = FakeComfyUI()
+    model = _model(fake)  # no prompt_log_dir
+
+    # The logger is disabled — generation still succeeds, nothing is written.
+    panels = _generate(model)
+    assert panels
+    assert model._prompt_logger.enabled is False
+
+
 def test_generate_uploads_input_under_its_substituted_filename() -> None:
     fake = FakeComfyUI()
     model = _model(fake)

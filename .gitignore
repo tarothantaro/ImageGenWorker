@@ -8,3 +8,6 @@ htmlcov/
 build/
 dist/
 .venv/
+# Per-panel prompt/workflow logs written by the dev worker (PROMPT_LOG_DIR);
+# host-mounted debug artifacts, not source.
+prompt_logs/

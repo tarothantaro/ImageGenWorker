@@ -65,3 +65,12 @@ export APPSTACK_NETWORK="${APPSTACK_NETWORK:-local_default}"
 # GCS bucket the smoke test seeds inputs into and the worker writes outputs to.
 # Job messages built by smoke.py use gs://$GCS_BUCKET/... URIs.
 export GCS_BUCKET="${GCS_BUCKET:-tarostory-local-images}"
+
+# Per-panel prompt logging (debug + the prompt-eval skill). The worker writes one
+# JSON record per panel of the ACTUAL prompt + rendered workflow it submits to
+# ComfyUI under PROMPT_LOG_DIR (the *container* path). docker-compose mounts the
+# host dir below onto it, so the logs survive the container and are readable from
+# the host (PROMPT_LOG_DIR_HOST is relative to the compose file — repo-root
+# prompt_logs/, gitignored). Set PROMPT_LOG_DIR="" to disable.
+export PROMPT_LOG_DIR="${PROMPT_LOG_DIR:-/app/prompt_logs}"
+export PROMPT_LOG_DIR_HOST="${PROMPT_LOG_DIR_HOST:-../../../prompt_logs}"

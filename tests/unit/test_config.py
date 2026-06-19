@@ -32,6 +32,17 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.model_version == "comfyui-flux2"
     assert cfg.comfyui_request_timeout_seconds == 180
     assert cfg.max_delivery_attempts == 5
+    # Prompt logging is off unless explicitly pointed at a dir (production default).
+    assert cfg.prompt_log_dir is None
+
+
+def test_load_config_picks_up_prompt_log_dir() -> None:
+    cfg = load_config(_VALID_ENV | {"PROMPT_LOG_DIR": "/app/prompt_logs"})
+    assert cfg.prompt_log_dir == "/app/prompt_logs"
+
+    # An empty value is treated as unset, not as the path "".
+    cfg_blank = load_config(_VALID_ENV | {"PROMPT_LOG_DIR": ""})
+    assert cfg_blank.prompt_log_dir is None
 
 
 def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:

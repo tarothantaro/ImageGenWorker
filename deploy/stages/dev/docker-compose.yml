@@ -96,6 +96,10 @@ services:
       MAX_DELIVERY_ATTEMPTS: ${MAX_DELIVERY_ATTEMPTS}
       MODEL_VERSION: ${MODEL_VERSION}
       LOG_LEVEL: ${LOG_LEVEL}
+      # Per-panel record of the actual prompt + workflow sent to ComfyUI, written
+      # under this (container) path; the volume below maps it to a host dir so the
+      # logs outlive the container (debug + the prompt-eval skill). env.sh default.
+      PROMPT_LOG_DIR: ${PROMPT_LOG_DIR}
     # The image installs image-gen-contract at the commit pyproject.toml pins,
     # which now tracks the local ../ImageGenContract HEAD (pushed so the build can
     # fetch it). Keep that pin current — see CLAUDE.md "Contract pin".
@@ -104,6 +108,10 @@ services:
       # local /app/imagegen shadows the installed copy; restart the worker to
       # pick up edits: `docker compose ... restart imagegen-worker`.
       - ../../../imagegen:/app/imagegen:ro
+      # Persist the actual-prompt logs to the host (repo-root prompt_logs/,
+      # gitignored) so they survive the container and the prompt-eval skill +
+      # debugging can read them. Target mirrors PROMPT_LOG_DIR.
+      - ${PROMPT_LOG_DIR_HOST:-../../../prompt_logs}:${PROMPT_LOG_DIR:-/app/prompt_logs}
     networks:
       - default
       - appstack

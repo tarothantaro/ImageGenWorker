@@ -52,6 +52,7 @@ from .failure_classification import (
     InvalidConfigError,
     ModelTransientError,
 )
+from .prompt_log import PromptLogger
 from .workflow import PreparedTemplate, WorkflowBuilder, _substitute
 
 logger = logging.getLogger(__name__)
@@ -233,12 +234,14 @@ class ComfyUIModel:
         prompts_root: Path = _DEFAULT_PROMPTS_ROOT,
         model_version: str = _DEFAULT_MODEL_VERSION,
         request_timeout_seconds: float = _DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        prompt_log_dir: Path | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._transport = transport
         self._builder = WorkflowBuilder(workflow_root, template_root, prompts_root)
         self._model_version = model_version
         self._request_timeout = request_timeout_seconds
+        self._prompt_logger = PromptLogger(prompt_log_dir)
         self._clock = clock
 
     def generate(
@@ -281,6 +284,8 @@ class ComfyUIModel:
         return self._iter_panels(
             prepared,
             story_id=story_id,
+            user_id=user_id,
+            story_ref=story_ref,
             placeholders=placeholders,
         )
 
@@ -291,6 +296,8 @@ class ComfyUIModel:
         prepared: PreparedTemplate,
         *,
         story_id: str,
+        user_id: str,
+        story_ref: str,
         placeholders: dict[str, str],
     ) -> Iterator[PanelResult]:
         # Each panel keeps its own template ``noise_seed`` + ``filename_prefix``
@@ -307,6 +314,10 @@ class ComfyUIModel:
                     panel,
                     placeholders=placeholders,
                     client_id=f"{story_id}-{panel_index}",
+                    story_id=story_id,
+                    user_id=user_id,
+                    story_ref=story_ref,
+                    panel_index=panel_index,
                 )
             except ComfyUIBadRequest as exc:
                 raise InvalidConfigError(f"ComfyUI rejected the prompt: {exc}") from exc
@@ -356,26 +367,61 @@ class ComfyUIModel:
         *,
         placeholders: dict[str, str],
         client_id: str,
+        story_id: str,
+        user_id: str,
+        story_ref: str,
+        panel_index: int,
     ) -> tuple[list[bytes], float]:
         start = self._clock()
         workflow = self._builder.render(prepared, panel, placeholders=placeholders)
         prefixes = self._builder.output_prefixes(workflow)
 
-        # Open the WebSocket *before* queuing, so we don't miss early events,
-        # then block on the live stream until ComfyUI signals completion.
-        with self._transport.open_events(client_id=client_id) as events:
-            prompt_id = self._transport.queue_prompt(
-                prompt=workflow, client_id=client_id
-            )
-            self._await_execution(
-                events, prompt_id, deadline=start + self._request_timeout
+        # Capture the actual prompt + rendered workflow before we submit, so a
+        # hung or failing run is still on disk for debugging (the prompt-eval
+        # skill + manual inspection). No-op unless PROMPT_LOG_DIR is set.
+        def _log(status: str, **extra: Any) -> None:
+            self._prompt_logger.log_panel(
+                story_id=story_id,
+                user_id=user_id,
+                story_ref=story_ref,
+                render_template_id=_RENDER_TEMPLATE_ID,
+                model_version=self._model_version,
+                panel_index=panel_index,
+                client_id=client_id,
+                placeholders=placeholders,
+                panel=panel,
+                workflow=workflow,
+                status=status,
+                **extra,
             )
 
-        history = self._transport.get_history(prompt_id)
-        outputs = history.get(prompt_id, {}).get("outputs", {})
-        # Every variant the workflow saved, in variant order (V1, V2 …).
-        images = [self._fetch_variant(outputs, prefix) for prefix in prefixes]
-        return images, self._clock() - start
+        if self._prompt_logger.enabled:
+            _log("submitted")
+        try:
+            # Open the WebSocket *before* queuing, so we don't miss early events,
+            # then block on the live stream until ComfyUI signals completion.
+            with self._transport.open_events(client_id=client_id) as events:
+                prompt_id = self._transport.queue_prompt(
+                    prompt=workflow, client_id=client_id
+                )
+                if self._prompt_logger.enabled:
+                    _log("running", comfyui_prompt_id=prompt_id)
+                self._await_execution(
+                    events, prompt_id, deadline=start + self._request_timeout
+                )
+
+            history = self._transport.get_history(prompt_id)
+            outputs = history.get(prompt_id, {}).get("outputs", {})
+            # Every variant the workflow saved, in variant order (V1, V2 …).
+            images = [self._fetch_variant(outputs, prefix) for prefix in prefixes]
+        except Exception as exc:
+            if self._prompt_logger.enabled:
+                _log("error", error=f"{type(exc).__name__}: {exc}")
+            raise
+        elapsed = self._clock() - start
+        if self._prompt_logger.enabled:
+            _log("completed", comfyui_prompt_id=prompt_id, processing_seconds=elapsed)
+        return images, elapsed
 
     def _await_execution(
         self, events: Iterator[dict[str, Any]], prompt_id: str, *, deadline: float
@@ -440,8 +486,10 @@ def load_model(cfg: Any) -> ComfyUIModel:  # pragma: no cover - wires real trans
 
     timeout = float(cfg.comfyui_request_timeout_seconds)
     transport = HttpComfyUIClient(base_url=cfg.comfyui_url, timeout=timeout)
+    log_dir = getattr(cfg, "prompt_log_dir", None)
     return ComfyUIModel(
         transport,
         model_version=cfg.model_version,
         request_timeout_seconds=timeout,
+        prompt_log_dir=Path(log_dir) if log_dir else None,
     )
