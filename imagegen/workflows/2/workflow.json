@@ -133,14 +133,18 @@
   },
   "170:160": {
     "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1024,
+      "height": 736,
+      "crop": "center",
       "image": [
         "41",
         0
       ]
     },
-    "class_type": "FluxKontextImageScale",
+    "class_type": "ImageScale",
     "_meta": {
-      "title": "FluxKontextImageScale"
+      "title": "ImageScale (1024x736)"
     }
   },
   "170:151": {
