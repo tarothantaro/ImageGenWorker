@@ -63,26 +63,42 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
 3. **Name a camera/shot to control face visibility** — `medium shot`,
    `medium-wide shot`, `eye-level`, `three-quarter view`. This is the lever for
    constraint #2. The model obeys camera/angle cues reliably.
-4. **Reference the protagonist as "the person from the input image"** (consistent,
+4. **Give every person an explicit action.** Each person in the panel — the
+   protagonist **and** every supporting character — must be **doing something
+   concrete**: a physical verb or a specific gesture/pose anchored to a prop, the
+   other character, or their own body (*"kneeling to gather the oranges"*,
+   *"holding out a block"*, *"one hand pressed to their chest"*, *"wrapping their
+   arms around themselves against the cold"*). **Never leave a person merely
+   *standing / sitting + facing the camera + [expression]*** — an expression is
+   *not* an action. With nothing to do, the model invents a pose for the idle
+   body, and invented poses usually look weird (floating or clipping hands,
+   awkward limbs, random gestures). State the expression *in addition to* the
+   action, never instead of it. Even a solo panel with no prop or partner must
+   give the hands/body a job (*"hugging their teddy bear"*, *"hands on hips,
+   looking around"*, *"shielding their head from the rain"*) rather than just
+   "standing there". A bare verb of being present (`stands`, `sits`, `is in the
+   frame`) does not count; `kneeling`, `walking`, `holding`, `reaching`,
+   `clapping`, `pointing`, `hands on hips` do.
+5. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
    from `character.json`.
-5. **Pin identity at the end of every prompt:** *"Preserve the facial features,
+6. **Pin identity at the end of every prompt:** *"Preserve the facial features,
    skin tone and hairstyle of the person from the input image."* The edit + swap
    will otherwise drift the protagonist's look.
-6. **Never describe a generated character's fixed appearance.** Their age,
+7. **Never describe a generated character's fixed appearance.** Their age,
    ethnicity, build, hair and clothing live in `character.json` and arrive via
    the placeholder. In the prompt, give them only **position, action, and
    expression** (`stands to the right, watching gratefully`). Re-describing
    appearance fights the resolved description and breaks consistency. (Exception:
    a deliberate, story-driven change — e.g. *"… now wearing a raincoat over their
    usual clothes"* — added *after* the placeholder.)
-7. **Keep style consistent across the story.** Pick one visual register in panel 1
+8. **Keep style consistent across the story.** Pick one visual register in panel 1
    (e.g. *"soft storybook illustration style"*) and repeat the same phrase in
    every panel so the set reads as one book.
-8. **Keep each prompt self-contained.** Because each panel is an independent edit,
+9. **Keep each prompt self-contained.** Because each panel is an independent edit,
    re-establish the protagonist (left + face), the supporting cast tokens present,
    the setting, and the style every time — don't rely on "the previous panel".
-9. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
+10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
 
 ## Per-panel checklist
@@ -93,6 +109,8 @@ For every prompt in the array, confirm:
 - [ ] If >1 person: protagonist is explicitly **far left**.
 - [ ] Protagonist is **facing the camera, face clearly visible** (camera/shot cue
       present); any kneel/tilt adds "head turned toward the camera".
+- [ ] **Every person** (protagonist + each supporting character) is given a
+      **concrete action/gesture**, not just a placement and an expression.
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/
       expression only, no appearance, no re-described clothing.
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
@@ -110,7 +128,9 @@ For every prompt in the array, confirm:
    *establish → encounter/choice → action → consequence → turn → resolution that
    lands the lesson.* Keep location/time continuity unless the story moves on.
 4. **Write each panel** with the rules above. Alternate solo and multi-person
-   panels naturally, but every multi-person panel obeys constraint #1.
+   panels naturally, but every multi-person panel obeys constraint #1, and **every
+   person in every panel is given a concrete action** (rule 4) — never left
+   standing/sitting with only an expression.
 5. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
    token used, `version`). The panel count is just `len(prompts)` — no
    `panel_count` field.
