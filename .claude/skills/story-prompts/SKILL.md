@@ -52,11 +52,12 @@ constraint will be ignored.
 
 Derived from the model's prompt guidance — instruction-style, specific, spatial.
 
-1. **Lead with the composition/action, instruction-style.** Open with what to do
-   to the scene: *"Place the person from the input image into …"* /
-   *"Transform the scene: the person from the input image …"*. Short and specific
-   beats long and flowery — *"a torn grocery bag, oranges rolling out"* over a
-   paragraph of adjectives.
+1. **Lead with the composition/action, instruction-style.** Open with what to do:
+   *"Place the person from the input image into [the fully described scene] …"*.
+   Short and specific beats long and flowery — *"a torn grocery bag, oranges
+   rolling out"* over a paragraph of adjectives. Don't open with *"Transform the
+   scene"* — see rule 9: the input is the person photo, not a prior panel, so
+   there is no existing scene to transform.
 2. **Use spatial words to place people** — `far left`, `to the right`,
    `beside them`, `in the background`, `foreground`. This is the lever for
    constraint #1. The model positions by these words, not by image indices.
@@ -95,9 +96,25 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
 8. **Keep style consistent across the story.** Pick one visual register in panel 1
    (e.g. *"soft storybook illustration style"*) and repeat the same phrase in
    every panel so the set reads as one book.
-9. **Keep each prompt self-contained.** Because each panel is an independent edit,
+9. **Keep each prompt self-contained — re-describe the shared scene every panel.**
+   Because each panel is an independent edit with **no memory of any other panel**,
    re-establish the protagonist (left + face), the supporting cast tokens present,
-   the setting, and the style every time — don't rely on "the previous panel".
+   the style, **and the setting** every time. For panels that share a location,
+   re-state the concrete **setting anchors** — the key furniture/landmarks, the
+   time of day, and the light — in a short phrase (reasonable detail, not an
+   exhaustive list) so the location reads as the same place across the story. Two
+   failure modes to avoid, both caused by the no-memory pipeline:
+   - **Bare back-references** — *"Same living room"*, *"the same garden"*, *"the
+     broken vase"* — name something the model cannot see; they carry no
+     description, so the setting drifts. Spell the anchors out instead: *"the same
+     cozy living room — a wooden shelf on the wall, a wooden floor, warm afternoon
+     light"*.
+   - **"Transform the scene" openers.** The input image is the *person photo*, not
+     the previous panel, so there is no prior scene to transform — the instruction
+     acts on nothing and the intended setting is lost. Use *"Place the person from
+     the input image into [the fully described scene] …"* and describe the scene
+     from scratch, including any change of state (e.g. the now-shattered vase, the
+     now-tidy room).
 10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
 
@@ -114,6 +131,9 @@ For every prompt in the array, confirm:
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/
       expression only, no appearance, no re-described clothing.
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
+- [ ] Panels sharing a location **re-describe the setting anchors** (key
+      furniture/landmarks + time of day + light); no bare "same room"
+      back-reference and no "Transform the scene" opener.
 - [ ] Same style phrase as the rest of the story.
 - [ ] Ends with the preserve-identity sentence.
 
