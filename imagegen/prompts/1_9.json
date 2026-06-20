@@ -14,6 +14,14 @@
     "On a sunny playground in the green park — a sandbox and a set of swings, soft grass, warm sunlight — the {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a gentle smile, holding out a helping hand. On the right, {GENDER_M_AGE_06_RACE_WHITE} stands back up holding the refilled basket of toy blocks, smiling brightly and gratefully. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "On a sunny playground in the green park — a sandbox and a set of swings, soft grass, golden afternoon light — the {INPUT_1_AGE} person from the input image is on the far left, kneeling and stacking toy blocks beside a friend, facing the camera with their face fully visible and a joyful smile. On the right, {GENDER_M_AGE_06_RACE_WHITE} kneels and plays with the toy blocks alongside them, both happy together. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "At a sunny park playground with a sandbox and swings, the child skips happily on the grass alone.",
+    "At the playground, the child (far left) raises a hand to their cheek in concern as a young boy at right has tripped and sits by a tipped basket with toy blocks spilled, looking sad.",
+    "At the playground, the child (far left) hurries over reaching out with a kind, determined look while the boy at right sits by the spilled blocks, looking up hopefully — the child comes to help.",
+    "At the playground, the child (far left) kneels gathering the spilled blocks back into the basket, smiling, while the boy at right watches gratefully.",
+    "At the playground, the child (far left) holds out a helping hand while the boy at right stands back up holding the refilled basket, smiling gratefully — helping him up.",
+    "At the playground in golden light, the child (far left) and the boy at right kneel playing with the blocks together, both happy — helping a friend made both glad."
+  ],
   "texts": [
     "It was a bright morning at the park. You skipped happily past the swings and the sandbox.",
     "Then you saw your friend trip and fall. His basket tipped, and toys spilled everywhere. He looked so sad.",

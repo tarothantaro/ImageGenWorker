@@ -14,6 +14,14 @@
     "In a bright home bathroom — a sink with running water, light tiles — the {INPUT_1_AGE} person from the input image stands alone at the sink, holding up freshly rinsed clean hands under the running tap, hands held to one side so they do not cover the face, facing the camera with their face fully visible and a proud, beaming smile. Medium shot at eye level, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "A warm scene at a sunny kitchen table set for a snack. The {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face fully visible and a happy smile, clean hands resting beside a plate of fruit. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} sits across the table, passing over a piece of fruit and looking on warmly. Eye-level medium-wide shot, cheerful morning light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a bright sunny garden, the child plays alone on the grass with a toy spade, hands a little muddy, cheerful.",
+    "Just inside a bright home doorway, the child (far left) holds up slightly muddy hands while the mother at right kneels pointing toward the bathroom sink — time to wash up before a snack.",
+    "In a bright home bathroom, the child stands alone at the sink, stepping up on a stool and reaching for soap, curious.",
+    "In the bathroom, the child stands alone at the sink rubbing two soapy hands together with lots of fluffy bubbles, delighted — only one child, no twin or reflection.",
+    "In the bathroom, the child stands alone holding up freshly rinsed clean hands under the tap, proud.",
+    "At a sunny kitchen table set for a snack, the child (far left) sits with clean hands beside a plate of fruit while the mother at right passes over a piece of fruit — clean hands, happy snack."
+  ],
   "texts": [
     "You played outside in the garden, digging in the dirt. What fun! But your hands got all muddy.",
     "\"Time for a snack — but first, wash your hands,\" said Mum, pointing toward the sink.",

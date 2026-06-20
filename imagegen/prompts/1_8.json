@@ -14,6 +14,14 @@
     "On a sunny park path — green grass, leafy trees, warm sunlight — the {INPUT_1_AGE} person from the input image is on the far left, riding the little red balance bike a short way, wearing the safety helmet, beaming with delight, both feet gliding just above the ground, head and torso turned toward the camera so the face stays clearly visible, not a back view. {GENDER_M_AGE_35_RACE_ASIAN_PARENT} stands further to the right in the background, cheering with both arms raised. Eye-level three-quarter shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "On a sunny park path — green grass, leafy trees, golden afternoon light — the {INPUT_1_AGE} person from the input image is on the far left, standing proudly beside the little red balance bike, one hand resting on the handlebar, wearing the safety helmet, with a big happy smile, facing the camera with their face fully visible. {GENDER_M_AGE_35_RACE_ASIAN_PARENT} kneels to the right, cheering and giving a thumbs-up with a proud, delighted expression. Eye-level medium shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "On a sunny park path, the child (far left) sits on a little red balance bike wearing a helmet with feet down, excited, while the father at right rests a hand on the bike encouragingly — ready to ride.",
+    "On the park path, the child (far left) wobbles on the red balance bike, leaning to one side with a surprised look, while the father at right reaches out, ready to help.",
+    "On the park path after a gentle tumble, the child (far left) sits safely on the grass beside the red bike with a small pout but no tears, while the father at right kneels offering an open hand.",
+    "On the park path, the child (far left) stands back up beside the red bike, brushing off grass with a determined smile, while the father at right crouches clapping and cheering — trying again.",
+    "On the park path, the child (far left) rides the red balance bike a short way, beaming, while the father further back at right cheers with arms raised — the child succeeds.",
+    "On the park path in golden light, the child (far left) stands proudly by the red bike with a big grin while the father at right kneels giving a proud thumbs-up — never gave up."
+  ],
   "texts": [
     "You sat on your little red bike, helmet on tight. \"I'm going to ride!\" you said. Dad smiled beside you.",
     "You pushed off — but wibble, wobble! The bike tipped to one side. \"Whoa!\" you cried.",

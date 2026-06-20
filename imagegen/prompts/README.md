@@ -53,6 +53,10 @@ new categories are added (and add them to `_TYPE_NAMES`).
     "…panel 1 prompt…",
     "…panel 2 prompt…"
   ],
+  "gists": [
+    "…panel 1 gist…",
+    "…panel 2 gist…"
+  ],
   "texts": [
     "…panel 1 storybook line…",
     "…panel 2 storybook line…"
@@ -67,6 +71,18 @@ new categories are added (and add them to `_TYPE_NAMES`).
   the payload; `prompts[i]` becomes panel *i*'s `text`. The **panel count is
   `len(prompts)`** (there is no separate `panel_count` field), and it must match
   the render template `templates/1`'s panel count (6).
+- `gists` — the per-panel **eval gist**: a one-sentence statement of what *this
+  panel must show* — its setting, who is present (and the protagonist far-left in
+  any multi-person panel), the key action/interaction, and the narrative beat —
+  with all style/camera/identity boilerplate stripped out. **Same length and
+  order as `prompts`** (`gists[i]` is the intent of panel *i*). It is the panel's
+  testable *intent*, parallel to but distinct from the literal prompt, and is the
+  shared spec both eval skills grade against: `prompt-eval` (vision) asks "does
+  the generated image satisfy the gist?"; `prompt-lint` (text-only) asks "would
+  this prompt, rendered faithfully, satisfy the gist?". Authored by the
+  `story-prompts` skill alongside the prompts; the image pipeline never reads it.
+  Like `texts` (and unlike `prompts`) it carries **no** `{TOKEN}` placeholders —
+  refer to the supporting cast by role ("the elderly woman", "a friend").
 - `texts` — the per-panel **read-aloud storybook narration** (scene + dialog),
   one string per panel and the **same length/order as `prompts`** (`texts[i]`
   is what the reader sees on panel *i*'s page). Authored by the `story-text`

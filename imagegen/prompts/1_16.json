@@ -14,6 +14,14 @@
     "On a city street with a pedestrian crossing, clear daylight, the {INPUT_1_AGE} person from the input image walks on the far left across the white zebra crossing, facing the camera with a confident smile and the face fully visible, holding hands with {GENDER_M_AGE_35_RACE_ASIAN_PARENT} who walks to the right. A green walking signal glows ahead. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "On a city street with a pedestrian crossing, clear daylight, safely on the far pavement the {INPUT_1_AGE} person from the input image stands on the far left, giving a happy thumbs-up, facing the camera with a proud smile and the face fully visible. On the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} gives a thumbs-up and a warm smile. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "On a city street with a pedestrian crossing in daylight, the child (far left) walks along the pavement, cheerful, while the father at right walks beside them.",
+    "At the kerb, the child (far left) leans forward as if about to step into the road with a surprised look while the father at right gently holds them back, caring and watchful, a parked car nearby — stop first.",
+    "At the kerb, the child (far left) turns their head to look both ways along the road, attentive, while the father at right points left and right, teaching them to look.",
+    "At the crossing by a traffic light showing red, the child (far left) waits patiently holding the father's hand while the father at right waits calmly holding their hand — waiting for the signal.",
+    "The child (far left) walks across the white zebra crossing, confident, holding hands with the father at right, a green walking signal glowing ahead — crossing safely together.",
+    "Safely on the far pavement, the child (far left) gives a happy thumbs-up, proud, while the father at right gives a thumbs-up and a warm smile — crossed the road safely."
+  ],
   "texts": [
     "You walked along the busy pavement with Dad. Up ahead was the road. \"Stay close,\" said Dad.",
     "You started to step toward the road, but Dad gently held you back. \"We must stop first,\" he said.",

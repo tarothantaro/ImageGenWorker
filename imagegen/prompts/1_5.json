@@ -14,6 +14,14 @@
     "In a cozy child's bedroom — a small bed against the back wall, a low toy shelf, no sofa or television — now neat and tidy, the bed made, all the toys put away, the floor clear, the toy box closed and the books lined up on the shelf, the {INPUT_1_AGE} person from the input image stands with both hands on their hips, looking around the clean bright room, facing the camera with their face fully visible and a happy expression. Medium shot at eye level, warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a cozy child's bedroom — a small bed against the back wall, a low toy shelf, no sofa or television — now tidy and bright with all the toys put away, the {INPUT_1_AGE} person from the input image stands on the far left, facing the camera with their face fully visible and a proud, beaming smile, hands on hips. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} stands beside them clapping happily and looking proud. The clean room glows with warm light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a cozy child's bedroom strewn with toys, blocks, a teddy and books across the floor, the child stands alone among the mess, hand on cheek, looking around at the messy room.",
+    "In the messy bedroom, the child (far left) holds a single toy, unsure where to begin, while the mother at right kneels by a colourful toy box gesturing at the scattered toys — it's tidy-up time.",
+    "In the bedroom still scattered with toys, the child kneels alone picking up blocks with a determined little smile, starting to tidy.",
+    "In the half-tidied bedroom, the child (far left) drops a teddy into the toy box while the mother at right places books on the low shelf — they tidy as a team.",
+    "In the now neat and tidy bedroom (bed made, floor clear, toys away), the child stands alone with hands on hips, looking around the clean bright room, happy.",
+    "In the tidy bright bedroom, the child (far left) stands proudly with hands on hips while the mother at right claps happily beside them — a tidy room, a proud child."
+  ],
   "texts": [
     "Uh oh — your room was a big mess! Toys, books and blocks lay all over the floor.",
     "\"It's tidy-up time,\" said Mum, pointing to the toy box with a gentle smile.",

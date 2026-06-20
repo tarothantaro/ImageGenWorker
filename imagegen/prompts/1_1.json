@@ -15,6 +15,14 @@
     "At a roadside bus stop with wet reflective pavement, rain falling, the {INPUT_1_AGE} person from the input image stands alone with no umbrella, wrapping both arms tightly around themselves and hunching against the cold, facing the camera so the face remains clearly visible. Overcast grey light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "At a roadside bus stop with wet reflective pavement, rain falling, the {INPUT_1_AGE} person from the input image stands on the far left, one hand pressed to their chest as they glance up at the umbrella, facing the camera with a surprised, grateful expression and the face fully visible. On the right, {GENDER_M_AGE_25_RACE_ASIAN} holds a large umbrella over both of them and smiles warmly. Warm light breaking through the clouds, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "On a tree-lined suburban pavement in morning sun, the child walks along happily — an ordinary cheerful morning, the child alone.",
+    "On the suburban pavement, the child (far left) stops in surprise with one hand raised as an elderly woman on the right drops a torn grocery bag and oranges roll across the ground — the child has just noticed her trouble.",
+    "On the pavement, the child (far left) kneels gathering the spilled oranges back into the torn bag while the elderly woman stands at right, hands clasped, watching gratefully.",
+    "On the pavement, the child (far left) walks carrying two grocery bags with a kind smile while the elderly woman walks beside them at right, gesturing toward her house with a blue door.",
+    "At a rainy roadside bus stop under grey overcast light, the child stands alone with no umbrella, arms wrapped around themselves, cold and wet.",
+    "At the bus stop, the child (far left) looks up gratefully with a hand to their chest as a young man on the right holds a large umbrella over them both — kindness returning as the light warms."
+  ],
   "texts": [
     "One sunny morning, you set off down the street. The birds were singing, and you felt happy.",
     "Up ahead, an old lady's bag tore open and oranges rolled everywhere. \"Oh no!\" you said.",

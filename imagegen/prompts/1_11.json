@@ -14,6 +14,14 @@
     "In a cozy child's bedroom in the evening — a comfy bed, a small teddy bear — now softly lit by a glowing night-light, the {INPUT_1_AGE} person from the input image snuggles down alone under the blanket, hugging the teddy bear with a small brave smile, head turned toward the camera so the face stays clearly visible. Gentle eye-level medium shot, warm glowing light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a cozy child's bedroom in the evening — a comfy bed, a small teddy bear — now softly lit by a glowing night-light, the {INPUT_1_AGE} person from the input image rests peacefully alone on the pillow with the teddy bear tucked close and a content, peaceful expression, no longer afraid of the dark, head turned toward the camera so the face stays clearly visible. Gentle eye-level medium shot, warm glowing light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a cozy child's bedroom in the evening, the child sits up on the bed hugging a teddy bear, looking unsure about the dark, in a soft warm glow.",
+    "In the evening bedroom, the child (far left) sits on the bed hugging the teddy, a little worried, while the father at right kneels reaching toward a small night-light to switch it on.",
+    "In the bedroom now softly lit by the night-light, the child (far left) sits on the bed calmer, hugging the teddy, while the father at right leans in tucking a blanket around them.",
+    "In the night-light-lit bedroom, the child lies back alone on the pillow with the teddy beside them, calmer now.",
+    "In the night-light-lit bedroom, the child snuggles down alone under the blanket hugging the teddy with a small brave smile.",
+    "In the night-light-lit bedroom, the child rests peacefully alone on the pillow with the teddy close, content and no longer afraid of the dark."
+  ],
   "texts": [
     "It was bedtime. You sat up in bed hugging your teddy, feeling unsure about the dark.",
     "\"I'm a little bit scared,\" you said. Dad knelt down and switched on a soft, glowing night-light.",

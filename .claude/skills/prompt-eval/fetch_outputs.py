@@ -251,6 +251,10 @@ def _download(args: argparse.Namespace) -> int:
         return 2
     spec = json.loads(story_json.read_text())
     prompts: list[str] = spec.get("prompts", [])
+    # Per-panel gist: the authored, eval-ready intent of the panel (parallel to
+    # prompts). The judge also checks whether the image *satisfies the gist*, not
+    # just the literal prompt. Absent on older stories -> per-panel gist is None.
+    gists: list[str] = spec.get("gists", [])
     characters = _load_characters()
     variants = _variants_for_live_template()
     # The actual prompts the worker logged for THIS run (keyed by panel index).
@@ -313,6 +317,7 @@ def _download(args: argparse.Namespace) -> int:
                 "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
                 "resolved_prompt": resolved,
+                "gist": gists[panel_index] if panel_index < len(gists) else None,
                 # Provenance so the judge/report knows which prompt it graded.
                 "prompt_source": "worker_log" if logged_prompt else "reconstructed",
                 "reconstructed_prompt": reconstructed,
@@ -333,6 +338,9 @@ def _download(args: argparse.Namespace) -> int:
         "source": _source_label(args),
         "variants_per_panel": variants,
         "panel_count": len(prompts),
+        # Whether this story carries authored per-panel gists (the intent the
+        # judge also grades the image against). False on pre-gist stories.
+        "has_gists": bool(gists),
         # Which prompt the judge should grade against: "worker_log" means each
         # entry's resolved_prompt is the ACTUAL prompt the worker logged; mixed/
         # reconstructed means some/all fell back to re-deriving from the file.

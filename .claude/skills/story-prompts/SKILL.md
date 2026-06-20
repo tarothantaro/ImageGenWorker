@@ -13,7 +13,21 @@ the **same single input photo** to produce one panel image. Read
 story-type registry. Generated supporting characters come from
 `imagegen/prompts/character.json` (owned by the `character-config` skill). The
 read-aloud `texts` array in the same file is owned by the `story-text` skill,
-not this one — this skill writes the image `prompts` and metadata.
+not this one — this skill writes the image `prompts`, their per-panel `gists`,
+and the metadata.
+
+This skill also owns the **`gists`** array — one eval gist per panel, parallel to
+`prompts`. A gist is a single sentence capturing what *that panel must show*: its
+setting, who is present (and the protagonist far-left in any multi-person panel),
+the key action/interaction, and the narrative beat — **with the style, camera and
+identity-preservation boilerplate stripped out**. It is the panel's testable
+*intent*, and the spec both eval skills grade against: `prompt-eval` (vision)
+checks "does the image satisfy the gist?" and `prompt-lint` (text-only, no image
+gen) checks "would this prompt, rendered faithfully, satisfy the gist?". Write a
+gist for **every** panel whenever you write or edit its prompt, and keep the two
+in sync — if you change what a panel depicts, update its gist to match. Refer to
+the supporting cast by **role** ("the elderly woman", "a friend"), never by
+`{TOKEN}` — the gist carries no placeholders (see `imagegen/prompts/1_1.json`).
 
 ## How the pipeline shapes every prompt
 
@@ -234,7 +248,13 @@ For every prompt in the array, confirm:
    panels naturally, but every multi-person panel obeys constraint #1, and **every
    person in every panel is given a concrete action** (rule 4) — never left
    standing/sitting with only an expression.
-5. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
+5. **Write the gists** — one per panel, parallel to `prompts`. For each panel,
+   state in a sentence what the image must show (setting + who is present, with
+   the protagonist far-left when multi-person, + the key action/interaction + the
+   narrative beat), referring to the cast by role and dropping all style/camera/
+   identity boilerplate. This is the panel's intent both eval skills check
+   against — so it must describe the *same beat* the prompt does.
+6. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
    token used, `version`). The panel count is just `len(prompts)` — no
    `panel_count` field.
 
@@ -256,6 +276,10 @@ breaks then is cleaned up).
 
 - [ ] File is `imagegen/prompts/<type>_<id>.json`, valid JSON, schema per README.
 - [ ] `len(prompts) == 6` (matches the render template `templates/1`).
+- [ ] `len(gists) == len(prompts)`; each gist is one boilerplate-free sentence
+      describing the same beat as its prompt (setting + cast/placement + action +
+      point), cast named by role and **no** `{TOKEN}`. Run `prompt-lint` to grade
+      prompt↔gist alignment + rule compliance before generating any images.
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
 - [ ] Re-run the per-panel checklist on each prompt.

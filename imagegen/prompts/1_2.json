@@ -14,6 +14,14 @@
     "In a sunny backyard garden, on a picnic blanket, the {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face fully visible, laughing joyfully and pointing up at a tall, colourful tower they built together. On the right, {GENDER_F_AGE_06_RACE_BLACK} laughs and claps with delight at the finished tower. Eye-level medium-wide shot, warm sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a sunny backyard garden, on a picnic blanket at golden hour, the {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face clearly visible and a warm, contented smile, sharing a small bowl of fruit snacks, the tall colourful block tower they built earlier still standing on the blanket just beside them. On the right, {GENDER_F_AGE_06_RACE_BLACK} sits close, reaching into the bowl for a fruit snack and smiling happily, the two friends resting together after playing. Eye-level medium shot, soft warm evening light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a sunny backyard garden on a picnic blanket, the child sits alone happily building with a pile of colourful blocks.",
+    "On the garden blanket, the child (far left) holds a block a little tightly while another young girl walks up at right with open hands, hoping to join — the child is hesitant to share.",
+    "On the garden blanket, the child (far left) holds out a block to offer it while the girl at right reaches to accept it, delighted — the child decides to share.",
+    "On the garden blanket, the child (far left) and the girl at right stack colourful blocks together into a growing tower, both happy.",
+    "On the garden blanket, the child (far left) laughs and points up at the tall finished tower while the girl at right claps with delight.",
+    "On the garden blanket at golden hour, the child (far left) and the girl at right rest together sharing a bowl of fruit snacks, the tall block tower still standing beside them — contented friends after playing."
+  ],
   "texts": [
     "You sat in the sunny garden with a big pile of colourful blocks. Building was so much fun!",
     "A friend came over and watched. She wanted to play too, but you held your block tight.",

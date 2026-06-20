@@ -17,6 +17,14 @@
     "In a bright cheerful classroom — a colourful alphabet rug, cubby shelves, warm light — the {INPUT_1_AGE} person from the input image stands on the far left holding hands in a circle with friends, facing the camera with a joyful smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK}, {GENDER_M_AGE_06_RACE_WHITE} and {GENDER_F_AGE_06_RACE_ASIAN} hold hands too, all together. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a bright cheerful classroom — a colourful alphabet rug, cubby shelves, golden light — the {INPUT_1_AGE} person from the input image stands on the far left in a happy group hug with friends, facing the camera with a big warm smile and the face fully visible. To the right, {GENDER_F_AGE_06_RACE_BLACK}, {GENDER_F_AGE_06_RACE_ASIAN} and {GENDER_M_AGE_06_RACE_SOUTH_ASIAN} hug in close, all delighted. Exactly four children in the frame and no one else. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a bright classroom on a colourful alphabet rug, the child (far left) sits cross-legged in a small circle, chatting and gesturing, while three other children sit at right chatting together.",
+    "On the classroom rug, the child (far left) leans forward with hands on knees, curious, watching a friend share; at right a girl holds up a favourite picture book while a boy leans in to look.",
+    "On the classroom rug, the child (far left) proudly holds up their own favourite toy with a sharing smile while two friends at right clap, interested — exactly three children.",
+    "On the classroom rug, four children stand in a single row noticing how different they all look — child far left laughing and gesturing, then the three friends — exactly four, no duplicates.",
+    "On the classroom rug, the child (far left) holds hands in a circle with three friends at right, all joyful — different and special, side by side.",
+    "On the classroom rug in golden light, the child (far left) is in a happy group hug with three friends at right, all delighted — exactly four children. Everyone is special."
+  ],
   "texts": [
     "You sat in a circle with your friends on the colourful classroom rug. Everyone was chatting happily.",
     "One friend held up her favourite picture book to share. You watched, curious and interested.",

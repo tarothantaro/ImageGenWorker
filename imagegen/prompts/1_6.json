@@ -14,6 +14,14 @@
     "In a sunny home garden — green grass, flowers, a low wooden fence behind — the {INPUT_1_AGE} person from the input image sits on the grass as a small fluffy brown puppy relaxes and snuggles up against their side, eyes softly closed and tail wagging, facing the camera with their face fully visible and a gentle, happy expression, head turned toward the camera so the face stays clearly visible. Medium shot at eye level, warm golden light, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a sunny home garden — green grass, flowers, a low wooden fence behind — the {INPUT_1_AGE} person from the input image sits on the far left, facing the camera with their face fully visible and a joyful smile, gently cradling a happy, content small fluffy brown puppy in their lap. To the right, {GENDER_M_AGE_35_RACE_ASIAN_PARENT} sits beside them, looking on proudly. Eye-level medium-wide shot, warm golden sunlight, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a sunny home garden with a low wooden fence, the child kneels alone, beaming with excitement at a small brown puppy sitting a little way ahead.",
+    "In the garden, the child leans forward with both hands reaching out too eagerly and a surprised look as the small brown puppy bolts away to the right, clearly frightened — the child was too fast and scared it.",
+    "In the garden, the child (far left) kneels watching attentively while the father at right crouches calmly holding out one slow, open hand to a small brown puppy, showing how to be gentle.",
+    "In the garden, the child kneels alone very gently stroking the back of the small brown puppy with one soft hand, calm and tender.",
+    "In the garden in golden light, the child sits alone as the small brown puppy relaxes and snuggles against their side, tail wagging — gentleness made a friend.",
+    "In the garden in golden light, the child (far left) cradles the happy puppy in their lap while the father at right looks on proudly."
+  ],
   "texts": [
     "In the sunny garden you met a little brown puppy. \"Hello, puppy!\" you said, full of excitement.",
     "You reached out too fast, and the puppy shrank back, afraid. Oh no — that was too quick.",

@@ -14,6 +14,14 @@
     "In a cozy living room in the afternoon — a wooden shelf on the wall, a wooden floor, warm afternoon light — the {INPUT_1_AGE} person from the input image is on the far left, kneeling to pick up small scattered blue ceramic shards lying flat on the wooden floor (no whole or rounded vase anywhere in frame) but with the head turned toward the camera so the face stays clearly visible, with a softer expression. {GENDER_F_AGE_35_RACE_ASIAN_PARENT} kneels to the right, helping gather the pieces and smiling gently. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image.",
     "In a cozy living room in the afternoon — a wooden shelf on the wall, a wooden floor, warm afternoon light — the {INPUT_1_AGE} person from the input image stands on the far left, one hand resting over their heart in relief, facing the camera with a happy smile and the face fully visible. On the right, {GENDER_F_AGE_35_RACE_ASIAN_PARENT} rests a hand warmly on their shoulder. A fresh flower sits in a new cup on the wooden shelf behind them. Eye-level medium-wide shot, photorealistic, cinematic photography style. Preserve the facial features, skin tone and hairstyle of the person from the input image."
   ],
+  "gists": [
+    "In a cozy afternoon living room with a wooden shelf holding a blue ceramic vase, the child plays alone on the floor bouncing a red ball, playful.",
+    "In the living room, the wooden shelf is now bare and the blue vase lies shattered in shards on the floor while the child stands alone among them, hands flying up beside their cheeks in shock.",
+    "In the living room beside the shattered blue shards with the shelf bare above, the child stands alone, hand to cheek, looking down worriedly — unsure what to do.",
+    "In the living room, the child (far left) points down at the shattered blue shards with an honest, nervous look while the mother at right kneels to their level, listening calmly — the child owns up.",
+    "In the living room, the child (far left) kneels helping pick up the blue shards with a softer expression while the mother at right kneels gathering pieces too, smiling gently — telling the truth, cleaning up together.",
+    "In the living room with a fresh flower in a new cup on the shelf, the child (far left) rests a hand over their heart in relief, happy, while the mother at right rests a hand on their shoulder — the truth feels lighter."
+  ],
   "texts": [
     "You were bouncing your red ball in the living room. Boing, boing — what fun!",
     "Then crash! The blue vase fell and broke into pieces. You gasped and covered your mouth.",

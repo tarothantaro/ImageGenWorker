@@ -1,6 +1,6 @@
 ---
 name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most with the face ≥70% visible, the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, and it matches the prompt (composition, clothes, age). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` skill.
+description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most with the face ≥70% visible, the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
 ---
 
 # prompt-eval
@@ -93,6 +93,15 @@ back to a **reconstruction** (`{TOKEN}` characters expanded from
 resolved `characters` map, and `variants_per_panel`. Read `manifest.json` before
 judging.
 
+Each entry also carries a **`gist`** — the story author's one-sentence statement
+of what *this panel must show* (setting, who is present + protagonist far-left
+when multi-person, the key action/interaction, the narrative beat), stripped of
+style/camera/identity boilerplate. It is the panel's intent, parallel to the
+prompt, authored by the `story-prompts` skill (the JSON `gists` array). The
+manifest's `has_gists` says whether the story carries them. Grade the image
+against the gist as its own rubric row (below); when `gist` is `null` (a pre-gist
+story) score that row **NA** and say so.
+
 > The actual-prompt log only exists if the worker generated the story with
 > `PROMPT_LOG_DIR` set (the dev stack sets it by default). Point `--log-dir` at a
 > different host dir if yours is non-standard. A `mixed`/`reconstructed`
@@ -136,6 +145,7 @@ full rendered workflow that produced the image.
 | **Prompt match** | The image matches the `resolved_prompt` — **composition/shot**, **clothes/wardrobe**, **age**, props, expression. (Setting/location is scored under **Scene & setting**.) Call out each mismatch specifically. |
 | **Action & interaction** | Each person performs the **action** the prompt asks, and people **interacting** do so coherently — the prompt's verbs read in the image (e.g. handshake, hug, pointing, sharing a toy), with bodies/gazes/hands oriented toward one another. No disconnected, contradictory, or idle poses where the prompt calls for an action or exchange. |
 | **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. |
+| **Gist satisfied** | The image conveys the panel's **`gist`** — the author's intended beat: the right setting, the right people doing the right thing, and the narrative point landing (e.g. "child *offers* a block and the friend *accepts*"; "the vase is *shattered* and the child is *shocked*"). This is the *meaning* check, above the literal-prompt match: an image can match the prompt's words yet miss the beat (the offer reads as the child keeping the block; the "shattered vase" still shows a whole vase). Judge whether someone seeing only the gist would accept this image. NA when `gist` is `null`. |
 
 Score each criterion **pass / partial / fail** (NA where it doesn't apply) with a
 one-line evidence note.
@@ -169,11 +179,13 @@ Write markdown to the `report_path` from the manifest
 - Prompt match: <count> pass / <count> partial / <count> fail
 - Action & interaction: <X/Y> panels
 - Cast & identity: <consistent?>
+- Gist satisfied: <X/Y> panels
 - Top issues (ranked): 1) … 2) … 3) …
 
 ## Panels (V2)
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
+- Gist: "<gist>"
 - Frame: <what the pixels show — #people, L→R order naming who is left-most, anything over the protagonist's face>
 - Far-left: NA (solo) | pass | **fail** — <evidence>
 - Face ≥70% visible: pass | **fail** — <evidence>
@@ -183,6 +195,7 @@ Write markdown to the `report_path` from the manifest
 - Prompt match: pass | partial — composition/clothes/age/… <evidence>
 - Action & interaction: NA (no action) | pass | partial — <evidence>
 - Cast & identity: NA | pass | partial — <evidence>
+- Gist satisfied: NA (no gist) | pass | partial | **fail** — does the intended beat land? <evidence>
 … (every panel, on its V2 image) …
 
 ## Recommended prompt fixes
@@ -198,8 +211,9 @@ to paste into the prompt.
 ### 5. Report back
 
 Tell the user the verdict, the headline numbers (far-left, face-visible,
-realism, scale & depth, scene & setting, prompt match, action & interaction), and
-the `report.md` path. If outputs were missing or the set was partial, say so plainly.
+realism, scale & depth, scene & setting, prompt match, action & interaction, gist
+satisfied), and the `report.md` path. If outputs were missing or the set was
+partial, say so plainly.
 
 ## Notes
 
