@@ -564,7 +564,12 @@ def main(argv: list[str] | None = None) -> int:
         default="eval_runs/latest",
         help="run dir produced by generate_stories.py + the eval step",
     )
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="bind address (default 0.0.0.0 = reachable from other devices on "
+        "the LAN; pass 127.0.0.1 to restrict to this machine)",
+    )
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args(argv)
 
@@ -574,7 +579,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     server = ThreadingHTTPServer((args.host, args.port), _make_handler(run_dir))
-    url = f"http://{args.host}:{args.port}/"
+    # 0.0.0.0 isn't a browsable address — point at localhost for this machine.
+    shown_host = "localhost" if args.host == "0.0.0.0" else args.host
+    url = f"http://{shown_host}:{args.port}/"
     n = len(list(_iter_eval_dirs(run_dir / "eval")))
     print(f"[review] serving {run_dir} ({n} stor{'y' if n == 1 else 'ies'}) at {url}")
     print("[review] Ctrl-C to stop")
