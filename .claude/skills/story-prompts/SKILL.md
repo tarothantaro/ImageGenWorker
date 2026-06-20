@@ -102,13 +102,22 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    the style, **and the setting** every time. For panels that share a location,
    re-state the concrete **setting anchors** — the key furniture/landmarks, the
    time of day, and the light — in a short phrase (reasonable detail, not an
-   exhaustive list) so the location reads as the same place across the story. Two
-   failure modes to avoid, both caused by the no-memory pipeline:
-   - **Bare back-references** — *"Same living room"*, *"the same garden"*, *"the
-     broken vase"* — name something the model cannot see; they carry no
-     description, so the setting drifts. Spell the anchors out instead: *"the same
-     cozy living room — a wooden shelf on the wall, a wooden floor, warm afternoon
-     light"*.
+   exhaustive list) so the location reads as the same place across the story.
+   Continuity comes from **repeating the anchors**, never from a word that points
+   at another panel. Introduce the scene with an **indefinite article** (*"In a
+   cozy living room …"*, *"A garden scene …"*), exactly as panel 1 would — every
+   panel is panel 1 to the model. Three failure modes to avoid, all caused by the
+   no-memory pipeline:
+   - **Cross-panel reference words** — *"the same"*, *"again"*, *"back at"*, *"as
+     before"*. The model has no memory of any other panel, so *"the same garden"*
+     points at nothing; at best the word is wasted, at worst it implies a prior
+     image that does not exist. **Drop the word entirely** and let the re-described
+     anchors carry the continuity: write *"In a cozy living room — a wooden shelf
+     on the wall, a wooden floor, warm afternoon light …"*, **not** *"In the same
+     cozy living room …"*.
+   - **Bare back-references** — *"Same living room"*, *"the broken vase"* — name
+     something the model cannot see; they carry no description, so the setting
+     drifts. Spell the anchors (and any referenced object) out in full instead.
    - **"Transform the scene" openers.** The input image is the *person photo*, not
      the previous panel, so there is no prior scene to transform — the instruction
      acts on nothing and the intended setting is lost. Use *"Place the person from
@@ -132,8 +141,10 @@ For every prompt in the array, confirm:
       expression only, no appearance, no re-described clothing.
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
 - [ ] Panels sharing a location **re-describe the setting anchors** (key
-      furniture/landmarks + time of day + light); no bare "same room"
-      back-reference and no "Transform the scene" opener.
+      furniture/landmarks + time of day + light), introduced with an **indefinite
+      article** ("In a cozy living room …"); no cross-panel reference word ("the
+      same", "again", "back at"), no bare "same room" back-reference, and no
+      "Transform the scene" opener.
 - [ ] Same style phrase as the rest of the story.
 - [ ] Ends with the preserve-identity sentence.
 
