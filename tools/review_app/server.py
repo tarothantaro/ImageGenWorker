@@ -280,6 +280,24 @@ main { flex: 1 1 auto; min-width: 0; }
     border-radius: 12px; padding: 16px; color: inherit; }
 .index-grid a.tile:hover { border-color: #93c5fd; text-decoration: none; }
 .index-grid .tile h3 { margin: 0 0 6px; font-size: 16px; }
+
+/* --- narrow screens (phones / small tablets) ------------------------------ */
+@media (max-width: 760px) {
+  header.top { padding: 10px 14px; gap: 10px; }
+  .wrap { flex-direction: column; gap: 14px; padding: 14px; }
+  /* Sidebar stops being a fixed rail: full-width, scrolls within a capped box,
+     above the content rather than beside it. */
+  nav.side { position: static; width: auto; flex: none; max-height: 38vh;
+      top: auto; }
+  main { width: 100%; }
+  .card { padding: 14px; }
+  /* Panel: stack prompt/eval above the images instead of side by side. */
+  .panel { grid-template-columns: 1fr; gap: 14px; }
+  /* Let the V1/V2 variants share the row and grow to fill it. */
+  .panel .imgs figure { flex: 1 1 0; min-width: 0; }
+  .panel figure img { width: 100%; max-width: 100%; }
+  .index-grid { grid-template-columns: 1fr; }
+}
 """
 
 _LIGHTBOX_JS = """
