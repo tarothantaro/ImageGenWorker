@@ -52,12 +52,20 @@ constraint will be ignored.
 
 Derived from the model's prompt guidance — instruction-style, specific, spatial.
 
-1. **Lead with the composition/action, instruction-style.** Open with what to do:
-   *"Place the person from the input image into [the fully described scene] …"*.
-   Short and specific beats long and flowery — *"a torn grocery bag, oranges
-   rolling out"* over a paragraph of adjectives. Don't open with *"Transform the
-   scene"* — see rule 9: the input is the person photo, not a prior panel, so
-   there is no existing scene to transform.
+1. **Lead with the scene, then introduce each person — once.** Open every panel
+   with the canonical setting-anchor clause (rule 9) and keep **all people out of
+   that clause**: *"In a cozy living room — a wooden shelf, a wooden floor, warm
+   afternoon light — the person from the input image …"*. Then introduce the
+   protagonist **exactly once**, in a **single uninterrupted block** carrying
+   position *and* action *and* facing-camera *and* expression together. Never name
+   the person, insert the scene (or another character), then name them again
+   (*"Place the person into `<scene>` … the person facing the camera …"*): each panel
+   is a memory-less edit, so two separated mentions of the same person read as **two
+   different people** and the model renders a duplicate child (see rule 9, "split
+   reference"). Short and specific beats long and flowery — *"a torn grocery bag,
+   oranges rolling out"* over a paragraph of adjectives. Don't open with *"Place the
+   person into …"* ahead of the setting, or with *"Transform the scene"* — the input
+   is the person photo, not a prior panel, so there is no existing scene to transform.
 2. **Use spatial words to place people** — `far left`, `to the right`,
    `beside them`, `in the background`, `foreground`. This is the lever for
    constraint #1. The model positions by these words, not by image indices.
@@ -112,10 +120,11 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    floor, warm afternoon light"* or *"a sunny playground in the green park — a
    sandbox and a set of swings, soft grass, warm sunlight"*. Reasonable detail,
    not an exhaustive list. Then reuse that **exact string** in every panel of the
-   scene (the grammatical frame around it may differ — *"Place the person … into
-   `<anchor>` …"* in an establishing panel vs *"In `<anchor>` — the person …"*
-   later — but the adjectives/nouns/landmarks/light inside it must be identical).
-   When the story moves to a new location, that is a **new scene** with its own
+   scene, **leading the panel with it so no person sits inside the anchor** —
+   *"In `<anchor>` — the person from the input image …"* in every panel, establishing
+   or not (the leading article/preposition may differ, *"In a …"* / *"On a …"* /
+   *"At a …"*, but the adjectives/nouns/landmarks/light inside the anchor must be
+   identical). When the story moves to a new location, that is a **new scene** with its own
    canonical anchor; if it later returns to an earlier scene, reuse that scene's
    exact anchor again.
 
@@ -147,18 +156,47 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      drifts. Spell the anchor (and any referenced object) out in full instead.
    - **"Transform the scene" openers.** The input image is the *person photo*, not
      the previous panel, so there is no prior scene to transform — the instruction
-     acts on nothing and the intended setting is lost. Use *"Place the person from
-     the input image into [the fully described scene] …"* and describe the scene
-     from scratch, including any change of state (e.g. the shattered vase, the
-     tidied room).
+     acts on nothing and the intended setting is lost. Lead with the anchor and
+     describe the scene from scratch, including any change of state (e.g. the
+     shattered vase, the tidied room).
+   - **A person inside the anchor, named again later (split reference).** Writing
+     *"Place the person into `<anchor>` … `<action>`. … the person facing the camera
+     …"* names the protagonist, drops the scene (or another character) in between,
+     then names them again. With no memory across the sentence the model treats the
+     two mentions as **two separate children** and renders a duplicate. Lead with the
+     anchor (no person in it), then describe each person **once**, in a single
+     contiguous block (position + action + face + expression): *"In `<anchor>` — the
+     person from the input image kneels on the far left gathering the blocks, facing
+     the camera with their face fully visible and a kind smile."*
 10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
+11. **Guard tight close-ups and dense groups against child duplication.** A
+   *separate* failure from the split reference (rule 9): even a single-block,
+   scene-first prompt can make the **base model** invent an extra child — this
+   shows up in the V1 (pre-face-swap) image too, so it is not a swap artifact. Two
+   patterns trigger it, with two fixes:
+   - **Symmetric solo close-ups** (a child bent over a sink with both hands
+     together, centered and mirrored) invent a companion. Frame the solo subject
+     **upright, turned slightly to one side, hands/props off to one side** (the
+     pose that already works elsewhere), and add a targeted *"only this one child,
+     alone in the frame, no second child, twin, sibling or reflection"*. A bare
+     *"Exactly one child"* count alone does **not** reliably hold.
+   - **Tight group hugs / crowds (3+ children)** fragment a `{TOKEN}` into two kids
+     (e.g. the "red dungarees" and the "puff buns" of one girl land on different
+     children). Pose them in an **explicit left-to-right row**, naming each child
+     once in order, with *"exactly N children in total, each a single distinct
+     child — no extra, duplicate or twin"*, instead of an overlapping hug.
 
 ## Per-panel checklist
 
 For every prompt in the array, confirm:
 
-- [ ] Opens with an instruction-style composition/action line.
+- [ ] **Opens with the scene** (the canonical setting-anchor clause), with **no
+      person named inside that clause**.
+- [ ] **Each person is described exactly once**, in one contiguous block (position +
+      action + facing-camera + expression) — the protagonist is never named near the
+      scene and then again later (a "split reference" makes the model draw a duplicate
+      child).
 - [ ] If >1 person: protagonist is explicitly **far left**.
 - [ ] Protagonist is **facing the camera, face clearly visible** (camera/shot cue
       present); any kneel/tilt adds "head turned toward the camera".
@@ -205,7 +243,8 @@ For every prompt in the array, confirm:
 See `imagegen/prompts/1_1.json` — a 6-panel life-lesson story
 ("Kindness Comes Back Around") that follows every rule here: protagonist left and
 face-forward in all multi-person panels, supporting cast via tokens only,
-consistent storybook style, identity preserved each panel. It also shows rule 9's
+consistent storybook style, identity preserved each panel. Every panel **leads with
+the scene** and names the protagonist exactly once. It also shows rule 9's
 anchor reuse across a two-scene story — panels 1–4 repeat the verbatim clause
 *"a tree-lined suburban pavement in the morning sunlight"*, then panels 5–6 switch
 to *"a roadside bus stop with wet reflective pavement, rain falling"* (with only

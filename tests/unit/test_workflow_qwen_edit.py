@@ -71,7 +71,7 @@ def test_prepare_injects_story_prompt_into_prompt_named_field(
 
     prompt_text = next(f["prompt"] for f in prepared.panels[0] if "prompt" in f)
     assert "{PROMPT}" not in prompt_text
-    assert prompt_text.startswith("Place the {INPUT_1_AGE} person from the input image")
+    assert "the {INPUT_1_AGE} person from the input image" in prompt_text
 
 
 def test_render_substitutes_panel_values_and_placeholders(

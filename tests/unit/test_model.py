@@ -106,8 +106,9 @@ def test_generate_sends_expected_workflow_parameters() -> None:
     # come from the template (no per-job overrides anymore). Node ids are
     # workflow 2's (Qwen-Image-Edit-2511) — see templates/2 + workflows/2.
     first = fake.submitted[0].prompt
-    assert first["170:151"]["inputs"]["prompt"].startswith(
-        "Place the person from the input image"
+    assert (
+        "the person from the input image"
+        in first["170:151"]["inputs"]["prompt"]
     )
     assert first["41"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert first["83"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
@@ -124,8 +125,9 @@ def test_generate_fills_input_age_placeholder_in_prompt() -> None:
     _generate(model, input_ages=["2-year-old"])
 
     first = fake.submitted[0].prompt
-    assert first["170:151"]["inputs"]["prompt"].startswith(
-        "Place the 2-year-old person from the input image"
+    assert (
+        "the 2-year-old person from the input image"
+        in first["170:151"]["inputs"]["prompt"]
     )
 
 
@@ -138,8 +140,9 @@ def test_generate_drops_age_placeholder_when_no_age_given() -> None:
     _generate(model, input_ages=[None])
 
     first = fake.submitted[0].prompt
-    assert first["170:151"]["inputs"]["prompt"].startswith(
-        "Place the person from the input image"
+    assert (
+        "the person from the input image"
+        in first["170:151"]["inputs"]["prompt"]
     )
     assert "{INPUT_1_AGE}" not in first["170:151"]["inputs"]["prompt"]
 
@@ -157,7 +160,7 @@ def test_generate_writes_actual_prompt_log_per_panel(tmp_path: Path) -> None:
 
     first = json.loads(records[0].read_text())
     # The logged prompt is the ACTUAL one sent — age word substituted in.
-    assert first["prompt_text"].startswith("Place the 4-year-old person")
+    assert "the 4-year-old person from the input image" in first["prompt_text"]
     assert first["status"] == "completed"
     assert first["story_ref"] == "1_1"
     assert first["comfyui_prompt_id"]  # populated after queue_prompt
@@ -204,8 +207,9 @@ def test_generate_uses_template_seed_and_story_prompt() -> None:
 
     submitted = fake.submitted[0].prompt
     assert submitted["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
-    assert submitted["170:151"]["inputs"]["prompt"].startswith(
-        "Place the person from the input image"
+    assert (
+        "the person from the input image"
+        in submitted["170:151"]["inputs"]["prompt"]
     )
 
 

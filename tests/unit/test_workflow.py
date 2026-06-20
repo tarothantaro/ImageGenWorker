@@ -198,7 +198,12 @@ def test_prepare_injects_story_prompts_and_resolves_characters(
     # still carrying the per-job {INPUT_1_AGE} token (resolved at render time,
     # like USER_ID/STORY_ID — not at prepare time).
     panel0_text = next(f["text"] for f in prepared.panels[0] if "text" in f)
-    assert panel0_text.startswith("Place the {INPUT_1_AGE} person from the input image")
+    assert panel0_text.startswith(
+        "On a tree-lined suburban pavement in the morning sunlight, "
+        "the {INPUT_1_AGE} person from the input image"
+    )
+    # The render-time token survives prepare (resolved later, like USER_ID).
+    assert "{INPUT_1_AGE} person from the input image" in panel0_text
     # Panel 1 references {GENDER_F_AGE_70_RACE_ASIAN}: resolved to its
     # description here. The only braces left are the render-time {INPUT_1_AGE}.
     panel1_text = next(f["text"] for f in prepared.panels[1] if "text" in f)
