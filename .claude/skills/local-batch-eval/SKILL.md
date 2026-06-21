@@ -110,18 +110,43 @@ Do this for every generated story so the review page is complete.
 
 ### 4. Open the review web UI
 
+**Kill any stale server first, then start one fresh for the new report.** A
+review server from a previous run is likely still running (left backgrounded);
+reusing it risks a port clash (`OSError: [Errno 98] Address already in use`) or,
+worse, silently serving an old run dir. Kill the old one and start a single new
+server pinned to *this* run:
+
 ```bash
-~/python_env/torch-env/bin/python tools/review_app/server.py \
-    --run-dir eval_runs/latest --port 8000
+pkill -f "review_app/server.py"                 # drop any server from a prior run
+sleep 1
+nohup ~/python_env/torch-env/bin/python tools/review_app/server.py \
+    --run-dir eval_runs/latest --port 8000 > eval_runs/review_app.log 2>&1 &
+disown
+sleep 2 && curl -s -o /dev/null -w "review app HTTP %{http_code}\n" http://127.0.0.1:8000/
 ```
+
+Notes:
+- Use `nohup … & disown` (not a bare `&`) so the server survives the turn; health-check
+  with the `curl` above (expect `HTTP 200`) before handing the URL over.
+- If the bind still fails with "Address already in use", the just-killed socket is in
+  `TIME_WAIT` — wait a couple of seconds and retry, or pick another port (`--port 8001`).
+- The server re-reads the run dir on every request, so once it's up you can re-judge or
+  re-generate and just refresh — no restart needed *within* the same run. The kill/restart
+  is only for starting a **new** report (new run dir, or after killing an orphaned server).
 
 Open `http://127.0.0.1:8000/`. The index lists every story with a verdict badge;
 each story page shows the **input photo**, and per panel the **actual prompt**
 sent to ComfyUI, the **V1 + V2 output images** side by side, and the judge's
-**eval notes** for that panel, plus the summary and recommended fixes. It
-re-reads the run dir on every request, so re-running generation or re-writing a
-`report.md` shows up on refresh. Stdlib-only — no install step. Leave it running
-(background it) and give the user the URL.
+**eval notes** for that panel, plus the summary and recommended fixes. Stdlib-only
+— no install step. Leave it running (backgrounded) and give the user the URL.
+
+> **Re-evaluating an existing run?** The `eval/<story>__<sid>/` dirs hold *copies*
+> of the PNGs (made by `fetch_outputs.py`) plus the `manifest.json` and `report.md`.
+> If the outputs were re-generated since the last eval, those copies and reports are
+> **stale** — re-run step 2 (`fetch_outputs.py`) for every story to refresh the copied
+> PNGs + manifests against the latest outputs, then re-judge (step 3) before serving.
+> Compare PNG mtimes under `outputs/<user>/<story>/outputs/` against the `eval/` copies
+> if unsure which is newer.
 
 ### 5. Report back
 
