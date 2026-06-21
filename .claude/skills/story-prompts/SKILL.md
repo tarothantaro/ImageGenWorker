@@ -45,22 +45,26 @@ photo** through a Flux/Qwen image-edit + ReActor face-swap graph, once per panel
   **only** from reusing the identical `{TOKEN}` placeholder (which expands to the
   identical appearance string) — never from one panel "remembering" another.
 
-## The two hard constraints (non-negotiable)
+## The hard constraint (non-negotiable)
 
 1. **Input person on the far left.** Any panel with more than one person places
    the protagonist as the **left-most** figure. State it literally:
    *"The person from the input image stands on the far left …"*. (Solo panels:
-   placement is free, but still keep the face visible — see #2.)
-2. **Input person's face ≥70% visible.** Compose front-on or three-quarter,
-   **facing the camera, face unobstructed**. Avoid back views, deep profiles,
-   and anything covering the face (hands, hats, masks, other characters, props).
-   If the head must tilt or kneel, add *"head turned toward the camera so the
-   face stays clearly visible"*. Only drop this when the narrative truly demands
-   it (e.g. a deliberate looking-away-at-a-vista shot) — and say so explicitly.
+   placement is free.) The face-swap stage maps the input face onto the
+   **left-most detected face**, so this is a pipeline requirement, not a
+   stylistic one.
 
-Both must be **restated in every panel that needs them** — panels are independent
+It must be **restated in every panel that needs it** — panels are independent
 edits and the base model has strong built-in preferences, so an unstated
 constraint will be ignored.
+
+**Let the protagonist engage naturally.** Do *not* force the input person to face
+the camera or keep the face front-on — that mandate produced stiff, posed-looking
+compositions and unnatural interactions. Let them look at the other character, at
+the action, or at the camera, whatever the moment calls for; three-quarter,
+profile, over-the-shoulder, and downward-glancing poses are all welcome. The only
+floor is the face-swap above: don't bury the protagonist in a pure back-of-head
+shot where no face is detectable. There is **no** "face ≥70% visible" rule.
 
 ## Prompt-writing rules (Qwen-Image-Edit-2511)
 
@@ -73,7 +77,7 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    protagonist **exactly once**, in a **single uninterrupted block** carrying
    position *and* action *and* facing-camera *and* expression together. Never name
    the person, insert the scene (or another character), then name them again
-   (*"Place the person into `<scene>` … the person facing the camera …"*): each panel
+   (*"Place the person into `<scene>` … the person smiling …"*): each panel
    is a memory-less edit, so two separated mentions of the same person read as **two
    different people** and the model renders a duplicate child (see rule 9, "split
    reference"). Short and specific beats long and flowery — *"a torn grocery bag,
@@ -83,16 +87,17 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
 2. **Use spatial words to place people** — `far left`, `to the right`,
    `beside them`, `in the background`, `foreground`. This is the lever for
    constraint #1. The model positions by these words, not by image indices.
-3. **Name a camera/shot to control face visibility** — `medium shot`,
-   `medium-wide shot`, `eye-level`, `three-quarter view`. This is the lever for
-   constraint #2. The model obeys camera/angle cues reliably.
+3. **Name a camera/shot to control framing** — `medium shot`,
+   `medium-wide shot`, `eye-level`, `three-quarter view`. Sets how much of the
+   scene and the people the frame includes, and the viewing angle. The model
+   obeys camera/angle cues reliably.
 4. **Give every person an explicit action.** Each person in the panel — the
    protagonist **and** every supporting character — must be **doing something
    concrete**: a physical verb or a specific gesture/pose anchored to a prop, the
    other character, or their own body (*"kneeling to gather the oranges"*,
    *"holding out a block"*, *"one hand pressed to their chest"*, *"wrapping their
    arms around themselves against the cold"*). **Never leave a person merely
-   *standing / sitting + facing the camera + [expression]*** — an expression is
+   *standing / sitting + [expression]*** — an expression is
    *not* an action. With nothing to do, the model invents a pose for the idle
    body, and invented poses usually look weird (floating or clipping hands,
    awkward limbs, random gestures). State the expression *in addition to* the
@@ -174,14 +179,14 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      describe the scene from scratch, including any change of state (e.g. the
      shattered vase, the tidied room).
    - **A person inside the anchor, named again later (split reference).** Writing
-     *"Place the person into `<anchor>` … `<action>`. … the person facing the camera
+     *"Place the person into `<anchor>` … `<action>`. … the person smiling
      …"* names the protagonist, drops the scene (or another character) in between,
      then names them again. With no memory across the sentence the model treats the
      two mentions as **two separate children** and renders a duplicate. Lead with the
      anchor (no person in it), then describe each person **once**, in a single
-     contiguous block (position + action + face + expression): *"In `<anchor>` — the
-     person from the input image kneels on the far left gathering the blocks, facing
-     the camera with their face fully visible and a kind smile."*
+     contiguous block (position + action + expression): *"In `<anchor>` — the
+     person from the input image kneels on the far left gathering the blocks with a
+     kind smile."*
 10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
 11. **Guard tight close-ups and dense groups against child duplication.** A
@@ -208,12 +213,13 @@ For every prompt in the array, confirm:
 - [ ] **Opens with the scene** (the canonical setting-anchor clause), with **no
       person named inside that clause**.
 - [ ] **Each person is described exactly once**, in one contiguous block (position +
-      action + facing-camera + expression) — the protagonist is never named near the
+      action + expression) — the protagonist is never named near the
       scene and then again later (a "split reference" makes the model draw a duplicate
       child).
 - [ ] If >1 person: protagonist is explicitly **far left**.
-- [ ] Protagonist is **facing the camera, face clearly visible** (camera/shot cue
-      present); any kneel/tilt adds "head turned toward the camera".
+- [ ] A **camera/shot cue** is present (`medium shot`, `eye-level`, `three-quarter
+      view`, …) to set framing — the protagonist engages naturally and is **not**
+      forced to face the camera.
 - [ ] **Every person** (protagonist + each supporting character) is given a
       **concrete action/gesture**, not just a placement and an expression.
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/

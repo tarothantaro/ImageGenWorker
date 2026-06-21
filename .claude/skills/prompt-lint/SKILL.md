@@ -1,6 +1,6 @@
 ---
 name: prompt-lint
-description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (far-left, face/camera cue, one action per person, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `prompt-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `prompt-eval` skills.
+description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (far-left, shot/framing cue, one action per person, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `prompt-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `prompt-eval` skills.
 ---
 
 # prompt-lint
@@ -45,8 +45,8 @@ prints, per panel, the prompt, its gist, and any findings:
   `{TOKEN}` that doesn't resolve in `character.json`; an empty gist or a gist that
   still carries a `{TOKEN}`; a banned cross-panel reference (`the same`, `back at`,
   `as before`, `transform the scene`, `place the person into`).
-- **WARN** (review) — no named camera/shot cue (the panel leans on "facing the
-  camera" alone, rule 3); a missing/inconsistent style phrase (rule 8); a `{TOKEN}`
+- **WARN** (review) — no named camera/shot cue (medium shot, eye-level, … — the
+  lever for framing, rule 3); a missing/inconsistent style phrase (rule 8); a `{TOKEN}`
   used but not listed in `characters` (or listed but unused); a `\bagain\b` /
   `once more` that *might* be a cross-panel reference; **anchor drift** — panels
   that share a scene but whose setting-anchor wording isn't verbatim (rule 9).
@@ -73,20 +73,17 @@ panel** on the things only a reader can:
   sometimes the gist was mis-stated).
 - **One concrete action per person** (rule 4) — every person named (protagonist +
   each `{TOKEN}`) has a physical verb/gesture, never just placement + expression.
-  A bare `stands`/`sits` + "facing the camera" + an expression is a defect; the
+  A bare `stands`/`sits` + an expression (no action) is a defect; the
   model invents a pose for the idle body.
 - **Scene-first, single-block person** (rule 1 / rule 9 "split reference") — the
   panel opens with the scene anchor (no person inside it), then introduces each
-  person **once** in a contiguous position+action+face+expression block. A
+  person **once** in a contiguous position+action+expression block. A
   protagonist named near the scene and **again** later reads as two children.
 - **Verbatim scene anchor across a scene** (rule 9) — panels set in the same place
   repeat the **identical** anchor string (same adjectives/landmarks/light, only the
   leading article free to differ). The linter's `anchor` WARN points at candidates;
   confirm by reading. A recurring changed-state object (a shattered vase, a tidied
   room) must be worded identically too.
-- **Face visibility** (constraint #2) — front-on / three-quarter, nothing over the
-  face; any kneel/tilt adds "head turned toward the camera". Pair this with the
-  linter's camera-cue WARN.
 - **Cast by token only** (rule 7) — supporting characters get position/action/
   expression only, never a re-described appearance.
 
@@ -115,7 +112,7 @@ note that this is a **text-only** check — the image-side confirmation is
 - Gist: "<gist>"
 - Mechanical: <linter findings, or "clean">
 - Gist alignment: pass | **gap** — <which gist element the prompt doesn't instruct>
-- Action per person / scene-first / anchor / face / cast: <only the ones with an issue>
+- Action per person / scene-first / anchor / cast: <only the ones with an issue>
 - Fix: <exact edit to the prompt string>
 
 ## Recommended prompt fixes (paste-ready)

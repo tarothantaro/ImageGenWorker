@@ -1,6 +1,6 @@
 ---
 name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most with the face ≥70% visible, the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
+description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most, the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
 ---
 
 # prompt-eval
@@ -119,13 +119,12 @@ V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
 **Ground every panel in the pixels before you score it.** First write a one-line
 literal description of what the V2 image *actually shows*: how many people are in
 it and their **left-to-right order naming who is left-most** (e.g. "L→R: child,
-elderly woman"), plus what — if anything — is over or touching the protagonist's
-face. Score the spatial criteria (Far-left, Face-visible, Scale) from *that*
+elderly woman"). Score the spatial criteria (Far-left, Scale) from *that*
 description, not from what the prompt intended. The prompt says where people
 *should* be; only the pixels say where they *are* — when they disagree, grade the
 pixels. **Do not record a `partial`/`fail` on any criterion without quoting the
-specific thing in the image that fails it** ("umbrella covers the upper third of
-the face"); if you can't point to it, it passes. These spatial/obstruction calls
+specific thing in the image that fails it** ("the protagonist is second from the
+left, not left-most"); if you can't point to it, it passes. These spatial calls
 are the easiest to hallucinate from the prompt — re-look at the image before
 writing `fail`. The `resolved_prompt` is the **actual
 prompt sent to ComfyUI** when `prompt_source == "worker_log"` — grade the image
@@ -138,13 +137,12 @@ full rendered workflow that produced the image.
 | Criterion | What to check |
 |---|---|
 | **Protagonist far-left** | The input-photo person is the **left-most** figure in any **multi-person** panel — "left-most" = nearest the **left edge of the image as you view it** (viewer's left, not the subject's). NA for a solo panel. A non-left protagonist is a real defect, not a nitpick. |
-| **Face ≥70% visible** | The protagonist faces the camera with the face unobstructed — at least ~70% of the face shown. No back/deep-profile views, nothing covering it (hands, hats, masks, props, other people). |
 | **Realism** | Reads as a real photograph — plausible anatomy (hands, limbs, faces), natural lighting/shadows/perspective, correct count of fingers/people. No cartoon/CGI/uncanny render, warps, duplicated or fused bodies, or garbled text. |
 | **Scale & depth** | Each person's size is consistent with their depth in the scene — figures nearer the camera are larger, those farther back are smaller, following perspective. No figure rendered giant or miniature for its position, and the protagonist isn't shrunk/enlarged relative to the rest of the cast. |
 | **Scene & setting** | The image's **setting** matches what *this panel's* `resolved_prompt` describes — the **location type** (living room / classroom / garden / playground …), the named **setting anchors** (the key furniture/landmarks, e.g. a wooden shelf, a toy box, a low fence), the **time of day / lighting**, and any described **change of state** (a shattered vase, a now-tidy room). Each panel is graded **against its own prompt only** — do **not** grade cross-panel scene consistency (whether two panels render the *same* room) here; that is out of scope for now. Call out a wrong location (e.g. "prompt says classroom, image is a living room") or a missing/contradicted anchor. |
 | **Prompt match** | The image matches the `resolved_prompt` — **composition/shot**, **clothes/wardrobe**, **age**, props, expression. (Setting/location is scored under **Scene & setting**.) Call out each mismatch specifically. |
 | **Action & interaction** | Each person performs the **action** the prompt asks, and people **interacting** do so coherently — the prompt's verbs read in the image (e.g. handshake, hug, pointing, sharing a toy), with bodies/gazes/hands oriented toward one another. No disconnected, contradictory, or idle poses where the prompt calls for an action or exchange. |
-| **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. |
+| **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. The protagonist's face does **not** have to face the camera — natural three-quarter, profile, and downward-glancing poses are fine. Only flag it when the face is *fully* hidden (a pure back-of-head shot) such that the face-swap could not land. |
 | **Gist satisfied** | The image conveys the panel's **`gist`** — the author's intended beat: the right setting, the right people doing the right thing, and the narrative point landing (e.g. "child *offers* a block and the friend *accepts*"; "the vase is *shattered* and the child is *shocked*"). This is the *meaning* check, above the literal-prompt match: an image can match the prompt's words yet miss the beat (the offer reads as the child keeping the block; the "shattered vase" still shows a whole vase). Judge whether someone seeing only the gist would accept this image. NA when `gist` is `null`. |
 
 Score each criterion **pass / partial / fail** (NA where it doesn't apply) with a
@@ -172,7 +170,6 @@ Write markdown to the `report_path` from the manifest
 
 ## Summary
 - Protagonist far-left: <X/Y> multi-person panels
-- Face ≥70% visible: <X/Y> panels
 - Realism: <X/Y> panels
 - Scale & depth: <X/Y> panels
 - Scene & setting: <X/Y> panels
@@ -188,7 +185,6 @@ Write markdown to the `report_path` from the manifest
 - Gist: "<gist>"
 - Frame: <what the pixels show — #people, L→R order naming who is left-most, anything over the protagonist's face>
 - Far-left: NA (solo) | pass | **fail** — <evidence>
-- Face ≥70% visible: pass | **fail** — <evidence>
 - Realism: pass | **fail** — <evidence>
 - Scale & depth: NA (solo) | pass | **fail** — <evidence>
 - Scene & setting: pass | partial | **fail** — location/anchors/lighting vs this panel's prompt <evidence>
@@ -210,9 +206,9 @@ to paste into the prompt.
 
 ### 5. Report back
 
-Tell the user the verdict, the headline numbers (far-left, face-visible,
-realism, scale & depth, scene & setting, prompt match, action & interaction, gist
-satisfied), and the `report.md` path. If outputs were missing or the set was
+Tell the user the verdict, the headline numbers (far-left, realism, scale &
+depth, scene & setting, prompt match, action & interaction, gist satisfied), and
+the `report.md` path. If outputs were missing or the set was
 partial, say so plainly.
 
 ## Notes

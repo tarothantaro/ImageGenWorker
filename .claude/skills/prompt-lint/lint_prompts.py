@@ -5,7 +5,7 @@ The cheap half of prompt iteration: catch the mechanical defects in
 ``imagegen/prompts/<type>_<id>.json`` **before** spending a ComfyUI run on it.
 This checks only what can be decided from the prompt/gist *text* — the structural
 invariants and the deterministic `story-prompts` rules (far-left when
-multi-person, face/camera cue, identity-preserve ending, banned cross-panel
+multi-person, shot/framing cue, identity-preserve ending, banned cross-panel
 reference words, `{TOKEN}` validity, gist↔prompt parity). It does **not** judge
 the semantic prompt↔gist alignment or whether every person has a concrete action
 — that is the agent's job in the `prompt-lint` skill, reading the prompts + gists
@@ -42,7 +42,7 @@ _IDENTITY_TAIL = (
 )
 # How the protagonist must be referenced (rule 5).
 _PROTAGONIST_REF = "person from the input image"
-# Camera / shot cue that controls face visibility (rule 3) — any one suffices.
+# Camera / shot cue that controls framing (rule 3) — any one suffices.
 _CAMERA_CUES = (
     "medium shot",
     "medium-wide",
@@ -187,7 +187,7 @@ def lint_story(stem: str, f: Findings) -> dict:
                 p,
                 "camera-cue",
                 "no named camera/shot cue (medium shot, eye-level, …) — rule 3's "
-                "lever for face visibility; the panel leans on 'facing the camera' alone",
+                "lever for framing",
             )
         if "photorealistic" not in low:
             f.add("WARN", p, "style", "no 'photorealistic' style word (rule 8)")

@@ -92,16 +92,17 @@ new categories are added (and add them to `_TYPE_NAMES`).
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
 
-## The two hard constraints (every prompt must honor)
+## The hard constraint (every prompt must honor)
 
 1. **Input person on the far left.** Whenever a panel shows more than one person,
    the protagonist (from the input photo) is the **left-most** figure. The
    face-swap stage maps the input face onto the left-most detected face, so this
    is a pipeline requirement, not a stylistic one.
-2. **Input person's face ≥70% visible.** Compose them front-on or three-quarter,
-   facing the camera, face unobstructed — unless the narrative genuinely requires
-   otherwise. The same photo is the face-swap source, so a hidden/averted face
-   degrades the swap.
+
+The protagonist no longer has to **face the camera**: there is no "face ≥70%
+visible" rule. Let them engage naturally with the scene — three-quarter, profile,
+and downward-glancing poses are all welcome. The only floor is the face-swap
+above: avoid a pure back-of-head shot where no face is detectable.
 
 ## Runtime placeholder substitution
 
