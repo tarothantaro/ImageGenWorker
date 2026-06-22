@@ -230,13 +230,19 @@ def _blob_uri(args: argparse.Namespace, name: str) -> str:
     return f"gs://{args.bucket}/{name}"
 
 
-def _list_sets(args: argparse.Namespace) -> int:
+def _output_sets(args: argparse.Namespace) -> dict[tuple[str, str], int]:
+    """Return ``{(user_id, story_id): image_count}`` for generated outputs."""
     sets: dict[tuple[str, str], int] = {}
     for blob in _source_blobs(args):
         m = _OUTPUT_RE.match(blob.name)
         if m:
             key = (m.group("user"), m.group("story"))
             sets[key] = sets.get(key, 0) + 1
+    return sets
+
+
+def _list_sets(args: argparse.Namespace) -> int:
+    sets = _output_sets(args)
     label = _source_label(args)
     if not sets:
         print(f"[eval] no output sets found in {label}/*/*/outputs/")
@@ -247,6 +253,37 @@ def _list_sets(args: argparse.Namespace) -> int:
     return 0
 
 
+def _batch_download(args: argparse.Namespace) -> int:
+    """Build manifests for every generated story, using story_id as story.
+
+    This is intended for local batch eval, where generated output dirs are named
+    after the prompt stem (for example ``outputs/leo/1_7/outputs/0.png``).
+    """
+    sets = _output_sets(args)
+    label = _source_label(args)
+    if not sets:
+        print(f"[eval] no output sets found in {label}/*/*/outputs/", file=sys.stderr)
+        return 1
+    if args.out:
+        out_root = Path(args.out).expanduser()
+    elif args.local_root:
+        out_root = Path(args.local_root).expanduser().parent / "eval"
+    else:
+        out_root = Path("/tmp/prompt_eval")
+
+    status = 0
+    for (user_id, story_id), _ in sorted(sets.items()):
+        child_args = argparse.Namespace(**vars(args))
+        child_args.user_id = user_id
+        child_args.story_id = story_id
+        child_args.story = story_id
+        child_args.out = str(out_root / f"{story_id}__{story_id}")
+        result = _download(child_args)
+        if result != 0:
+            status = result
+    return status
+
+
 def _download(args: argparse.Namespace) -> int:
     story_json = _PROMPTS_DIR / f"{args.story}.json"
     if not story_json.exists():
@@ -254,6 +291,8 @@ def _download(args: argparse.Namespace) -> int:
         return 2
     spec = json.loads(story_json.read_text())
     prompts: list[str] = spec.get("prompts", [])
+    # Per-panel storybook text/dialog shown to the reader (parallel to prompts).
+    texts: list[str] = spec.get("texts", [])
     # Per-panel gist: the authored, eval-ready intent of the panel (parallel to
     # prompts). The judge also checks whether the image *satisfies the gist*, not
     # just the literal prompt. Absent on older stories -> per-panel gist is None.
@@ -324,6 +363,7 @@ def _download(args: argparse.Namespace) -> int:
                 "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
                 "resolved_prompt": resolved,
+                "panel_dialog": texts[panel_index] if panel_index < len(texts) else None,
                 "gist": gists[panel_index] if panel_index < len(gists) else None,
                 # Provenance so the judge/report knows which prompt it graded.
                 "prompt_source": "worker_log" if logged_prompt else "reconstructed",
@@ -427,10 +467,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.list:
         return _list_sets(args)
 
-    missing = [n for n in ("story", "user_id", "story_id") if not getattr(args, n)]
+    provided = {n for n in ("story", "user_id", "story_id") if getattr(args, n)}
+    if not provided:
+        return _batch_download(args)
+
+    missing = sorted({"story", "user_id", "story_id"} - provided)
     if missing:
         parser.error(
-            "download mode needs --" + ", --".join(m.replace("_", "-") for m in missing)
+            "single-story download mode needs --"
+            + ", --".join(m.replace("_", "-") for m in missing)
+            + "; omit all three selector args to build every generated story"
         )
     return _download(args)
 

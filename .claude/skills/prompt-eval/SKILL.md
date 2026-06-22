@@ -79,9 +79,16 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python \
     --story 1_1 --user-id <uid> --story-id <sid>
 ```
 
+In local mode, if `--story`, `--user-id`, and `--story-id` are all omitted, the
+helper discovers every generated output set under `--local-root`, assumes each
+output `story_id` is also the prompt stem, and writes one manifest per story. Use
+`--out <eval-dir>` as the eval root; each manifest lands under
+`<eval-dir>/<story>__<story>/manifest.json`.
+
 This downloads the PNGs to `/tmp/prompt_eval/<story>__<story_id>/` (override with
-`--out`) and writes `manifest.json` there. The manifest joins each downloaded
-file to the panel prompt that produced it. For `resolved_prompt` it prefers the
+`--out`; in batch mode `--out` is a root directory) and writes `manifest.json`
+there. The manifest joins each downloaded file to the panel prompt that produced
+it. For `resolved_prompt` it prefers the
 **actual prompt the worker logged** for this run — the dev worker writes one
 record per panel of the exact prompt + workflow it submitted to ComfyUI under
 `PROMPT_LOG_DIR` (host-mounted `prompt_logs/<story_id>/panel_NN.json`; see
@@ -91,8 +98,8 @@ back to a **reconstruction** (`{TOKEN}` characters expanded from
 `prompt_source` (`worker_log` | `reconstructed`), plus `comfyui_prompt_id` and a
 `prompt_log` path for debugging; the manifest's top-level `prompt_source` is
 `worker_log` / `reconstructed` / `mixed`. It also carries `title`, `lesson`, the
-resolved `characters` map, and `variants_per_panel`. Read `manifest.json` before
-judging.
+resolved `characters` map, per-panel `panel_dialog` from the story `texts`, and
+`variants_per_panel`. Read `manifest.json` before judging.
 
 Each entry also carries a **`gist`** — the story author's one-sentence statement
 of what *this panel must show* (setting, who is present, the key
@@ -129,10 +136,12 @@ specific thing in the image that fails it** ("the child in the background is
 rendered larger than the adult in front"); if you can't point to it, it passes.
 These spatial calls are the easiest to hallucinate from the prompt — re-look at
 the image before writing `fail`. The `resolved_prompt` is the **actual
-prompt sent to ComfyUI** when `prompt_source == "worker_log"` — grade the image
-against exactly that text (it already has the real age word, e.g. "4-year-old",
-substituted in). When debugging a defect, the entry's `prompt_log` file holds the
-full rendered workflow that produced the image.
+prompt sent to ComfyUI** when the manifest entry's `prompt_source` is
+`worker_log`; grade the image against exactly that text (it already has the real
+age word, e.g. "4-year-old", substituted in). Do not add a separate per-panel
+`prompt source` line to the report, because it duplicates the resolved prompt's
+role. When debugging a defect, the entry's `prompt_log` file holds the full
+rendered workflow that produced the image.
 
 **Per-panel rubric** (judged on the panel's delivered image):
 
@@ -183,6 +192,7 @@ Write markdown to the `report_path` from the manifest
 ## Panels
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
+- Panel dialog: "<panel_dialog>"
 - Gist: "<gist>"
 - Frame: <what the pixels show — #people, L→R order, depth, anything over the protagonist's face>
 - Realism: pass | **fail** — <evidence>

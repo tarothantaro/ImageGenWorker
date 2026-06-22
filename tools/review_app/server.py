@@ -103,6 +103,16 @@ def _read_json(path: Path) -> dict | None:
 
 _VERDICT_RE = re.compile(r"\*\*Verdict:\*\*\s*(.+)")
 _PANEL_HDR_RE = re.compile(r"^###\s+Panel\s+(\d+)", re.IGNORECASE)
+_PANEL_METADATA_RE = re.compile(
+    r"^-\s*(Resolved prompt|Panel dialog|Prompt source):", re.IGNORECASE
+)
+
+
+def _strip_panel_metadata(text: str) -> str:
+    """Remove prompt/dialog metadata already rendered from manifest fields."""
+    return "\n".join(
+        line for line in text.splitlines() if not _PANEL_METADATA_RE.match(line.strip())
+    ).strip()
 
 
 def _parse_report(text: str) -> dict:
@@ -162,7 +172,7 @@ def _parse_report(text: str) -> dict:
     return {
         "verdict": verdict,
         "summary": "\n".join(summary).strip(),
-        "panels": {k: "\n".join(v).strip() for k, v in panels.items()},
+        "panels": {k: _strip_panel_metadata("\n".join(v)) for k, v in panels.items()},
         "rest": "\n".join(rest).strip(),
         "raw": text,
     }
@@ -267,6 +277,9 @@ main { flex: 1 1 auto; min-width: 0; }
 .panel h4 { margin: 0 0 6px; }
 .prompt { background: #f9fafb; border: 1px solid #eef0f2; border-radius: 8px;
     padding: 10px 12px; font-size: 13.5px; color: #111827; white-space: pre-wrap; }
+.dialog { background: #fffaf0; border: 1px solid #f3e2b8; border-radius: 8px;
+    padding: 10px 12px; margin-top: 8px; font-size: 13.5px; color: #111827; }
+.dialog strong { display: block; font-size: 11.5px; color: #92400e; margin-bottom: 4px; }
 .prompt .src { font-size: 11.5px; color: #6b7280; display: block; margin-top: 6px; }
 .eval p, .eval li { margin: 3px 0; }
 .eval ul { margin: 4px 0; padding-left: 20px; }
@@ -442,17 +455,21 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         prompt = next(
             (i.get("resolved_prompt") for i in imgs if i.get("resolved_prompt")), ""
         )
-        psrc = next(
-            (i.get("prompt_source") for i in imgs if i.get("prompt_source")), ""
+        dialog = next(
+            (i.get("panel_dialog") for i in imgs if i.get("panel_dialog")), ""
         )
         main.append('<div class="card"><div class="panel">')
         # left: prompt + eval
         main.append("<div>")
         main.append(f"<h4>Panel {panel_no}</h4>")
         main.append('<div class="prompt">' + html.escape(prompt or "(no prompt)"))
-        if psrc:
-            main.append(f'<span class="src">prompt source: {html.escape(psrc)}</span>')
         main.append("</div>")
+        if dialog:
+            main.append(
+                '<div class="dialog"><strong>Dialog</strong>'
+                + html.escape(dialog)
+                + "</div>"
+            )
         eval_md = report.get("panels", {}).get(panel_no)
         if eval_md:
             main.append('<div class="eval">' + _md_to_html(eval_md) + "</div>")

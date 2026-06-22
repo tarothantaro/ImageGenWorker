@@ -66,27 +66,25 @@ Read `run.json` to see which stories produced images.
 
 ### 2. Build the per-story manifests (local source)
 
-For **each** story that generated OK, run `prompt-eval`'s `fetch_outputs.py` in
-local mode — it reads the PNGs off disk (no GCS / no Application stack) and joins
-each to its **actual logged prompt**:
+Run `prompt-eval`'s `fetch_outputs.py` in local batch mode — it reads the PNGs
+off disk (no GCS / no Application stack), discovers every generated story under
+`--local-root`, assumes each output story id is also the prompt stem, and joins
+each image to its **actual logged prompt**:
 
 ```bash
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
     .claude/skills/prompt-eval/fetch_outputs.py \
     --local-root eval_runs/latest/outputs \
     --log-dir   eval_runs/latest/prompt_logs \
-    --story 1_1 --user-id leo --story-id 1_1 \
-    --out eval_runs/latest/eval/1_1__1_1
+    --out eval_runs/latest/eval
 ```
 
 `--local-root` (or `LOCAL_OUTPUT_ROOT`) is the switch that makes the otherwise
 GCS-bound script read locally. With the prompt logs present, the manifest's
 `prompt_source` is `worker_log` — i.e. you grade against the exact text ComfyUI
-received, with the real age word substituted in. Put each story's `--out` under
-`eval_runs/<run>/eval/<story>__<story_id>/` so the review app finds it.
-
-> Tip: loop over the OK stories from `run.json`, substituting `--story` /
-> `--user-id` / `--story-id` / `--out` per story.
+received, with the real age word substituted in. Each manifest lands under
+`eval_runs/<run>/eval/<story>__<story>/` so the review app finds it. For one
+story only, pass `--story`, `--user-id`, `--story-id`, and an exact `--out` dir.
 
 ### 3. Judge each story (vision) — via `prompt-eval`
 
