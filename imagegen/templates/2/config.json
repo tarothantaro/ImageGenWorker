@@ -5,14 +5,12 @@
     "panels": [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P0_V1"},
             {"filename_prefix": "USER_ID_STORY_ID_P0_V2"}
         ],
         [
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410684},
@@ -21,14 +19,12 @@
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410685},
             {"filename_prefix": "USER_ID_STORY_ID_P2_V1"},
             {"filename_prefix": "USER_ID_STORY_ID_P2_V2"}
         ],
         [
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410686},
@@ -37,14 +33,12 @@
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410687},
             {"filename_prefix": "USER_ID_STORY_ID_P4_V1"},
             {"filename_prefix": "USER_ID_STORY_ID_P4_V2"}
         ],
         [
-            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410688},

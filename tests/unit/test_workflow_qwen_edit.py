@@ -29,7 +29,6 @@ _TEMPLATE_ROOT = _PKG / "templates"
 # workflow 2 node ids that templates/2's panels customize (positional, in the
 # same order as workflows/2/config.json's node list).
 _NODE_EDIT_TARGET = "41"
-_NODE_REFERENCE = "83"
 _NODE_PROMPT = "170:151"
 _NODE_KSAMPLER = "170:169"
 _NODE_SAVE_V1 = "9"
@@ -52,7 +51,7 @@ def test_prepare_loads_template_2_against_workflow_2(builder: WorkflowBuilder) -
     assert prepared.panel_count == 6
     # Each panel lines up positionally with the workflow config's node list.
     assert all(len(panel) == len(prepared.config_nodes) for panel in prepared.panels)
-    # Both LoadImage nodes default to the one input photo → a single dedup'd slot.
+    # The single LoadImage node defaults to the one input photo slot.
     assert prepared.image_slots == ["USER_ID_STORY_ID_INPUT_1.png"]
     # Two SaveImage nodes → two variants per panel (V1 pre-swap, V2 restored).
     assert builder.output_prefixes(prepared.base_workflow) == [
@@ -85,9 +84,8 @@ def test_render_substitutes_panel_values_and_placeholders(
         placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
     )
 
-    # Image slots resolve to the per-story upload names (no remap step).
+    # Image slot resolves to the per-story upload name (no remap step).
     assert workflow[_NODE_EDIT_TARGET]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert workflow[_NODE_REFERENCE]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     # No story bound → the prompt field still holds the sentinel.
     assert workflow[_NODE_PROMPT]["inputs"]["prompt"] == "{PROMPT}"
     assert workflow[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683

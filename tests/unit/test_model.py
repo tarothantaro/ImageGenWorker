@@ -111,7 +111,6 @@ def test_generate_sends_expected_workflow_parameters() -> None:
         in first["170:151"]["inputs"]["prompt"]
     )
     assert first["41"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert first["83"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert first["9"]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
     assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
     assert first["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED

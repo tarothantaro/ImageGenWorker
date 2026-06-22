@@ -7,10 +7,6 @@
             "type": "LoadImage"
         },
         {
-            "id": 83,
-            "type": "LoadImage"
-        },
-        {
             "id": "170:151",
             "type": "TextEncodeQwenImageEditPlus"
         },

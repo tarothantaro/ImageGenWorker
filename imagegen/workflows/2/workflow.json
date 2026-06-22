@@ -8,15 +8,6 @@
       "title": "Load Image (edit target)"
     }
   },
-  "83": {
-    "inputs": {
-      "image": "texture_fur.png"
-    },
-    "class_type": "LoadImage",
-    "_meta": {
-      "title": "Load Image (reference)"
-    }
-  },
   "9": {
     "inputs": {
       "filename_prefix": "Qwen_Edit_2511_V1",
@@ -157,10 +148,6 @@
       "image1": [
         "170:160",
         0
-      ],
-      "image2": [
-        "83",
-        0
       ]
     },
     "class_type": "TextEncodeQwenImageEditPlus",
@@ -181,10 +168,6 @@
       ],
       "image1": [
         "170:160",
-        0
-      ],
-      "image2": [
-        "83",
         0
       ]
     },
