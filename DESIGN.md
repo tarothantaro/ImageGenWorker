@@ -350,11 +350,10 @@ imagegen-worker/
 │   └── templates/             # per-template node-value presets
 │       └── 3/                 # config.json ("custom" → workflow 2)
 ├── Dockerfile
-├── docker-compose.yml         # production
-├── docker-compose.dev.yml     # development (emulators)
-├── scripts/
-│   └── init-emulators.sh      # creates topics/subs in pubsub-emulator
-├── deploy/                    # per-stage bring-up (deploy/stages/<dev|preprod|prod>/) — §9, §10
+├── deploy/                    # per-stage bring-up: deploy/stages/<dev|preprod|prod>/ each holds its
+│   └── stages/<stage>/        #   own docker-compose.yml + env.sh + up.sh/down.sh/smoke.sh (§9, §10).
+│                              #   dev shares the Application local stack's Pub/Sub + GCS emulators —
+│                              #   no init script here; that stack creates the §6.1 topics/subs.
 ├── operation/                 # day-2 ops on a running stage (vs deploy/ which stands one up)
 │   ├── sync_story_catalog.py  # shared: write bound-story metadata → templates/{id} (§8.4)
 │   └── stages/<stage>/sync_story_catalog.sh  # per-stage wrapper (sources deploy/stages/<stage>/env.sh)
@@ -506,87 +505,71 @@ The catalog template MUST stay in lockstep with the bound prompt (the same locks
 
 ## 9. Development Environment
 
-The development stack runs entirely under `docker-compose.dev.yml`. No GCP credentials are needed; emulators replace Pub/Sub and GCS.
+The dev stack lives in `deploy/stages/dev/` (`docker-compose.yml` + `env.sh` + `up.sh`/`down.sh`/`smoke.sh`). No GCP credentials are needed; emulators replace Pub/Sub and GCS.
 
-### 9.1 What `docker-compose.dev.yml` brings up
+Crucially, the worker does **not** run its own emulators or an init container. It attaches to the **Application local stack's** Docker network (`APPSTACK_NETWORK`, default `local_default`) and shares that stack's `pubsub-emulator` and `fake-gcs-server`, so the API server and the worker pull/publish the **same** topics, subscriptions, and GCS bucket. That stack must be up first — it creates the §6.1 topics/subs (its `bootstrap_pubsub.py`); this repo no longer ships an emulator-init script. All worker config comes from `deploy/stages/dev/env.sh` (§10.4 dev column).
+
+### 9.1 What the dev stack brings up
+
+This stack's `docker-compose.yml` defines only the worker and an optional mock ComfyUI; the Pub/Sub and GCS emulators are owned by the Application local stack (above) and are reached by service name over `APPSTACK_NETWORK`.
 
 | Service | Image | Purpose |
 |---|---|---|
-| `pubsub-emulator` | `gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators` | Local Pub/Sub on `:8085`. |
-| `fake-gcs-server` | `fsouza/fake-gcs-server` | Local GCS-compatible blob store on `:4443`. |
-| `init-emulators` | The same CLI image | One-shot init container that creates topics and subscriptions on startup, then exits. |
-| `imagegen-worker` | Locally built (`build:` context) | The worker, mounted with source code for hot iteration. |
-| `image-gen-stub-completion-listener` | Built from `tests/stubs/` | Optional. Subscribes to `job-completed` and dumps messages to stdout, for hands-on testing. |
+| `imagegen-worker` | Locally built (`build:` context = repo root) | The worker, with `imagegen/` bind-mounted for hot iteration (§9.3). Joins `APPSTACK_NETWORK` to reach `pubsub-emulator` + `fake-gcs-server`. |
+| `mock-comfyui` | Built from `tests/mock_comfyui/` | Drop-in ComfyUI that replays the real `/ws` event stream and returns PNGs (no GPU/models). **Off by default** behind the `mock` compose profile; opt in with `up.sh --mock` (or `COMFYUI_BACKEND=mock`). Otherwise the worker points at the host's real ComfyUI on `:8188` via `host.docker.internal`. |
 
 ```yaml
-# docker-compose.dev.yml (excerpt)
+# deploy/stages/dev/docker-compose.yml (excerpt — every value comes from env.sh)
+name: imagegen-worker-dev
+
 services:
-  pubsub-emulator:
-    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
-    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
-    ports: ["8085:8085"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085"]
-      interval: 5s
-      retries: 10
-
-  fake-gcs-server:
-    image: fsouza/fake-gcs-server
-    command: -scheme http -host 0.0.0.0 -port 4443 -public-host fake-gcs-server:4443
-    ports: ["4443:4443"]
-
-  init-emulators:
-    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
-    depends_on:
-      pubsub-emulator:
-        condition: service_healthy
-    environment:
-      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
-    volumes:
-      - ./scripts/init-emulators.sh:/init.sh:ro
-    entrypoint: ["bash", "/init.sh"]
-    restart: "no"
+  mock-comfyui:
+    profiles: ["mock"]                          # off by default; up.sh --mock turns it on
+    build: { context: ../../../tests/mock_comfyui, dockerfile: Dockerfile }
 
   imagegen-worker:
-    build: { context: ., dockerfile: Dockerfile }
-    depends_on:
-      init-emulators:
-        condition: service_completed_successfully
+    build: { context: ../../.., dockerfile: Dockerfile }
+    extra_hosts:
+      - "host.docker.internal:host-gateway"     # reach the host's real ComfyUI :8188
     environment:
-      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
-      STORAGE_EMULATOR_HOST: http://fake-gcs-server:4443
-      GCP_PROJECT_ID: dev-project
-      JOBS_SUBSCRIPTION: projects/dev-project/subscriptions/image-gen-jobs-worker-sub
-      COMPLETION_TOPIC: projects/dev-project/topics/job-completed
-      MAX_CONCURRENCY: 2
-      MAX_PROCESSING_SECONDS: 60
-      MODEL_DIR: /app/dev-model
-      LOG_LEVEL: debug
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}         # = the Application local stack's project
+      JOBS_SUBSCRIPTION: ${JOBS_SUBSCRIPTION}
+      COMPLETION_TOPIC: ${COMPLETION_TOPIC}
+      GCS_BUCKET: ${GCS_BUCKET}
+      PUBSUB_EMULATOR_HOST: ${PUBSUB_EMULATOR_HOST}    # pubsub-emulator:8085 (appstack)
+      STORAGE_EMULATOR_HOST: ${STORAGE_EMULATOR_HOST}  # http://fake-gcs-server:4443 (appstack)
+      COMFYUI_URL: ${COMFYUI_URL}
     volumes:
-      - ./imagegen:/app/imagegen:ro              # hot reload of source
-      - ./dev-model:/app/dev-model:ro            # tiny stub model
+      - ../../../imagegen:/app/imagegen:ro      # hot-reload pure-Python edits (§9.3)
+    networks: [default, appstack]
+
+networks:
+  default:
+  appstack:                                     # the Application local stack's network
+    name: ${APPSTACK_NETWORK:-local_default}
+    external: true
 ```
 
 ### 9.2 Bringing it up
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+# 1. Bring up the Application local stack first — it owns the Pub/Sub + GCS
+#    emulators and creates the topics/subscriptions the worker shares.
+../../../../Application/server/deploy/stages/local/up.sh
+
+# 2. Bring up the worker dev stack (detached, --build, --wait). Add --mock to
+#    use the bundled mock ComfyUI instead of the host's real one on :8188.
+deploy/stages/dev/up.sh
 ```
 
-Topics, subscriptions, and a starter GCS bucket are created by `scripts/init-emulators.sh` before the worker starts. The script is idempotent — re-running compose just no-ops on existing resources.
+`up.sh` fails fast with a pointer if `APPSTACK_NETWORK` isn't present (the Application local stack isn't up). Topics, subscriptions, and the GCS bucket are created by that stack's bootstrap, not by this repo. `up.sh` is idempotent. Tear down with `deploy/stages/dev/down.sh`, and verify end-to-end with `deploy/stages/dev/smoke.sh` (seeds an input into GCS → publishes a job → reads the worker's completion off `job-completed`).
 
 ### 9.3 Iteration loop
 
-- **Code change in `imagegen/`** → `docker compose -f docker-compose.dev.yml restart imagegen-worker`. The source is bind-mounted, so no rebuild is needed for pure-Python changes.
-- **Dependency change in `pyproject.toml`** → `docker compose -f docker-compose.dev.yml up --build imagegen-worker`.
-- **Logs** → `docker compose -f docker-compose.dev.yml logs -f imagegen-worker`.
-- **Publishing a test job by hand** →
-  ```bash
-  PUBSUB_EMULATOR_HOST=localhost:8085 gcloud pubsub topics publish image-gen-jobs \
-      --message="$(cat tests/fixtures/jobs/sample.json)" \
-      --attribute=story_id=manual_$(uuidgen),schema_version=1 \
-      --project=dev-project
-  ```
+- **Code change in `imagegen/`** → `( . deploy/stages/dev/env.sh && docker compose -f deploy/stages/dev/docker-compose.yml restart imagegen-worker )`. The source is bind-mounted, so no rebuild is needed for pure-Python changes.
+- **Dependency change in `pyproject.toml`** → `deploy/stages/dev/up.sh` (it rebuilds via `--build`).
+- **Logs** → `docker compose -f deploy/stages/dev/docker-compose.yml logs -f imagegen-worker`.
+- **Publishing a test job by hand** → `deploy/stages/dev/smoke.sh` does exactly this — seed GCS → publish a job → print the worker's completions — against the shared emulator.
 
 For the Application repo's own e2e suite, this repo also publishes the **stub image** (`ghcr.io/<org>/imagegen-stub`) used by their `docker-compose.yml`. See [TESTING.md §5](./TESTING.md).
 
