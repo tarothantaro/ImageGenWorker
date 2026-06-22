@@ -38,9 +38,8 @@ photo** through a Qwen-Image-Edit-2511 image-edit graph, once per panel:
   the **protagonist**. Every other character is *conjured by the prompt text*,
   not supplied as a second image.
 - The edit transfers the input person's identity into the panel. It needs the
-  protagonist's **face visible** to carry that identity — but there is **no**
-  face-swap stage keying on a detected left-most face, so the protagonist's
-  position is otherwise free (see "Composition & position" below).
+  protagonist's **face visible** to carry that identity, but the position is
+  otherwise free (see "Composition & position" below).
 - Panels do **not** share generated pixels. Each panel is an independent edit
   from the same photo. So cross-panel consistency of the supporting cast comes
   **only** from reusing the identical `{TOKEN}` placeholder (which expands to the
@@ -53,10 +52,9 @@ narrative beat needs it** — an exchange that reads a particular way across the
 frame, who is in front vs behind, or an explicit left-to-right row that keeps a
 group of children from fusing (rule 11). Otherwise give each person a concrete
 action and an expression and let the model place them; do **not** pin the
-protagonist (or anyone) to a fixed spot out of habit. There is **no longer** a
-face-swap stage keying on a left-most face, so the protagonist no longer has to
-sit far-left. When you *do* need placement, spatial words are the lever (rule 2):
-*to the left*, *beside them*, *in the foreground*, *in a single row*.
+protagonist (or anyone) to a fixed spot out of habit. When you *do* need
+placement, spatial words are the lever (rule 2): *to the left*, *beside them*,
+*in the foreground*, *in a single row*.
 
 Whatever position you state must be **restated in every panel that needs it** —
 panels are independent edits with no memory of each other, and the base model has
@@ -257,8 +255,7 @@ For every prompt in the array, confirm:
       model draw a duplicate child).
 - [ ] **Position is stated only when the beat needs it** (an exchange, front/back
       depth, or an explicit left-to-right row to stop child duplication); otherwise
-      each person is given an action and the model composes the placement. The
-      protagonist is **not** forced far-left.
+      each person is given an action and the model composes the placement.
 - [ ] A **camera/shot cue** is present (`medium shot`, `eye-level`, `three-quarter
       view`, …) to set framing — the protagonist engages naturally and is **not**
       forced to face the camera.
