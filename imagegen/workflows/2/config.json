@@ -17,10 +17,6 @@
         {
             "id": 9,
             "type": "SaveImage"
-        },
-        {
-            "id": 119,
-            "type": "SaveImage"
         }
     ]
 }

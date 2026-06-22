@@ -82,8 +82,8 @@ def _all_completions(client: RecordingPublisherClient) -> list[CompletionMessage
 
 
 def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
-    # templates/2 has 6 panels; each ComfyUI run saves two variants (V1, V2) →
-    # 12 outputs. The prompt set (type=1, id=1) fills the panels' text.
+    # templates/2 has 6 panels; each ComfyUI run saves one output → 6 outputs.
+    # The prompt set (type=1, id=1) fills the panels' text.
     msg = FakePubsubMessage(_job_payload())
     storage = FakeStorageClient()
     _seed_inputs(storage)
@@ -96,28 +96,27 @@ def test_job_produces_outputs_in_gcs_and_completed_completion() -> None:
 
     bucket = storage.bucket(_BUCKET)
     outputs = {k for k in bucket.blobs if k.startswith("u1/s1/outputs/")}
-    assert outputs == {f"u1/s1/outputs/{i}.png" for i in range(12)}
+    assert outputs == {f"u1/s1/outputs/{i}.png" for i in range(6)}
     assert bucket.blobs["u1/s1/outputs/0.png"].uploaded[0] == (PNG, "image/png")
 
     # One incremental panel event per image, then the terminal completion.
     published = _all_completions(pub_client)
-    assert [c.status for c in published] == ["panel_completed"] * 12 + ["completed"]
-    assert published[0].panel_index == 0 and published[0].total_panels == 12
+    assert [c.status for c in published] == ["panel_completed"] * 6 + ["completed"]
+    assert published[0].panel_index == 0 and published[0].total_panels == 6
 
     completion = published[-1]
     assert completion.status == "completed"
     assert completion.model_version == "mv-test"
     assert completion.output_images is not None
     assert {o.gcs_uri for o in completion.output_images} == {
-        f"gs://bkt/u1/s1/outputs/{i}.png" for i in range(12)
+        f"gs://bkt/u1/s1/outputs/{i}.png" for i in range(6)
     }
     assert all(o.width == 1024 and o.height == 736 for o in completion.output_images)
 
 
-def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
-    # templates/2 is the storybook A/B template: 6 panels, each saving V1 + V2 →
-    # 12 outputs. The model tags each output panel_index = index // 2, variant
-    # = index % 2.
+def test_each_output_is_tagged_with_panel_and_variant() -> None:
+    # templates/2 saves one output per panel: 6 panels → 6 outputs, each tagged
+    # panel_index = index, variant = 0 (no V1/V2 variants anymore).
     msg = FakePubsubMessage(_job_payload())
     storage = FakeStorageClient()
     _seed_inputs(storage)
@@ -130,7 +129,7 @@ def test_variants_per_panel_tags_outputs_with_panel_and_variant() -> None:
     assert completion.output_images is not None
     tagged = sorted(completion.output_images, key=lambda o: o.index)
     assert [(o.panel_index, o.variant) for o in tagged] == [
-        (panel, variant) for panel in range(6) for variant in range(2)
+        (panel, 0) for panel in range(6)
     ]
 
 

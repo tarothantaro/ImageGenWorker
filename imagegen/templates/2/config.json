@@ -1,49 +1,43 @@
 {
     "id": "2",
-    "name": "qwen-edit-six-panels-two-versions",
+    "name": "qwen-edit-six-panels",
     "workflow_id": "2",
     "panels": [
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410683},
-            {"filename_prefix": "USER_ID_STORY_ID_P0_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P0_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P0"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410684},
-            {"filename_prefix": "USER_ID_STORY_ID_P1_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P1_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P1"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410685},
-            {"filename_prefix": "USER_ID_STORY_ID_P2_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P2_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P2"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410686},
-            {"filename_prefix": "USER_ID_STORY_ID_P3_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P3_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P3"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410687},
-            {"filename_prefix": "USER_ID_STORY_ID_P4_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P4_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P4"}
         ],
         [
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"seed": 771062815410688},
-            {"filename_prefix": "USER_ID_STORY_ID_P5_V1"},
-            {"filename_prefix": "USER_ID_STORY_ID_P5_V2"}
+            {"filename_prefix": "USER_ID_STORY_ID_P5"}
         ]
     ]
 }

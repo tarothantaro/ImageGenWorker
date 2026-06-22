@@ -4,7 +4,7 @@
 the returned object through the ``ImageGenModel`` protocol. The model:
 
 1. validates the input images (worker-side terminal failures),
-2. loads ``workflows/1`` + ``templates/1`` bound to the job's prompt set
+2. loads ``workflows/2`` + ``templates/2`` bound to the job's prompt set
    ``prompts/<type>_<id>.json`` (see :mod:`imagegen.workflow`),
 3. uploads the input photo(s) to ComfyUI under their per-story filenames,
 4. **yields one image per template panel** (DESIGN.md §7.2: *one panel == one
@@ -13,7 +13,7 @@ the returned object through the ``ImageGenModel`` protocol. The model:
    that run reports completion (a generation takes minutes — we cannot poll on a
    fixed interval; we block on the event stream and return the instant ComfyUI
    signals done, subject to a configurable **per-request timeout**), then fetches
-   that run's final (``_V2``, face-restored) image from history and yields it.
+   that run's saved output image(s) from history and yields each.
 
 ``generate`` returns an *iterator* of :class:`PanelResult`. The handler consumes
 it lazily so it can upload + publish each panel as it lands, then send the next

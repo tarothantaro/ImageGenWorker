@@ -4,8 +4,8 @@ Drives the real :class:`~imagegen.model.ComfyUIModel` against the
 :class:`~tests.fakes.comfyui.FakeComfyUI` mock container. These tests pin down:
 
 * the exact workflow + parameters the model sends to ComfyUI per panel,
-* **one image per template panel**, with per-panel values and (with a global
-  seed override) per-panel seed variation, and V2 (final) image selection,
+* **one image per template panel**, with per-panel values and per-panel seed
+  variation,
 * every worker-side terminal failure (bad input, bad options, unknown template),
 * every ComfyUI-side failure (unavailable, bad prompt, execution error, WS
   timeout, per-request timeout, missing/garbled output) and how it maps onto
@@ -72,28 +72,28 @@ def _generate(model: ComfyUIModel, **overrides: Any) -> list[Any]:
     return list(model.generate(**kwargs))
 
 
-# --- happy path (templates/2 — 6 panels, 2 variants each) --------------------
+# --- happy path (templates/2 — 6 panels, one output each) -------------------
 
 
-def test_generate_yields_all_panel_variants() -> None:
+def test_generate_yields_one_output_per_template_panel() -> None:
     fake = FakeComfyUI(width=1024, height=736)
     model = _model(fake)
 
     panels = _generate(model)
 
-    # templates/2 has 6 panels; each run saves two variants (V1, V2) → 12 outputs
-    # from 6 ComfyUI submissions.
-    assert len(panels) == 12
+    # templates/2 has 6 panels; each run saves one output → 6 outputs from 6
+    # ComfyUI submissions.
+    assert len(panels) == 6
     assert all(p.image == make_png(1024, 736) for p in panels)
     assert all(p.width == 1024 and p.height == 736 for p in panels)
     assert all(p.model_version == "mv-test" for p in panels)
     assert all(p.processing_seconds == 0.0 for p in panels)
-    assert len(fake.submitted) == 6  # one run per panel; each yields V1 + V2
-    # Storybook layout: index 0..11 → (panel_index, variant) pairs.
+    assert len(fake.submitted) == 6  # one run per panel, one output each
+    # Storybook layout: index 0..5 → the single variant (0) of each panel.
     assert [(p.panel_index, p.variant) for p in panels] == [
-        (panel, variant) for panel in range(6) for variant in range(2)
+        (panel, 0) for panel in range(6)
     ]
-    assert all(p.total == 12 for p in panels)
+    assert all(p.total == 6 for p in panels)
 
 
 def test_generate_sends_expected_workflow_parameters() -> None:
@@ -111,8 +111,7 @@ def test_generate_sends_expected_workflow_parameters() -> None:
         in first["170:151"]["inputs"]["prompt"]
     )
     assert first["41"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
-    assert first["9"]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
-    assert first["119"]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
+    assert first["9"]["inputs"]["filename_prefix"] == "u1_s1_P0"
     assert first["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
     assert fake.submitted[0].client_id == "s1-0"
 
@@ -165,6 +164,23 @@ def test_generate_writes_actual_prompt_log_per_panel(tmp_path: Path) -> None:
     assert first["comfyui_prompt_id"]  # populated after queue_prompt
     # The full rendered workflow is captured for debugging.
     assert first["workflow"]["170:151"]["inputs"]["prompt"] == first["prompt_text"]
+
+
+def test_generate_logs_error_status_when_a_panel_run_fails(tmp_path: Path) -> None:
+    # A failing run must still leave its prompt + workflow on disk for debugging:
+    # the _run_panel except-branch overwrites the panel record with status=error
+    # (carrying the exception) before re-raising.
+    fake = FakeComfyUI(execution_error=True)
+    model = _model(fake, prompt_log_dir=tmp_path)
+
+    with pytest.raises(ModelTransientError):
+        _generate(model)
+
+    records = sorted((tmp_path / "s1").glob("panel_*.json"))
+    assert records  # the panel that blew up was still logged
+    record = json.loads(records[0].read_text())
+    assert record["status"] == "error"
+    assert "ComfyUIExecutionError" in record["error"]
 
 
 def test_generate_writes_no_log_when_dir_unset() -> None:
@@ -221,7 +237,7 @@ def test_generate_consumes_realtime_ws_stream_until_done() -> None:
 
     panels = _generate(model)
 
-    assert len(panels) == 12  # 6 runs, two saved variants (V1, V2) each
+    assert len(panels) == 6  # 6 runs, one output each
     # WS opened once per panel run, with that run's client id.
     assert fake.event_client_ids == [f"s1-{i}" for i in range(6)]
 
@@ -230,7 +246,7 @@ def test_generate_accepts_execution_success_as_terminal() -> None:
     fake = FakeComfyUI(use_execution_success=True)
     model = _model(fake)
 
-    assert len(_generate(model)) == 12
+    assert len(_generate(model)) == 6
 
 
 def test_generate_accepts_heic_input() -> None:
@@ -240,7 +256,7 @@ def test_generate_accepts_heic_input() -> None:
 
     panels = _generate(model, input_images=[heic])
 
-    assert len(panels) == 12
+    assert len(panels) == 6
     assert fake.uploads[0][1] == heic
 
 

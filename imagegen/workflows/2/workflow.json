@@ -10,7 +10,7 @@
   },
   "9": {
     "inputs": {
-      "filename_prefix": "Qwen_Edit_2511_V1",
+      "filename_prefix": "Qwen_Edit_2511",
       "images": [
         "170:158",
         0
@@ -18,78 +18,7 @@
     },
     "class_type": "SaveImage",
     "_meta": {
-      "title": "Save Image (V1 pre-face-swap)"
-    }
-  },
-  "118": {
-    "inputs": {
-      "input_faces_order": "left-right",
-      "input_faces_index": "0",
-      "detect_gender_input": "no",
-      "source_faces_order": "large-small",
-      "source_faces_index": "0",
-      "detect_gender_source": "no",
-      "console_log_level": 1,
-      "restore_swapped_only": true
-    },
-    "class_type": "ReActorOptions",
-    "_meta": {
-      "title": "ReActor 🌌 Options"
-    }
-  },
-  "121": {
-    "inputs": {
-      "enabled": true,
-      "swap_model": "inswapper_128.onnx",
-      "facedetection": "retinaface_resnet50",
-      "face_restore_model": "none",
-      "face_restore_visibility": 1,
-      "codeformer_weight": 0.5,
-      "input_image": [
-        "170:158",
-        0
-      ],
-      "source_image": [
-        "41",
-        0
-      ],
-      "options": [
-        "118",
-        0
-      ]
-    },
-    "class_type": "ReActorFaceSwapOpt",
-    "_meta": {
-      "title": "ReActor 🌌 Fast Face Swap [OPTIONS]"
-    }
-  },
-  "120": {
-    "inputs": {
-      "facedetection": "retinaface_resnet50",
-      "model": "GFPGANv1.4.pth",
-      "visibility": 1,
-      "codeformer_weight": 0.5,
-      "image": [
-        "121",
-        0
-      ]
-    },
-    "class_type": "ReActorRestoreFace",
-    "_meta": {
-      "title": "Restore Face 🌌 ReActor"
-    }
-  },
-  "119": {
-    "inputs": {
-      "filename_prefix": "Qwen_Edit_2511_V2",
-      "images": [
-        "120",
-        0
-      ]
-    },
-    "class_type": "SaveImage",
-    "_meta": {
-      "title": "Save Image (V2 face-restored)"
+      "title": "Save Image"
     }
   },
   "170:161": {

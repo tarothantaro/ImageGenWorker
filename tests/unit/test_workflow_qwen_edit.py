@@ -1,14 +1,14 @@
 """Unit tests for the Qwen-Image-Edit-2511 assets (workflows/2 + templates/2).
 
 These lock the *shipped* asset pair so an accidental edit that breaks the
-skeleton ↔ config ↔ template alignment, drops the ReActor face-swap stage, or
-leaves a dangling node link after the subgraph flatten fails fast, without a
-running ComfyUI. They exercise the same generic :class:`WorkflowBuilder` path
-the worker uses, against the real copied JSON under ``imagegen/``.
+skeleton ↔ config ↔ template alignment, or leaves a dangling node link after
+the subgraph flatten, fails fast without a running ComfyUI. They exercise the
+same generic :class:`WorkflowBuilder` path the worker uses, against the real
+copied JSON under ``imagegen/``.
 
-Template 2 is built to full parity with template 1 (6 story-bound panels, two
-``_V1``/``_V2`` outputs) but is **not** the worker's active render — the model
-still hardcodes template 1 (see ``imagegen/model.py``). It also pins the
+Template 2 is the worker's active render (``_RENDER_TEMPLATE_ID = "2"`` in
+``imagegen/model.py``): 6 story-bound panels, **one output image each** (the
+Qwen edit — no ReActor face-swap, no V1/V2 variants). It also pins the
 field-name-agnostic prompt injection: template 2's prompt input is ``prompt``
 (not ``text``), and the ``{PROMPT}`` sentinel still receives the story prompt.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 import imagegen
-from imagegen.workflow import FINAL_OUTPUT_SUFFIX, WorkflowBuilder
+from imagegen.workflow import WorkflowBuilder
 
 _PKG = Path(imagegen.__file__).resolve().parent
 _WORKFLOW_ROOT = _PKG / "workflows"
@@ -31,12 +31,9 @@ _TEMPLATE_ROOT = _PKG / "templates"
 _NODE_EDIT_TARGET = "41"
 _NODE_PROMPT = "170:151"
 _NODE_KSAMPLER = "170:169"
-_NODE_SAVE_V1 = "9"
-_NODE_SAVE_V2 = "119"
-# The flattened subgraph's VAEDecode (the pre-face-swap image) + ReActor stage.
+_NODE_SAVE = "9"
+# The flattened subgraph's VAEDecode — the image the SaveImage node persists.
 _NODE_QWEN_OUTPUT = "170:158"
-_NODE_REACTOR_SWAP = "121"
-_NODE_REACTOR_RESTORE = "120"
 
 
 @pytest.fixture
@@ -53,11 +50,8 @@ def test_prepare_loads_template_2_against_workflow_2(builder: WorkflowBuilder) -
     assert all(len(panel) == len(prepared.config_nodes) for panel in prepared.panels)
     # The single LoadImage node defaults to the one input photo slot.
     assert prepared.image_slots == ["USER_ID_STORY_ID_INPUT_1.png"]
-    # Two SaveImage nodes → two variants per panel (V1 pre-swap, V2 restored).
-    assert builder.output_prefixes(prepared.base_workflow) == [
-        "Qwen_Edit_2511_V1",
-        "Qwen_Edit_2511_V2",
-    ]
+    # One SaveImage node → a single output (one variant) per panel.
+    assert builder.output_prefixes(prepared.base_workflow) == ["Qwen_Edit_2511"]
 
 
 def test_prepare_injects_story_prompt_into_prompt_named_field(
@@ -89,28 +83,23 @@ def test_render_substitutes_panel_values_and_placeholders(
     # No story bound → the prompt field still holds the sentinel.
     assert workflow[_NODE_PROMPT]["inputs"]["prompt"] == "{PROMPT}"
     assert workflow[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
-    assert workflow[_NODE_SAVE_V1]["inputs"]["filename_prefix"] == "u1_s1_P0_V1"
-    assert workflow[_NODE_SAVE_V2]["inputs"]["filename_prefix"] == "u1_s1_P0_V2"
+    assert workflow[_NODE_SAVE]["inputs"]["filename_prefix"] == "u1_s1_P0"
 
 
-def test_reactor_face_swap_stage_is_wired(builder: WorkflowBuilder) -> None:
-    """The ReActor stage mirrors workflow 1: V1 is the raw Qwen edit, V2 is the
-    face-restored image whose face-swap source is the input photo (node 41)."""
+def test_single_output_persists_the_qwen_edit(builder: WorkflowBuilder) -> None:
+    """The lone SaveImage persists the Qwen edit's VAEDecode directly — no
+    ReActor face-swap stage stands between them anymore."""
     prepared = builder.prepare("2")
     workflow = builder.render(
         prepared, prepared.panels[0],
         placeholders={"USER_ID": "u", "STORY_ID": "s"},
     )
 
-    # V1 = the flattened subgraph's decode; V2 = the ReActor restore output.
-    assert workflow[_NODE_SAVE_V1]["inputs"]["images"] == [_NODE_QWEN_OUTPUT, 0]
-    assert workflow[_NODE_SAVE_V2]["inputs"]["images"] == [_NODE_REACTOR_RESTORE, 0]
-    # Swap target is the Qwen output; swap source is the user's input photo.
-    assert workflow[_NODE_REACTOR_SWAP]["inputs"]["input_image"] == [_NODE_QWEN_OUTPUT, 0]
-    assert workflow[_NODE_REACTOR_SWAP]["inputs"]["source_image"] == [_NODE_EDIT_TARGET, 0]
-    assert workflow[_NODE_REACTOR_RESTORE]["inputs"]["image"] == [_NODE_REACTOR_SWAP, 0]
-    # The model selects the face-restored V2 as the final image.
-    assert builder.final_output_prefix(workflow) == "u_s_P0" + FINAL_OUTPUT_SUFFIX
+    assert workflow[_NODE_SAVE]["inputs"]["images"] == [_NODE_QWEN_OUTPUT, 0]
+    # No ReActor nodes survive the edit.
+    assert not [
+        n for n in workflow.values() if str(n.get("class_type", "")).startswith("ReActor")
+    ]
 
 
 def test_render_uses_each_panels_own_seed(builder: WorkflowBuilder) -> None:
@@ -122,8 +111,8 @@ def test_render_uses_each_panels_own_seed(builder: WorkflowBuilder) -> None:
 
     assert first[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
     assert second[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410684
-    assert first[_NODE_SAVE_V1]["inputs"]["filename_prefix"] == "u_s_P0_V1"
-    assert second[_NODE_SAVE_V1]["inputs"]["filename_prefix"] == "u_s_P1_V1"
+    assert first[_NODE_SAVE]["inputs"]["filename_prefix"] == "u_s_P0"
+    assert second[_NODE_SAVE]["inputs"]["filename_prefix"] == "u_s_P1"
 
 
 def test_rendered_workflow_has_no_dangling_node_links(builder: WorkflowBuilder) -> None:

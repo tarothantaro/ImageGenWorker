@@ -455,10 +455,12 @@ class WorkflowBuilder:
         """Every SaveImage ``filename_prefix`` in the rendered workflow, ordered
         by its trailing ``_V<n>`` (V1 before V2 …).
 
-        workflow 2 emits two images per run — ``_V1`` (pre-face-swap) and
-        ``_V2`` (face-restored) — and the worker returns *all* of them as a
-        panel's A/B variants (variant 0 = V1, 1 = V2 …). Prefixes without a
-        ``_V<n>`` suffix sort first, preserving single-output templates.
+        A workflow may save more than one image per run as a panel's A/B variants
+        (workflow 1 emits ``_V1`` pre-face-swap + ``_V2`` face-restored → variant
+        0 = V1, 1 = V2 …); the worker returns *all* of them. The live workflow 2
+        saves a single image per panel, so it yields one prefix (one variant).
+        Prefixes without a ``_V<n>`` suffix sort first, preserving single-output
+        templates.
         """
         prefixes = [
             node.get("inputs", {}).get("filename_prefix", "")
