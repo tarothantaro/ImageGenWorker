@@ -1,6 +1,6 @@
 ---
 name: local-batch-eval
-description: Generate every story locally by driving the image-gen worker directly against a live ComfyUI (no Pub/Sub, no GCS, no Application stack), then evaluate the outputs with the prompt-eval rubric and open a local web UI to review them. Use when asked to "generate all stories and evaluate", "run the local batch eval", "render every story from <photo> and review", regenerate-and-grade the whole catalog, or eyeball a story's outputs (input photo + actual prompts + V1/V2 images + eval) in a browser. Defaults to tests/assets/leo.jpg at age 4. Pairs with the `prompt-eval`, `story-prompts`, and `character-config` skills.
+description: Generate every story locally by driving the image-gen worker directly against a live ComfyUI (no Pub/Sub, no GCS, no Application stack), then evaluate the outputs with the prompt-eval rubric and open a local web UI to review them. Use when asked to "generate all stories and evaluate", "run the local batch eval", "render every story from <photo> and review", regenerate-and-grade the whole catalog, or eyeball a story's outputs (input photo + actual prompts + output image + eval) in a browser. Defaults to tests/assets/leo.jpg at age 4. Pairs with the `prompt-eval`, `story-prompts`, and `character-config` skills.
 ---
 
 # local-batch-eval
@@ -27,7 +27,7 @@ itself **reuses the `prompt-eval` skill** — same rubric, same report format.
 - A **live ComfyUI** on `http://localhost:8188` (same requirement as
   `scripts/smoke_real_comfyui.py`). Generation is real and slow — each panel is
   one ComfyUI run of seconds-to-minutes; the full 21-story catalog is 21 × 6
-  panels × 2 variants. Generate a subset with `--stories` while iterating.
+  panels = 126 images (one per panel). Generate a subset with `--stories` while iterating.
 - Run everything from the repo root with `PYTHONPATH=.` and the project Python
   (`~/python_env/torch-env/bin/python`).
 
@@ -94,8 +94,9 @@ Now grade exactly as the **`prompt-eval` skill** describes — read
 `.claude/skills/prompt-eval/SKILL.md` §3 (per-panel rubric) and §4 (report
 structure) and follow them verbatim for each story:
 
-- Read the story's `manifest.json`, then Read each **V2** PNG (the entries where
-  `variant_label == "V2"` — the delivered, face-restored image) and score it
+- Read the story's `manifest.json`, then Read each panel's delivered PNG (the
+  entries where `is_delivered` is `true` — one image per panel on the live
+  template) and score it
   against that panel's `resolved_prompt` and the rubric (realism, scale & depth,
   scene & setting, prompt match, action & interaction, cast & identity).
 - Cite concrete visual evidence from the image; never grade from prompt text
@@ -135,7 +136,7 @@ Notes:
 
 Open `http://127.0.0.1:8000/`. The index lists every story with a verdict badge;
 each story page shows the **input photo**, and per panel the **actual prompt**
-sent to ComfyUI, the **V1 + V2 output images** side by side, and the judge's
+sent to ComfyUI, the **output image** for that panel, and the judge's
 **eval notes** for that panel, plus the summary and recommended fixes. Stdlib-only
 — no install step. Leave it running (backgrounded) and give the user the URL.
 

@@ -9,7 +9,7 @@ page so a human can review the whole batch at a glance — for each story it sho
 * the **input photo** + run metadata (age, model, when),
 * every panel's **actual prompt** sent to ComfyUI (from the manifest, which
   prefers the worker's logged prompt),
-* the **output images** (V1 pre-face-swap + V2 face-restored) side by side,
+* the **output image** for each panel (one image per panel on the live template),
 * the **eval result** — the judge's per-panel notes pulled out of ``report.md``
   and shown next to that panel, plus the verdict/summary/fixes.
 
@@ -136,7 +136,7 @@ def _parse_report(text: str) -> dict:
                 section = "summary"
                 current_panel = None
                 continue
-            if heading.startswith("panel"):  # "## Panels (V2)"
+            if heading.startswith("panel"):  # "## Panels"
                 section = "panels"
                 current_panel = None
                 continue
@@ -293,7 +293,7 @@ main { flex: 1 1 auto; min-width: 0; }
   .card { padding: 14px; }
   /* Panel: stack prompt/eval above the images instead of side by side. */
   .panel { grid-template-columns: 1fr; gap: 14px; }
-  /* Let the V1/V2 variants share the row and grow to fill it. */
+  /* Let the panel image(s) share the row and grow to fill it. */
   .panel .imgs figure { flex: 1 1 0; min-width: 0; }
   .panel figure img { width: 100%; max-width: 100%; }
   .index-grid { grid-template-columns: 1fr; }
@@ -435,7 +435,7 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         main.append('<div class="report">' + _md_to_html(report["summary"]) + "</div>")
     main.append("</div>")
 
-    # Panels: group manifest images by panel number; show prompt + V1/V2 + eval.
+    # Panels: group manifest images by panel number; show prompt + image(s) + eval.
     panels = _group_panels(man.get("images", []))
     for panel_no in sorted(panels):
         imgs = panels[panel_no]
@@ -459,8 +459,10 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         else:
             main.append('<p class="empty">No eval notes for this panel.</p>')
         main.append("</div>")
-        # right: images
+        # right: image(s) — one per panel on the live template; a caption is shown
+        # only when a panel carries several (then mark which is delivered).
         main.append('<div class="imgs">')
+        multi = len(imgs) > 1
         for img in imgs:
             src = (
                 "/img?dir="
@@ -468,13 +470,16 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
                 + "&name="
                 + quote(Path(img["file"]).name)
             )
-            cap = html.escape(
-                f"{img.get('variant_label', '')} · {img.get('variant_role', '')}"
-            )
-            main.append(
-                f'<figure><img src="{src}" loading="lazy">'
-                f"<figcaption>{cap}</figcaption></figure>"
-            )
+            if multi:
+                tag = (
+                    "delivered"
+                    if img.get("is_delivered")
+                    else f"variant {img.get('variant', 0) + 1}"
+                )
+                cap = f"<figcaption>{html.escape(tag)}</figcaption>"
+            else:
+                cap = ""
+            main.append(f'<figure><img src="{src}" loading="lazy">{cap}</figure>')
         main.append("</div>")
         main.append("</div></div>")
 

@@ -121,11 +121,10 @@ def _generate_one(
             (out_dir / f"{panel.index}.png").write_bytes(panel.image)
             written += 1
             log.info(
-                "  %s panel %d/%d (%s) %dx%d %.1fs",
+                "  %s panel %d/%d %dx%d %.1fs",
                 stem,
                 panel.index + 1,
                 panel.total,
-                f"V{panel.variant + 1}",
                 panel.width,
                 panel.height,
                 panel.processing_seconds,

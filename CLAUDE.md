@@ -138,7 +138,7 @@ After editing prompts, story text, or character tokens, re-run the appropriate `
 Two more skills (no file ownership — they read + grade):
 
 - **`prompt-eval`** — judges already-generated panel images against their prompts with the vision model and writes a per-story `report.md`. Its `fetch_outputs.py` reads outputs from the **Application stack's GCS by default**, or from a **local dir tree** when given `--local-root` / `LOCAL_OUTPUT_ROOT` (same `<user>/<story>/outputs/<i>.png` layout).
-- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `scripts/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + V1/V2 images + eval) for review. `eval_runs/` is gitignored.
+- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `scripts/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + output image + eval) for review. `eval_runs/` is gitignored.
 
 ### Key invariants
 

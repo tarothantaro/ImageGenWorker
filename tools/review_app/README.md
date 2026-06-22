@@ -9,8 +9,8 @@ For each story it shows, on one scrollable page:
 - the **input photo** + run metadata (age, model, when generated),
 - every panel's **actual prompt** sent to ComfyUI (from `manifest.json`, which
   prefers the worker's logged prompt),
-- the **output images** — V1 (pre-face-swap) and V2 (face-restored) side by side
-  (click to zoom),
+- the **output image** for each panel (one image per panel on the live template;
+  click to zoom),
 - the **eval result** — the vision judge's per-panel notes pulled out of
   `report.md` and shown next to that panel, plus the verdict, summary, and
   recommended prompt fixes.
@@ -32,7 +32,7 @@ For each story it shows, on one scrollable page:
 └── eval/<story>__<story_id>/      # one per story
     ├── manifest.json              # from prompt-eval/fetch_outputs.py
     ├── report.md                  # from the prompt-eval rubric (vision judge)
-    └── *.png                      # the downloaded V1/V2 panel images
+    └── *.png                      # the downloaded panel images (one per panel)
 ```
 
 It re-reads the run dir on every request, so regenerating or re-judging shows up

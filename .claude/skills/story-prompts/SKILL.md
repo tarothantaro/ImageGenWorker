@@ -228,8 +228,8 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
 11. **Guard tight close-ups and dense groups against child duplication.** A
    *separate* failure from the split reference (rule 9): even a single-block,
-   scene-first prompt can make the **base model** invent an extra child — this
-   shows up in the V1 (pre-face-swap) image too, so it is not a swap artifact. Two
+   scene-first prompt can make the **base model** invent an extra child — a
+   prompt problem to fix here, not a render/setting artifact. Two
    patterns trigger it, with two fixes:
    - **Symmetric solo close-ups** (a child bent over a sink with both hands
      together, centered and mirrored) invent a companion. Frame the solo subject

@@ -16,11 +16,13 @@ vision judge reads the *effective* prompt the model actually rendered. The judgi
 itself is done by the agent reading each PNG; this script never calls an LLM.
 
 Output index → storybook layout (mirrors ``imagegen/model.py``): the live render
-template emits ``variants`` images per panel (V1 = pre-face-swap, V2 =
-face-restored), flattened in order, so::
+template emits **one image per panel**, written at a flat output index. The helper
+derives the per-panel image count from the live workflow, so the math below still
+holds if a template is ever changed to emit more than one image per panel
+(they would be flattened in index order)::
 
     panel_index = index // variants
-    variant     = index %  variants   # 0 -> V1, 1 -> V2, ...
+    variant     = index %  variants
 
 Usage (host side, from the repo root; the Application local stack must be up so
 fake-gcs is published on :4443):
@@ -133,12 +135,13 @@ def _resolve_prompt(raw: str, characters: dict[str, str]) -> str:
 
 
 def _variants_for_live_template() -> int:
-    """How many SaveImage variants the live render template emits per panel.
+    """How many output images the live render template emits per panel.
 
-    Prefers the real worker code path (``WorkflowBuilder`` + the live
-    ``_RENDER_TEMPLATE_ID``); falls back to counting ``SaveImage`` nodes in the
-    template's workflow JSON, then to 2 (V1/V2) so the skill still runs if the
-    imports change.
+    The live ``templates/2`` emits a **single** image per panel. This derives
+    that count from the real worker code path (``WorkflowBuilder`` + the live
+    ``_RENDER_TEMPLATE_ID``) so the index math stays correct if a template is ever
+    changed to emit more than one image per panel. Falls back to 1 if the imports
+    change.
     """
     try:
         from imagegen.model import _RENDER_TEMPLATE_ID
@@ -160,13 +163,13 @@ def _variants_for_live_template() -> int:
             ).read_text()
         )
         count = len(builder.output_prefixes(base))
-        return count or 2
+        return count or 1
     except Exception as exc:  # noqa: BLE001 - best-effort; fall back gracefully
         print(
-            f"[eval] warn: could not derive variant count ({exc}); assuming 2",
+            f"[eval] warn: could not derive image count ({exc}); assuming 1",
             file=sys.stderr,
         )
-        return 2
+        return 1
 
 
 # --- output source (GCS or local filesystem) ---------------------------------
@@ -296,7 +299,10 @@ def _download(args: argparse.Namespace) -> int:
         index = int(Path(blob.name).stem)
         panel_index = index // variants
         variant = index % variants
-        local = out_dir / f"{index:02d}_panel{panel_index + 1}_V{variant + 1}.png"
+        # One image per panel on the live template -> no variant suffix; keep a
+        # generic _vN only if a template is ever changed to emit several.
+        suffix = f"_v{variant + 1}" if variants > 1 else ""
+        local = out_dir / f"{index:02d}_panel{panel_index + 1}{suffix}.png"
         blob.download_to_filename(str(local))
         raw = prompts[panel_index] if panel_index < len(prompts) else None
         reconstructed = _resolve_prompt(raw, characters) if raw else None
@@ -311,8 +317,9 @@ def _download(args: argparse.Namespace) -> int:
                 "panel_index": panel_index,
                 "panel_number": panel_index + 1,
                 "variant": variant,
-                "variant_label": f"V{variant + 1}",
-                "variant_role": "pre-face-swap" if variant == 0 else "face-restored",
+                # The image users receive. With one image per panel this is the
+                # only image; if a template emits several, the last is delivered.
+                "is_delivered": variant == variants - 1,
                 "file": str(local),
                 "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
@@ -354,7 +361,7 @@ def _download(args: argparse.Namespace) -> int:
     print(f"[eval] story {args.story!r}: {spec.get('title')!r}")
     print(
         f"[eval] downloaded {len(entries)} image(s) "
-        f"({len(prompts)} panels x {variants} variants) -> {out_dir}"
+        f"({len(prompts)} panels x {variants} image(s)/panel) -> {out_dir}"
     )
     print(f"[eval] manifest -> {out_dir / 'manifest.json'}")
     print(f"[eval] write the report to -> {out_dir / 'report.md'}")

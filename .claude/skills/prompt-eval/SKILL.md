@@ -1,6 +1,6 @@
 ---
 name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
+description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's output image with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
 ---
 
 # prompt-eval
@@ -30,15 +30,16 @@ gs://tarostory-local-images/<user_id>/<story_id>/outputs/<index>.png
   `../Application/server/deploy/stages/local/up.sh`).
 - `<story_id>` here is the **job/story id** the Application assigned, **not** the
   prompt-file stem. The prompt set is selected separately by `type`/`id`.
-- The live render template (`templates/2`, Qwen-Image-Edit-2511) saves **2
-  variants per panel**: `_V1` (pre-face-swap) and `_V2` (face-restored). They are
-  flattened to sequential indices, so for index *i*:
-  `panel = i // 2`, `variant = i % 2` (0 → V1, 1 → V2). A 6-panel story = 12
-  images, indices 0–11. The helper computes this from the live workflow so it
-  stays correct if the variant count changes.
-  **This skill judges the V2 (face-restored) image of every panel** — V2 is the
-  delivered output, so every criterion is graded on it. (V1 is still downloaded
-  for reference but not scored.)
+- The live render template (`templates/2`, Qwen-Image-Edit-2511) saves **one
+  image per panel** at a flat output index, so for index *i*: `panel = i` (a
+  6-panel story = 6 images, indices 0–5). There is no longer a pre-face-swap /
+  face-restored split — the single image is the delivered output. The helper
+  derives the per-panel image count from the live workflow, so the
+  `panel = i // variants` math stays correct if a template is ever changed to
+  emit more than one image per panel.
+  **This skill judges that one delivered image of every panel** (the manifest
+  entry with `is_delivered: true`; with one image per panel that is simply the
+  panel's image), grading every criterion on it.
 
 ### Local mode (no Application stack)
 
@@ -110,14 +111,15 @@ story) score that row **NA** and say so.
 
 ### 3. Judge each panel (vision)
 
-Read `manifest.json`, then for **each panel** Read its **V2** PNG — the entries
-where `variant_label == "V2"` (the face-restored, delivered image) — and score it
+Read `manifest.json`, then for **each panel** Read its delivered PNG — the entry
+where `is_delivered` is `true` (with one image per panel that is simply the
+panel's image) — and score it
 against that panel's `resolved_prompt` and the rubric below. Judge every panel on
-V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
-— never grade from the prompt text alone.
+its delivered image. Cite concrete visual evidence ("two figures, protagonist is
+on the *right*") — never grade from the prompt text alone.
 
 **Ground every panel in the pixels before you score it.** First write a one-line
-literal description of what the V2 image *actually shows*: how many people are in
+literal description of what the image *actually shows*: how many people are in
 it and their **left-to-right order** (e.g. "L→R: child, elderly woman"), plus
 their depth in frame. Score the spatial criterion (Scale & depth) from *that*
 description, not from what the prompt intended. The prompt says where people
@@ -132,7 +134,7 @@ against exactly that text (it already has the real age word, e.g. "4-year-old",
 substituted in). When debugging a defect, the entry's `prompt_log` file holds the
 full rendered workflow that produced the image.
 
-**Per-panel rubric** (judged on the V2 image):
+**Per-panel rubric** (judged on the panel's delivered image):
 
 | Criterion | What to check |
 |---|---|
@@ -165,7 +167,7 @@ Write markdown to the `report_path` from the manifest
 # Prompt eval — <title> (<story>)
 
 - **Lesson:** <lesson>
-- **Source:** gs://<bucket>/<user>/<story>/outputs/  (V2 of <P> panels)
+- **Source:** gs://<bucket>/<user>/<story>/outputs/  (<P> panels, one image each)
 - **Verdict:** ✅ ship / ⚠️ revise prompts / ❌ regenerate — one-line rationale
 
 ## Summary
@@ -178,7 +180,7 @@ Write markdown to the `report_path` from the manifest
 - Gist satisfied: <X/Y> panels
 - Top issues (ranked): 1) … 2) … 3) …
 
-## Panels (V2)
+## Panels
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
 - Gist: "<gist>"
@@ -190,7 +192,7 @@ Write markdown to the `report_path` from the manifest
 - Action & interaction: NA (no action) | pass | partial — <evidence>
 - Cast & identity: NA | pass | partial — <evidence>
 - Gist satisfied: NA (no gist) | pass | partial | **fail** — does the intended beat land? <evidence>
-… (every panel, on its V2 image) …
+… (every panel, on its delivered image) …
 
 ## Recommended prompt fixes
 - Panel N: <specific edit to the prompt string that would fix the observed defect>
