@@ -1,6 +1,6 @@
 ---
 name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the protagonist is left-most, the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
+description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's V2 (face-restored) output with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
 ---
 
 # prompt-eval
@@ -94,8 +94,8 @@ resolved `characters` map, and `variants_per_panel`. Read `manifest.json` before
 judging.
 
 Each entry also carries a **`gist`** — the story author's one-sentence statement
-of what *this panel must show* (setting, who is present + protagonist far-left
-when multi-person, the key action/interaction, the narrative beat), stripped of
+of what *this panel must show* (setting, who is present, the key
+action/interaction, the narrative beat), stripped of
 style/camera/identity boilerplate. It is the panel's intent, parallel to the
 prompt, authored by the `story-prompts` skill (the JSON `gists` array). The
 manifest's `has_gists` says whether the story carries them. Grade the image
@@ -118,15 +118,15 @@ V2. Cite concrete visual evidence ("two figures, protagonist is on the *right*")
 
 **Ground every panel in the pixels before you score it.** First write a one-line
 literal description of what the V2 image *actually shows*: how many people are in
-it and their **left-to-right order naming who is left-most** (e.g. "L→R: child,
-elderly woman"). Score the spatial criteria (Far-left, Scale) from *that*
+it and their **left-to-right order** (e.g. "L→R: child, elderly woman"), plus
+their depth in frame. Score the spatial criterion (Scale & depth) from *that*
 description, not from what the prompt intended. The prompt says where people
 *should* be; only the pixels say where they *are* — when they disagree, grade the
 pixels. **Do not record a `partial`/`fail` on any criterion without quoting the
-specific thing in the image that fails it** ("the protagonist is second from the
-left, not left-most"); if you can't point to it, it passes. These spatial calls
-are the easiest to hallucinate from the prompt — re-look at the image before
-writing `fail`. The `resolved_prompt` is the **actual
+specific thing in the image that fails it** ("the child in the background is
+rendered larger than the adult in front"); if you can't point to it, it passes.
+These spatial calls are the easiest to hallucinate from the prompt — re-look at
+the image before writing `fail`. The `resolved_prompt` is the **actual
 prompt sent to ComfyUI** when `prompt_source == "worker_log"` — grade the image
 against exactly that text (it already has the real age word, e.g. "4-year-old",
 substituted in). When debugging a defect, the entry's `prompt_log` file holds the
@@ -136,13 +136,12 @@ full rendered workflow that produced the image.
 
 | Criterion | What to check |
 |---|---|
-| **Protagonist far-left** | The input-photo person is the **left-most** figure in any **multi-person** panel — "left-most" = nearest the **left edge of the image as you view it** (viewer's left, not the subject's). NA for a solo panel. A non-left protagonist is a real defect, not a nitpick. |
 | **Realism** | Reads as a real photograph — plausible anatomy (hands, limbs, faces), natural lighting/shadows/perspective, correct count of fingers/people. No cartoon/CGI/uncanny render, warps, duplicated or fused bodies, or garbled text. |
 | **Scale & depth** | Each person's size is consistent with their depth in the scene — figures nearer the camera are larger, those farther back are smaller, following perspective. No figure rendered giant or miniature for its position, and the protagonist isn't shrunk/enlarged relative to the rest of the cast. |
 | **Scene & setting** | The image's **setting** matches what *this panel's* `resolved_prompt` describes — the **location type** (living room / classroom / garden / playground …), the named **setting anchors** (the key furniture/landmarks, e.g. a wooden shelf, a toy box, a low fence), the **time of day / lighting**, and any described **change of state** (a shattered vase, a now-tidy room). Each panel is graded **against its own prompt only** — do **not** grade cross-panel scene consistency (whether two panels render the *same* room) here; that is out of scope for now. Call out a wrong location (e.g. "prompt says classroom, image is a living room") or a missing/contradicted anchor. |
 | **Prompt match** | The image matches the `resolved_prompt` — **composition/shot**, **clothes/wardrobe**, **age**, props, expression. (Setting/location is scored under **Scene & setting**.) Call out each mismatch specifically. |
 | **Action & interaction** | Each person performs the **action** the prompt asks, and people **interacting** do so coherently — the prompt's verbs read in the image (e.g. handshake, hug, pointing, sharing a toy), with bodies/gazes/hands oriented toward one another. No disconnected, contradictory, or idle poses where the prompt calls for an action or exchange. |
-| **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. The protagonist's face does **not** have to face the camera — natural three-quarter, profile, and downward-glancing poses are fine. Only flag it when the face is *fully* hidden (a pure back-of-head shot) such that the face-swap could not land. |
+| **Cast & identity** | Each `{TOKEN}` present matches its `characters[TOKEN]` description (gender, age, build, hair, wardrobe); the protagonist looks like the **same person** across all panels. The protagonist's face does **not** have to face the camera — natural three-quarter, profile, and downward-glancing poses are fine. Only flag it when the face is *fully* hidden (a pure back-of-head shot) such that the edit could not carry the input identity. |
 | **Gist satisfied** | The image conveys the panel's **`gist`** — the author's intended beat: the right setting, the right people doing the right thing, and the narrative point landing (e.g. "child *offers* a block and the friend *accepts*"; "the vase is *shattered* and the child is *shocked*"). This is the *meaning* check, above the literal-prompt match: an image can match the prompt's words yet miss the beat (the offer reads as the child keeping the block; the "shattered vase" still shows a whole vase). Judge whether someone seeing only the gist would accept this image. NA when `gist` is `null`. |
 
 Score each criterion **pass / partial / fail** (NA where it doesn't apply) with a
@@ -154,7 +153,8 @@ Derive the **Summary** counts and the **Verdict** mechanically from the per-pane
 lines you just wrote — do not re-judge from memory. Every issue named in the
 Verdict or "Top issues" must trace to a panel line you scored `partial`/`fail` for
 that exact criterion: never cite a panel as failing a check its own line passed
-(e.g. don't say "drifts off-left in P6" if Panel 6's Far-left line is `pass`). If
+(e.g. don't say "the cast looks wrong in P6" if Panel 6's Cast & identity line is
+`pass`). If
 the per-panel lines show no `fail` and only minor `partial`s, the verdict is
 `✅ ship`, not `⚠️ revise`.
 
@@ -169,7 +169,6 @@ Write markdown to the `report_path` from the manifest
 - **Verdict:** ✅ ship / ⚠️ revise prompts / ❌ regenerate — one-line rationale
 
 ## Summary
-- Protagonist far-left: <X/Y> multi-person panels
 - Realism: <X/Y> panels
 - Scale & depth: <X/Y> panels
 - Scene & setting: <X/Y> panels
@@ -183,8 +182,7 @@ Write markdown to the `report_path` from the manifest
 ### Panel 1
 - Resolved prompt: "<resolved_prompt>"
 - Gist: "<gist>"
-- Frame: <what the pixels show — #people, L→R order naming who is left-most, anything over the protagonist's face>
-- Far-left: NA (solo) | pass | **fail** — <evidence>
+- Frame: <what the pixels show — #people, L→R order, depth, anything over the protagonist's face>
 - Realism: pass | **fail** — <evidence>
 - Scale & depth: NA (solo) | pass | **fail** — <evidence>
 - Scene & setting: pass | partial | **fail** — location/anchors/lighting vs this panel's prompt <evidence>
@@ -198,15 +196,15 @@ Write markdown to the `report_path` from the manifest
 - Panel N: <specific edit to the prompt string that would fix the observed defect>
 ```
 
-Tie each recommended fix to a `story-prompts` rule (e.g. "state 'on the far
-left' so the protagonist is left-most", "name a 'medium shot, photorealistic'
-to push realism", "the cast age/clothes drift means the panel re-describes
-appearance — remove it, the `{TOKEN}` carries it"). Keep fixes concrete enough
+Tie each recommended fix to a `story-prompts` rule (e.g. "name a 'medium shot,
+photorealistic' to push realism", "the cast age/clothes drift means the panel
+re-describes appearance — remove it, the `{TOKEN}` carries it", "add a placement
+cue only if the beat needs a specific arrangement"). Keep fixes concrete enough
 to paste into the prompt.
 
 ### 5. Report back
 
-Tell the user the verdict, the headline numbers (far-left, realism, scale &
+Tell the user the verdict, the headline numbers (realism, scale &
 depth, scene & setting, prompt match, action & interaction, gist satisfied), and
 the `report.md` path. If outputs were missing or the set was
 partial, say so plainly.

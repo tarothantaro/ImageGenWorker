@@ -96,9 +96,8 @@ structure) and follow them verbatim for each story:
 
 - Read the story's `manifest.json`, then Read each **V2** PNG (the entries where
   `variant_label == "V2"` — the delivered, face-restored image) and score it
-  against that panel's `resolved_prompt` and the rubric (protagonist far-left,
-  realism, scale & depth, scene & setting, prompt match,
-  action & interaction, cast & identity).
+  against that panel's `resolved_prompt` and the rubric (realism, scale & depth,
+  scene & setting, prompt match, action & interaction, cast & identity).
 - Cite concrete visual evidence from the image; never grade from prompt text
   alone.
 - Write the markdown report to the manifest's `report_path`

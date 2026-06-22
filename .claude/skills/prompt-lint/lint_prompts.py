@@ -4,9 +4,9 @@
 The cheap half of prompt iteration: catch the mechanical defects in
 ``imagegen/prompts/<type>_<id>.json`` **before** spending a ComfyUI run on it.
 This checks only what can be decided from the prompt/gist *text* — the structural
-invariants and the deterministic `story-prompts` rules (far-left when
-multi-person, shot/framing cue, identity-preserve ending, banned cross-panel
-reference words, `{TOKEN}` validity, gist↔prompt parity). It does **not** judge
+invariants and the deterministic `story-prompts` rules (shot/framing cue,
+identity-preserve ending, banned cross-panel reference words, `{TOKEN}` validity,
+gist↔prompt parity). It does **not** judge
 the semantic prompt↔gist alignment or whether every person has a concrete action
 — that is the agent's job in the `prompt-lint` skill, reading the prompts + gists
 this script prints. No image generation, no LLM, no GCS.
@@ -57,8 +57,6 @@ _CAMERA_CUES = (
     "full shot",
     "long shot",
 )
-# Far-left placement phrasings (constraint #1) — required in any multi-person panel.
-_FAR_LEFT = ("far left", "left-most", "leftmost", "on the left", "to the far left")
 # Shared visual register that should appear in every panel (rule 8).
 _STYLE_PHRASE = "cinematic photography style"
 
@@ -196,14 +194,6 @@ def lint_story(stem: str, f: Findings) -> dict:
 
         tokens = [t for t in _PLACEHOLDER_RE.findall(prompt) if _CHAR_TOKEN_RE.match(t)]
         used_tokens.update(tokens)
-        if tokens and not any(fl in low for fl in _FAR_LEFT):
-            f.add(
-                "FAIL",
-                p,
-                "far-left",
-                "multi-person panel without an explicit far-left placement "
-                "(constraint #1)",
-            )
         for tok in tokens:
             if tok not in declared:
                 f.add("WARN", p, "tokens", f"{{{tok}}} used but not in `characters`")

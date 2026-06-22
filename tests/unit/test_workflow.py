@@ -209,7 +209,7 @@ def test_prepare_injects_story_prompts_and_resolves_characters(
     panel1_text = next(f["text"] for f in prepared.panels[1] if "text" in f)
     assert "{GENDER" not in panel1_text
     assert "elderly East Asian woman" in panel1_text
-    assert "the far left" in panel1_text
+    assert "in the mid-ground" in panel1_text
     assert "{INPUT_1_AGE}" in panel1_text
 
 

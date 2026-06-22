@@ -1,15 +1,15 @@
 ---
 name: prompt-lint
-description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (far-left, shot/framing cue, one action per person, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `prompt-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `prompt-eval` skills.
+description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (shot/framing cue, one action per person, position cued only when the beat needs it, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `prompt-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `prompt-eval` skills.
 ---
 
 # prompt-lint
 
 Grade a story's **prompt text** against its **gists** and the `story-prompts`
 rules, and recommend concrete edits — **before** spending a ComfyUI run on it.
-Image generation is the expensive, slow step; most prompt defects (a protagonist
-not placed far-left, a panel whose prompt drifts from its intended beat, a scene
-anchor that isn't repeated verbatim, an unresolvable `{TOKEN}`) are visible in the
+Image generation is the expensive, slow step; most prompt defects (a panel whose
+prompt drifts from its intended beat, a scene anchor that isn't repeated verbatim,
+an unresolvable `{TOKEN}`) are visible in the
 text and can be fixed for free here. This skill **reads and grades only** — it
 generates nothing and edits nothing; apply the fixes via the `story-prompts` skill.
 
@@ -41,7 +41,6 @@ prints, per panel, the prompt, its gist, and any findings:
 
 - **FAIL** (load-bearing, unambiguous) — wrong prompt/gist counts; a panel missing
   the preserve-identity ending; no `"person from the input image"` reference; a
-  **multi-person panel without an explicit far-left placement** (constraint #1); a
   `{TOKEN}` that doesn't resolve in `character.json`; an empty gist or a gist that
   still carries a `{TOKEN}`; a banned cross-panel reference (`the same`, `back at`,
   `as before`, `transform the scene`, `place the person into`).

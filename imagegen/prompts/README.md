@@ -72,8 +72,8 @@ new categories are added (and add them to `_TYPE_NAMES`).
   `len(prompts)`** (there is no separate `panel_count` field), and it must match
   the render template `templates/1`'s panel count (6).
 - `gists` — the per-panel **eval gist**: a one-sentence statement of what *this
-  panel must show* — its setting, who is present (and the protagonist far-left in
-  any multi-person panel), the key action/interaction, and the narrative beat —
+  panel must show* — its setting, who is present, the key action/interaction, and
+  the narrative beat —
   with all style/camera/identity boilerplate stripped out. **Same length and
   order as `prompts`** (`gists[i]` is the intent of panel *i*). It is the panel's
   testable *intent*, parallel to but distinct from the literal prompt, and is the
@@ -92,17 +92,20 @@ new categories are added (and add them to `_TYPE_NAMES`).
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
 
-## The hard constraint (every prompt must honor)
+## Composition & position
 
-1. **Input person on the far left.** Whenever a panel shows more than one person,
-   the protagonist (from the input photo) is the **left-most** figure. The
-   face-swap stage maps the input face onto the left-most detected face, so this
-   is a pipeline requirement, not a stylistic one.
+**Mention a person's position only when the narrative beat needs it** (an
+exchange, front/back depth, or an explicit left-to-right row to keep a group of
+children from fusing); otherwise give each person an action and let the model
+compose the placement. There is **no** face-swap stage keying on a left-most
+face, so the protagonist no longer has to be the left-most figure. See the
+`story-prompts` skill for the full guidance.
 
-The protagonist no longer has to **face the camera**: there is no "face ≥70%
+The protagonist also does not have to **face the camera**: there is no "face ≥70%
 visible" rule. Let them engage naturally with the scene — three-quarter, profile,
-and downward-glancing poses are all welcome. The only floor is the face-swap
-above: avoid a pure back-of-head shot where no face is detectable.
+and downward-glancing poses are all welcome. The only floor is identity: avoid a
+pure back-of-head shot where no face is visible, or the edit can't carry the
+input face.
 
 ## Runtime placeholder substitution
 

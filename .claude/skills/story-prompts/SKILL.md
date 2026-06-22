@@ -18,8 +18,8 @@ and the metadata.
 
 This skill also owns the **`gists`** array — one eval gist per panel, parallel to
 `prompts`. A gist is a single sentence capturing what *that panel must show*: its
-setting, who is present (and the protagonist far-left in any multi-person panel),
-the key action/interaction, and the narrative beat — **with the style, camera and
+setting, who is present, the key action/interaction, and the narrative beat —
+**with the style, camera and
 identity-preservation boilerplate stripped out**. It is the panel's testable
 *intent*, and the spec both eval skills grade against: `prompt-eval` (vision)
 checks "does the image satisfy the gist?" and `prompt-lint` (text-only, no image
@@ -32,39 +32,44 @@ the supporting cast by **role** ("the elderly woman", "a friend"), never by
 ## How the pipeline shapes every prompt
 
 This is not generic text-to-image. The worker (DESIGN.md §7.2) runs **one input
-photo** through a Flux/Qwen image-edit + ReActor face-swap graph, once per panel:
+photo** through a Qwen-Image-Edit-2511 image-edit graph, once per panel:
 
 - There is exactly **one input image** — the user's photo. The person in it is
   the **protagonist**. Every other character is *conjured by the prompt text*,
   not supplied as a second image.
-- The face-swap stage maps the input face onto a **detected face in the output**.
-  In this pipeline it targets the **left-most** face — so the protagonist must be
-  composed left-most, front-facing, for the swap to land cleanly.
+- The edit transfers the input person's identity into the panel. It needs the
+  protagonist's **face visible** to carry that identity — but there is **no**
+  face-swap stage keying on a detected left-most face, so the protagonist's
+  position is otherwise free (see "Composition & position" below).
 - Panels do **not** share generated pixels. Each panel is an independent edit
   from the same photo. So cross-panel consistency of the supporting cast comes
   **only** from reusing the identical `{TOKEN}` placeholder (which expands to the
   identical appearance string) — never from one panel "remembering" another.
 
-## The hard constraint (non-negotiable)
+## Composition & position
 
-1. **Input person on the far left.** Any panel with more than one person places
-   the protagonist as the **left-most** figure. State it literally:
-   *"The person from the input image stands on the far left …"*. (Solo panels:
-   placement is free.) The face-swap stage maps the input face onto the
-   **left-most detected face**, so this is a pipeline requirement, not a
-   stylistic one.
+**Let the model compose the scene. Mention a person's position only when the
+narrative beat needs it** — an exchange that reads a particular way across the
+frame, who is in front vs behind, or an explicit left-to-right row that keeps a
+group of children from fusing (rule 11). Otherwise give each person a concrete
+action and an expression and let the model place them; do **not** pin the
+protagonist (or anyone) to a fixed spot out of habit. There is **no longer** a
+face-swap stage keying on a left-most face, so the protagonist no longer has to
+sit far-left. When you *do* need placement, spatial words are the lever (rule 2):
+*to the left*, *beside them*, *in the foreground*, *in a single row*.
 
-It must be **restated in every panel that needs it** — panels are independent
-edits and the base model has strong built-in preferences, so an unstated
-constraint will be ignored.
+Whatever position you state must be **restated in every panel that needs it** —
+panels are independent edits with no memory of each other, and the base model has
+strong built-in preferences, so an unstated cue will be ignored.
 
 **Let the protagonist engage naturally.** Do *not* force the input person to face
 the camera or keep the face front-on — that mandate produced stiff, posed-looking
 compositions and unnatural interactions. Let them look at the other character, at
 the action, or at the camera, whatever the moment calls for; three-quarter,
 profile, over-the-shoulder, and downward-glancing poses are all welcome. The only
-floor is the face-swap above: don't bury the protagonist in a pure back-of-head
-shot where no face is detectable. There is **no** "face ≥70% visible" rule.
+floor is identity: don't bury the protagonist in a pure back-of-head shot where no
+face is visible, or the edit can't carry the input face. There is **no** "face
+≥70% visible" rule.
 
 ## Prompt-writing rules (Qwen-Image-Edit-2511)
 
@@ -84,9 +89,11 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    oranges rolling out"* over a paragraph of adjectives. Don't open with *"Place the
    person into …"* ahead of the setting, or with *"Transform the scene"* — the input
    is the person photo, not a prior panel, so there is no existing scene to transform.
-2. **Use spatial words to place people** — `far left`, `to the right`,
-   `beside them`, `in the background`, `foreground`. This is the lever for
-   constraint #1. The model positions by these words, not by image indices.
+2. **Use spatial words when you need to place people** — `to the left`,
+   `to the right`, `beside them`, `in the background`, `foreground`, `in a row`.
+   Reach for them only when the beat needs a specific arrangement (see
+   "Composition & position"); otherwise let the model compose. The model
+   positions by these words, not by image indices.
 3. **Name a camera/shot to control framing** — `medium shot`,
    `medium-wide shot`, `eye-level`, `three-quarter view`. Sets how much of the
    scene and the people the frame includes, and the viewing angle. The model
@@ -125,7 +132,7 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    every panel so the set reads as one book.
 9. **Keep each prompt self-contained — repeat one verbatim setting anchor per
    scene.** Because each panel is an independent edit with **no memory of any
-   other panel**, re-establish the protagonist (left + face), the supporting cast
+   other panel**, re-establish the protagonist, the supporting cast
    tokens present, the style, **and the setting** every time. Slightly *reworded*
    re-descriptions of the same place ("on a wooden floor" in one panel, "with a
    wooden floor" in the next, the light dropped from a third) make the location
@@ -216,9 +223,9 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      then names them again. With no memory across the sentence the model treats the
      two mentions as **two separate children** and renders a duplicate. Lead with the
      anchor (no person in it), then describe each person **once**, in a single
-     contiguous block (position + action + expression): *"In `<anchor>` — the
-     person from the input image kneels on the far left gathering the blocks with a
-     kind smile."*
+     contiguous block (action + expression, plus position only if the beat needs
+     it): *"In `<anchor>` — the person from the input image kneels, gathering the
+     blocks with a kind smile."*
 10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
 11. **Guard tight close-ups and dense groups against child duplication.** A
@@ -244,11 +251,14 @@ For every prompt in the array, confirm:
 
 - [ ] **Opens with the scene** (the canonical setting-anchor clause), with **no
       person named inside that clause**.
-- [ ] **Each person is described exactly once**, in one contiguous block (position +
-      action + expression) — the protagonist is never named near the
-      scene and then again later (a "split reference" makes the model draw a duplicate
-      child).
-- [ ] If >1 person: protagonist is explicitly **far left**.
+- [ ] **Each person is described exactly once**, in one contiguous block (action +
+      expression, plus position only when the beat needs it) — the protagonist is
+      never named near the scene and then again later (a "split reference" makes the
+      model draw a duplicate child).
+- [ ] **Position is stated only when the beat needs it** (an exchange, front/back
+      depth, or an explicit left-to-right row to stop child duplication); otherwise
+      each person is given an action and the model composes the placement. The
+      protagonist is **not** forced far-left.
 - [ ] A **camera/shot cue** is present (`medium shot`, `eye-level`, `three-quarter
       view`, …) to set framing — the protagonist engages naturally and is **not**
       forced to face the camera.
@@ -283,13 +293,13 @@ For every prompt in the array, confirm:
    setting-anchor clause for each** (rule 9); every panel in a scene pastes that
    exact clause, so continuity is locked before you write the per-panel action.
 4. **Write each panel** with the rules above. Alternate solo and multi-person
-   panels naturally, but every multi-person panel obeys constraint #1, and **every
-   person in every panel is given a concrete action** (rule 4) — never left
-   standing/sitting with only an expression.
+   panels naturally; **every person in every panel is given a concrete action**
+   (rule 4) — never left standing/sitting with only an expression. State a
+   person's position only when the beat needs it (see "Composition & position").
 5. **Write the gists** — one per panel, parallel to `prompts`. For each panel,
-   state in a sentence what the image must show (setting + who is present, with
-   the protagonist far-left when multi-person, + the key action/interaction + the
-   narrative beat), referring to the cast by role and dropping all style/camera/
+   state in a sentence what the image must show (setting + who is present + the
+   key action/interaction + the narrative beat), referring to the cast by role and
+   dropping all style/camera/
    identity boilerplate. This is the panel's intent both eval skills check
    against — so it must describe the *same beat* the prompt does.
 6. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
@@ -299,9 +309,10 @@ For every prompt in the array, confirm:
 ## Worked reference
 
 See `imagegen/prompts/1_1.json` — a 6-panel life-lesson story
-("Kindness Comes Back Around") that follows every rule here: protagonist left and
-face-forward in all multi-person panels, supporting cast via tokens only,
-consistent storybook style, identity preserved each panel. Every panel **leads with
+("Kindness Comes Back Around") that follows every rule here: people composed
+naturally (position called out only where the beat needs it), supporting cast via
+tokens only, consistent storybook style, identity preserved each panel. Every
+panel **leads with
 the scene** and names the protagonist exactly once. It also shows rule 9's
 anchor reuse across a two-scene story — panels 1–4 repeat the verbatim clause
 *"a tree-lined suburban pavement in the morning sunlight"*, then panels 5–6 switch
