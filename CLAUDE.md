@@ -22,12 +22,12 @@ ruff check imagegen/
 mypy imagegen/
 
 # Story prompt smoke test against a live ComfyUI container on :8188
-PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
+PYTHONPATH=. ~/python_env/torch-env/bin/python tests/smoke/smoke_real_comfyui.py \
     --url http://localhost:8188 --input tests/assets/test.jpg --out /tmp/smoke_out
 
 # Local batch generate + eval + review (live ComfyUI on :8188; no GCS/Pub/Sub).
 # See the `local-batch-eval` skill for the full generate→grade→review loop.
-PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/generate_stories.py \
+PYTHONPATH=. ~/python_env/torch-env/bin/python .claude/skills/local-batch-eval/generate_stories.py \
     --input tests/assets/leo.jpg --age "4-year-old" --run-dir eval_runs/latest
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
     .claude/skills/prompt-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
@@ -138,7 +138,7 @@ After editing prompts, story text, or character tokens, re-run the appropriate `
 Two more skills (no file ownership — they read + grade):
 
 - **`prompt-eval`** — judges already-generated panel images against their prompts with the vision model and writes a per-story `report.md`. Its `fetch_outputs.py` reads outputs from the **Application stack's GCS by default**, or from a **local dir tree** when given `--local-root` / `LOCAL_OUTPUT_ROOT` (same `<user>/<story>/outputs/<i>.png` layout).
-- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `scripts/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + output image + eval) for review. `eval_runs/` is gitignored.
+- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `.claude/skills/local-batch-eval/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + output image + eval) for review. `eval_runs/` is gitignored.
 
 ### Key invariants
 

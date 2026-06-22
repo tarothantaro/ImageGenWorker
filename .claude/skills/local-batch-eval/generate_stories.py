@@ -27,12 +27,14 @@ the prompt-log dir all line up with no Application-assigned id to track.
 
 Usage (from the repo root, ComfyUI up on :8188)::
 
-    PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/generate_stories.py \
+    PYTHONPATH=. ~/python_env/torch-env/bin/python \
+        .claude/skills/local-batch-eval/generate_stories.py \
         --input tests/assets/leo.jpg --age "4-year-old" \
         --run-dir eval_runs/latest
 
     # just two stories, against a remote ComfyUI
-    PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/generate_stories.py \
+    PYTHONPATH=. ~/python_env/torch-env/bin/python \
+        .claude/skills/local-batch-eval/generate_stories.py \
         --stories 1_1,1_2 --url http://localhost:8188 --run-dir eval_runs/latest
 
 Exits non-zero if **any** story failed (the rest still run + are recorded).
@@ -52,7 +54,9 @@ from pathlib import Path
 from imagegen.comfyui_client import HttpComfyUIClient
 from imagegen.model import _RENDER_TEMPLATE_ID, ComfyUIModel
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+# This script lives at .claude/skills/local-batch-eval/generate_stories.py, so
+# the repo root is four parents up.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 
 log = logging.getLogger("generate_stories")

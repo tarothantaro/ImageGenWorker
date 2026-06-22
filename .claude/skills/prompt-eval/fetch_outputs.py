@@ -45,7 +45,7 @@ Application local stack's fake-gcs (the flow above). Pass ``--local-root`` (or s
 ``LOCAL_OUTPUT_ROOT``) to instead read PNGs straight off the local filesystem in
 the very same ``<user>/<story>/outputs/<index>.png`` layout — this is what the
 ``local-batch-eval`` skill uses when the worker is driven directly from
-*this* repo (``scripts/generate_stories.py``) with no Application stack and no
+*this* repo (``.claude/skills/local-batch-eval/generate_stories.py``) with no Application stack and no
 GCS in the loop. Everything downstream (the index→panel/variant math, the prompt
 log join, the manifest) is identical; only the bytes come from disk instead of
 GCS.

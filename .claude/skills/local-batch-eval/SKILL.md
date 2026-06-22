@@ -9,7 +9,7 @@ Run the **whole story catalog** through the real model on this machine and revie
 the results, end to end, without any of the production plumbing:
 
 ```
-scripts/generate_stories.py   →  outputs + prompt logs on local disk
+.claude/skills/local-batch-eval/generate_stories.py   →  outputs + prompt logs on local disk
    (drives imagegen.model.ComfyUIModel directly against live ComfyUI :8188)
 prompt-eval/fetch_outputs.py  →  per-story manifest.json   (--local-root mode)
 prompt-eval rubric (vision)   →  per-story report.md
@@ -25,7 +25,7 @@ itself **reuses the `prompt-eval` skill** — same rubric, same report format.
 ## Preconditions
 
 - A **live ComfyUI** on `http://localhost:8188` (same requirement as
-  `scripts/smoke_real_comfyui.py`). Generation is real and slow — each panel is
+  `tests/smoke/smoke_real_comfyui.py`). Generation is real and slow — each panel is
   one ComfyUI run of seconds-to-minutes; the full 21-story catalog is 21 × 6
   panels = 126 images (one per panel). Generate a subset with `--stories` while iterating.
 - Run everything from the repo root with `PYTHONPATH=.` and the project Python
@@ -39,7 +39,7 @@ Default run: every `imagegen/prompts/1_*.json` from `tests/assets/leo.jpg` at ag
 4, into `eval_runs/latest/`.
 
 ```bash
-PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/generate_stories.py \
+PYTHONPATH=. ~/python_env/torch-env/bin/python .claude/skills/local-batch-eval/generate_stories.py \
     --input tests/assets/leo.jpg --age "4-year-old" \
     --run-dir eval_runs/latest
 ```

@@ -243,11 +243,11 @@ For changes to GPU / model integration that emulators can't catch:
 
 ### 7.0 Against a live ComfyUI container
 
-`scripts/smoke_real_comfyui.py` drives the real `ComfyUIModel` + `HttpComfyUIClient` (httpx + websocket-client) through template 3 / workflow 2 against a running ComfyUI container, with a real input photo — the GPU/model path the in-process mock and emulators can't cover. No Pub/Sub or GCS involved; it exercises upload → render → submit → live WS stream → fetch the `_V2` image.
+`tests/smoke/smoke_real_comfyui.py` drives the real `ComfyUIModel` + `HttpComfyUIClient` (httpx + websocket-client) through template 3 / workflow 2 against a running ComfyUI container, with a real input photo — the GPU/model path the in-process mock and emulators can't cover. No Pub/Sub or GCS involved; it exercises upload → render → submit → live WS stream → fetch the `_V2` image.
 
 ```bash
 # ComfyUI container up on :8188 (see ../ImageGenComfyui/docker-compose.yml)
-PYTHONPATH=. ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
+PYTHONPATH=. ~/python_env/torch-env/bin/python tests/smoke/smoke_real_comfyui.py \
     --url http://localhost:8188 \
     --input tests/assets/test.jpg \
     --out /tmp/smoke_out --timeout 300

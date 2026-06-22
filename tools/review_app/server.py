@@ -13,7 +13,7 @@ page so a human can review the whole batch at a glance — for each story it sho
 * the **eval result** — the judge's per-panel notes pulled out of ``report.md``
   and shown next to that panel, plus the verdict/summary/fixes.
 
-It reads a run dir produced by ``scripts/generate_stories.py`` + the eval step::
+It reads a run dir produced by ``.claude/skills/local-batch-eval/generate_stories.py`` + the eval step::
 
     <run-dir>/
     ├── run.json                       # batch metadata
@@ -372,7 +372,7 @@ def _render_index(run: dict, run_dir_name: str) -> bytes:
     if not stories:
         bits.append(
             '<p class="empty">No stories found. Generate a run first '
-            "(scripts/generate_stories.py) and build manifests "
+            "(.claude/skills/local-batch-eval/generate_stories.py) and build manifests "
             "(prompt-eval/fetch_outputs.py --local-root …).</p>"
         )
     bits.append("</div>")

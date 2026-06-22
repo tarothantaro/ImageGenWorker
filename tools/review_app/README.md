@@ -1,7 +1,7 @@
 # Story eval review app
 
 A tiny, dependency-free (Python stdlib `http.server`) web UI for reviewing a
-**local story-eval run** — the artifacts produced by `scripts/generate_stories.py`
+**local story-eval run** — the artifacts produced by `.claude/skills/local-batch-eval/generate_stories.py`
 plus the `local-batch-eval` / `prompt-eval` skills.
 
 For each story it shows, on one scrollable page:

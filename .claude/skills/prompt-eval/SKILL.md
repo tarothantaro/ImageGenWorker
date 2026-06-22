@@ -12,7 +12,7 @@ its outputs to the **Application local stack's** GCS; this skill pulls those
 images back and scores each one with the vision model against its panel prompt.
 
 It does **not** generate images. (To produce outputs first, run the worker dev
-stack — `deploy/stages/dev/` — or `scripts/smoke_real_comfyui.py`, then come
+stack — `deploy/stages/dev/` — or `tests/smoke/smoke_real_comfyui.py`, then come
 back here.) Read `imagegen/prompts/README.md` and the `story-prompts` skill for
 the prompt schema and the rules a good prompt follows — this skill grades against
 those same rules.
@@ -45,7 +45,7 @@ gs://tarostory-local-images/<user_id>/<story_id>/outputs/<index>.png
 
 `fetch_outputs.py` reads from the Application's fake-gcs by default, but the
 output source is **configurable**. When the worker was driven directly from this
-repo — `scripts/generate_stories.py` writes the same `<user>/<story>/outputs/<i>.png`
+repo — `.claude/skills/local-batch-eval/generate_stories.py` writes the same `<user>/<story>/outputs/<i>.png`
 layout to a local run dir — pass `--local-root <run>/outputs` (or set
 `LOCAL_OUTPUT_ROOT`) and it reads the PNGs off disk instead, with no GCS / no
 emulator / no Application stack in the loop. Everything downstream (the

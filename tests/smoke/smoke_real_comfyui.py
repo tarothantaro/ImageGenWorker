@@ -10,7 +10,7 @@ integration path that emulators and the in-process mock can't cover (TESTING.md
 
 Usage (from the repo root, with the ComfyUI container up on :8188):
 
-    ~/python_env/torch-env/bin/python scripts/smoke_real_comfyui.py \
+    ~/python_env/torch-env/bin/python tests/smoke/smoke_real_comfyui.py \
         --url http://localhost:8188 \
         --input tests/assets/test.jpg \
         --type 1 --id 1 \

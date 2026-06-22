@@ -11,6 +11,6 @@ dist/
 # Per-panel prompt/workflow logs written by the dev worker (PROMPT_LOG_DIR);
 # host-mounted debug artifacts, not source.
 prompt_logs/
-# Local story-eval runs (scripts/generate_stories.py + the local-batch-eval
+# Local story-eval runs (.claude/skills/local-batch-eval/generate_stories.py + the local-batch-eval
 # skill): generated panel images, manifests, and reports — artifacts, not source.
 eval_runs/
