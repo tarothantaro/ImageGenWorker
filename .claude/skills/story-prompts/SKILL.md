@@ -151,12 +151,44 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    never by editing the anchor.** A vase that breaks, a room that gets tidied, a
    sandcastle that grows, a night-light that switches on: describe the changed
    state in its own clause after the anchor, and when that changed state recurs
-   across panels, word *it* identically too (e.g. *"small scattered blue ceramic
-   shards lying flat on the wooden floor (no whole or rounded vase anywhere in
-   frame)"* repeated verbatim in every post-break panel). **Light** stays
+   across panels, word *it* identically too (e.g. *"the blue ceramic vase lies
+   smashed to pieces on the wooden floor — broken into thin-walled, curved,
+   jagged-edged blue pottery fragments of various sizes, all lying scattered on
+   the floor with no piece whole or upright (no intact or standing vase anywhere
+   in frame)"* repeated verbatim in every post-break panel). **Light** stays
    identical across the scene as well, except where a lighting shift is itself a
    deliberate story beat (gloom → sun breaking through; a single golden-hour
    resolution) — keep that the only varying token, worded consistently.
+
+   **Render a broken/damaged object as what it physically *is*, by its real
+   fragment geometry — not as "small scattered pieces".** Vague debris wording
+   backfires in two ways, both seen on the broken-vase panel:
+   - *"small scattered shards lying flat"* / *"pieces no larger than a coin"* →
+     the model paints **uniform little flat discs that read as toy plates or
+     coasters**, not a smashed vase.
+   - *"some larger curved shards"* (size-only, no clear parent shape) → a "larger
+     curved" piece renders as an **intact bowl or cup**, leaving a whole vessel in
+     a frame that is supposed to show only debris.
+
+   Fix both by describing the fragments **positively, with concrete broken
+   geometry**: name the object once, say it is *smashed/broken into pieces*, and
+   spell out the shard form — *"broken into thin-walled, curved, jagged-edged blue
+   pottery fragments of various sizes, all lying scattered on the floor"*. Add
+   *"with no piece whole or upright"* to kill the intact-vessel render, plus the
+   "no intact/standing vase in frame" guard. Two more tripwires, both observed:
+   - **Do not name the wrong shape even inside a negative.** *"not flat round
+     plates or discs"* tends to *summon* plates in Qwen (it keys on the nouns, not
+     the "not"); steer with the positive shard description instead.
+   - **Do not name a distinctive *whole-object part*** (*"the tall vase"*, *"the
+     snapped-off vase neck"*). A vase's neck/silhouette is its most recognizable
+     feature, so naming it makes the model draw the **whole intact vase standing
+     upright** beside the debris — exactly the thing the panel must not contain.
+     Describe the pieces only as generic curved/jagged *fragments*, never as
+     named anatomical parts of the object.
+
+   The same logic applies to any broken prop (a cracked plate, a snapped crayon,
+   torn paper): describe the real broken form as generic fragments, not "small
+   bits" and not by the object's signature whole-part.
 
    Continuity comes from **repeating the anchor verbatim**, never from a word that
    points at another panel. Introduce the scene with an **indefinite article**
