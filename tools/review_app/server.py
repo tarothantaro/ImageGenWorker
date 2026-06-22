@@ -261,7 +261,7 @@ main { flex: 1 1 auto; min-width: 0; }
     border-top: 1px solid #eef0f2; padding: 18px 0; }
 .panel .imgs { display: flex; gap: 12px; flex-wrap: wrap; }
 .panel figure { margin: 0; }
-.panel figure img { width: 260px; max-width: 42vw; border-radius: 8px;
+.panel figure img { width: 520px; max-width: 84vw; border-radius: 8px;
     border: 1px solid #e5e7eb; cursor: zoom-in; display: block; }
 .panel figcaption { font-size: 12px; color: #6b7280; margin-top: 4px; }
 .panel h4 { margin: 0 0 6px; }
