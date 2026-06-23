@@ -23,12 +23,12 @@
     "In the garden in golden light, the child cradles the happy puppy in their lap while the father rests a hand on their shoulder, looking on proudly."
   ],
   "texts": [
-    "In the sunny garden you met a little brown puppy. \"Hello, puppy!\" you said, full of excitement.",
-    "You reached out too fast, and the puppy shrank back, afraid. Oh no — that was too quick.",
-    "Dad knelt down beside you. \"Be gentle,\" he said softly, holding out one slow, open hand.",
-    "So you stroked the puppy very gently, soft and slow. The puppy stayed close, calm and happy.",
-    "The puppy snuggled right up against you, its tail wagging. Being gentle had made a new friend!",
-    "You cuddled the happy puppy in your lap. \"Good job,\" Dad smiled. Gentle hands are kind hands."
+    "In the sunny garden, {NAME} met a little brown puppy. \"Hello, puppy!\" said {NAME}, full of excitement.",
+    "{NAME} reached out too fast, and the puppy shrank back, afraid. \"Oh no, I scared it,\" said {NAME}. \"That was too quick.\"",
+    "Dad knelt down beside {NAME}. \"Be gentle,\" he said softly, holding out one slow, open hand. \"Like this?\" asked {NAME}. \"Just like that,\" said Dad.",
+    "So {NAME} stroked the puppy very gently, soft and slow. \"Good puppy,\" {NAME} whispered. The puppy stayed close, calm and happy.",
+    "The puppy snuggled right up against {NAME}, its tail going wag, wag, wag. \"He likes me now!\" laughed {NAME}. Being gentle had made a new friend.",
+    "{NAME} cuddled the happy puppy close. \"Good job,\" said Dad with a smile. \"Gentle hands are kind hands,\" said {NAME}."
   ],
   "version": 1
 }

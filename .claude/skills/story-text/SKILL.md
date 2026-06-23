@@ -1,114 +1,178 @@
 ---
 name: story-text
-description: Write the read-aloud storybook text for a story's panels — the per-panel narration and conversational dialog that sits next to the generated images. Use when asked to write, add, or edit a story's text/narration/story-book copy, add the words for a story, or fill in the `texts` for a `<type>_<id>.json`. Writes the `texts` array of imagegen/prompts/<type>_<id>.json. Pairs with the `story-prompts` skill.
+description: Write a story's narrative spine — the per-panel gist (the intended beat each panel must land) and the read-aloud storybook text (narration + conversational dialog) that sits beside each generated image. Use when asked to write, add, or edit a story's text/narration/story-book copy/dialog, write the gist or beats of a story, add the words for a story, or fill in the `gists`/`texts` of a `<type>_<id>.json`. Writes the `gists`, `texts`, `title`, and `lesson` of imagegen/prompts/<type>_<id>.json. First skill in the pipeline; pairs with `story-prompts` (turns gists into image prompts) and `story-text-eval` (grades the result).
 ---
 
 # story-text
 
-Write the **read-aloud storybook text** for a story: one short line per panel,
-the words a parent reads aloud while the child looks at that panel's picture.
-For an N-panel story this is N strings, stored as the `texts` array of
-`imagegen/prompts/<type>_<id>.json` — **parallel to `prompts`**, so `texts[i]`
-is the narration for the panel that `prompts[i]` draws.
+Write the **narrative spine** of a story: for each panel, the **gist** (one
+sentence stating the beat the panel must land) and the **read-aloud text** (the
+storybook narration + dialog a parent reads aloud while the child looks at that
+panel's picture). For an N-panel story that is N gists and N texts, stored as the
+`gists` and `texts` arrays of `imagegen/prompts/<type>_<id>.json` — both
+**parallel to `prompts`**, so `gists[i]` / `texts[i]` belong to panel *i*.
 
-Read `imagegen/prompts/README.md` first for the file schema. This skill owns
-**only** the `texts` field; the `story-prompts` skill owns the image `prompts`
-and all other metadata, and `character-config` owns `character.json`.
+This skill is **first** in the authoring pipeline. It decides *what each panel is
+about* (gist) and *the words on the page* (text); the `story-prompts` skill then
+turns each gist into the Qwen-Image-Edit image prompt, and `story-text-eval`
+grades the gist + text. Read `imagegen/prompts/README.md` first for the file
+schema.
 
-## What this text is (and is not)
+**Ownership.** This skill owns `title`, `lesson`, `gists`, and `texts` — the
+story's beats, its moral, and its words. The `story-prompts` skill owns the image
+`prompts` and `characters` (it reads your gists as its spec); `character-config`
+owns `character.json`. Grade your output with `story-text-eval`.
 
-- It is the **book copy**: storybook narration + conversational dialog that the
-  reader sees beside the picture. The API catalog serves it as `story_text`
-  (synced by `operation/sync_story_catalog.py`).
-- It is **never read by the image pipeline.** The model only sees `prompts`. So
-  the text is free of every image-prompt mechanic — no `{TOKEN}` placeholders,
-  no camera/shot directions, no "person from the input image", no
-  "preserve the facial features" tail.
+## The two arrays this skill writes
 
-## The voice: second person, the child is the hero
+### 1. `gists` — the per-panel intended beat (the eval spec)
 
-The protagonist is the user's own child — their photo appears in every panel —
-but we never know their name. So **address the child directly as "you."** The
-child *is* the hero of the book, which makes "you" both natural and personal:
+A gist is a **single sentence** capturing what *that panel must show*: its
+setting, who is present, the key action/interaction, and the narrative beat —
+**with all style, camera and identity boilerplate stripped out**. It is the
+panel's testable *intent*: the shared spec the downstream skills grade against.
+`story-prompts` turns each gist into a prompt; `story-prompts-eval` (text-only)
+checks "would this prompt, rendered faithfully, satisfy the gist?"; `image-eval`
+(vision) checks "does the generated image satisfy the gist?".
 
-> *You knelt down and helped pick up every single orange.*
+- Write a gist for **every** panel, same length/order as `texts` (and `prompts`).
+- Refer to the protagonist as **"the child"** and the supporting cast by **role**
+  ("the elderly woman", "a friend") — a gist carries **no** placeholders at all
+  (no `{NAME}`, no `{TOKEN}`). It is an internal spec, never read aloud.
+- Keep it boilerplate-free: no "person from the input image", no camera/shot
+  words, no "preserve the facial features" tail, no style register.
 
-- **Past tense narration** ("You knelt…", "Dad smiled…") reads like a classic
-  picture book; keep it consistent across all panels of a story.
-- **Dialogue is spoken aloud**, in quotes and present tense:
-  *"Thank you, dear," the old lady smiled.* / *"I can do this!" you said.*
+### 2. `texts` — the read-aloud storybook words
 
-## Naming the supporting cast (do NOT use {TOKEN})
+The **book copy**: storybook narration + conversational dialog the reader sees
+beside the picture, one short passage per panel. The API catalog serves it as
+`story_text` (synced by `operation/sync_story_catalog.py`). It is **never read by
+the image pipeline** — the model only sees `prompts` — so it is free of every
+image-prompt mechanic: no camera/shot directions, no "person from the input
+image", no "preserve the facial features" tail, and **no character `{TOKEN}`**.
+
+## The voice: third person, the hero named by `{NAME}`
+
+The protagonist is the user's own child — their photo appears in every panel. We
+do not bake in a name; instead, **name the hero with the `{NAME}` placeholder**.
+At runtime `../Application` replaces `{NAME}` with the role's name (e.g. "Leo")
+before showing the page (the role's `name`, the subject of the photo). Write
+classic **third-person, past-tense** picture-book narration:
+
+> *One sunny morning, {NAME} set off down the street.*
+
+- **`{NAME}` is the only placeholder allowed in `texts`** — and it is the one the
+  hero is referred to by. Use it wherever you would have written "you"/"your"
+  (possessive is `{NAME}'s` — *"{NAME}'s kindness came back around"*). After the
+  first mention in a passage you may use a pronoun (he/she — match the photo only
+  if known, otherwise keep using `{NAME}` or "they") to avoid repeating the name
+  in every clause.
+- **Past-tense narration** (*"{NAME} knelt down…", "Dad smiled…"*) reads like a
+  classic picture book; keep the tense consistent across all panels of a story.
+- **No second person.** Don't address the reader as "you" — the hero is a named
+  character in the story, not the listener.
+
+## Dialogue: name the speaker, and make it a real conversation
+
+Dialog is the heart of the read-aloud book — don't settle for one short line.
+**When two characters are together, give them a genuine exchange** (aim for
+**2–4 short spoken turns**) so the page feels alive, and **attribute each line to
+its speaker by name**:
+
+> *"Oh no — your oranges!" cried {NAME}, rushing over.*
+> *"They're rolling everywhere!" said the old lady.*
+> *"Don't worry, I'll catch them," said {NAME}, kneeling down to scoop them up.*
+> *"Thank you, dear — you're so kind," she said with a warm smile.*
+
+- **Attribute the hero's lines with `{NAME}`** (*said {NAME}* / *{NAME} said* /
+  *cried {NAME}*); attribute everyone else by their **warm role** (*said the old
+  lady*, *Dad laughed*, *"Wheee!" giggled the puppy's owner*). Every spoken line
+  in a conversation should make clear **who is speaking**.
+- **Vary the speech verbs** (said, asked, whispered, laughed, cried, called) and
+  add a tiny stage action where it helps (*…, kneeling down*, *…, with a grin*).
+- **Let the dialog carry the beat.** The conversation should advance the same
+  thing the gist describes (the offer, the apology, the thank-you), not just
+  decorate it.
+
+## Naming the supporting cast (warm role, never `{TOKEN}`)
 
 The image prompts reference generated characters by `{TOKEN}` (which expands to a
 long appearance string — *"an elderly East Asian woman with grey hair…"*). That
-is wrong for read-aloud text. In the **text**, name each character with a short,
-warm, scene-appropriate role that matches what that `{TOKEN}` is:
+is wrong for read-aloud text. In the **text** (and **gist**), name each character
+with a short, warm, scene-appropriate role that matches what that `{TOKEN}` is:
 
-| In the prompt | In the text (pick what fits the scene) |
+| In the prompt | In the text/gist (pick what fits the scene) |
 |---|---|
 | `…_AGE_70_…` (elderly) | "an old lady", "Grandma" |
 | `…_PARENT` (the F/M adult guide) | "Mum" / "Dad", or "a grown-up" |
-| a teacher-role adult | "your teacher" |
-| `…_AGE_06…`/child peer | "your friend", "a boy"/"a girl", "a new friend" |
+| a teacher-role adult | "the teacher" |
+| `…_AGE_06…` / child peer | "a friend", "a boy" / "a girl", "a new friend" |
 | an animal in the scene | "the puppy", "the little kitten" |
 
-Keep the role **consistent within a story** (the same friend stays "your
-friend"). Match the character's gender to the token (F→Mum/she, M→Dad/he).
+Keep the role **consistent within a story** (the same friend stays "the friend").
+Match the character's gender to the token (F→Mum/she, M→Dad/he).
 
 ## Writing rules
 
-1. **One line per panel, parallel to `prompts`.** `len(texts) == len(prompts)`
-   (6 for a `templates/1`/`templates/2` story), same order. Re-read each panel's
-   prompt and narrate **that** scene — the location, who is there, and what
-   happens — so the words and the picture agree.
-2. **Short and simple.** Aim for **1–2 sentences (~12–30 words)** per panel,
-   for a 3–6-year-old listener. Plain words, concrete nouns, gentle rhythm.
-   Sound effects are welcome ("crash!", "wheee!", "trot, trot, trot").
-3. **Tell the scene, then let someone speak.** Most panels pair a line of
-   narration with a short line of dialogue. Don't make every panel pure
-   narration — the conversational voice is the point.
-4. **Follow the story arc the panels already tell:** establish → problem/choice
-   → trying → turn → resolution. Carry feelings across panels (worried → brave →
-   proud) so it reads as one journey, not six captions.
+1. **One gist + one text per panel, parallel to `prompts`.**
+   `len(gists) == len(texts) == len(prompts)` (6 for a `templates/1`/`templates/2`
+   story), same order. The gist and the text narrate the **same beat** — location,
+   who is there, what happens.
+2. **Short and simple text.** Aim for **2–4 sentences (~20–45 words)** per panel —
+   enough room for a small conversation, still readable to a 3–6-year-old. Plain
+   words, concrete nouns, gentle rhythm. Sound effects welcome ("crash!",
+   "wheee!", "trot, trot, trot").
+3. **Narrate, then converse.** Most panels open with a line of narration and then
+   let the characters **talk** — a named, multi-turn exchange wherever two people
+   share the scene (see "Dialogue"). A purely solo panel can be narration with a
+   single spoken thought (*"I can do this!" said {NAME}.*).
+4. **Follow the arc the panels tell:** establish → problem/choice → trying → turn
+   → resolution. Carry feelings across panels (worried → brave → proud) so it
+   reads as one journey, not six captions.
 5. **Land the lesson on the last panel.** Close with a warm line that states or
-   gently implies the `lesson` field — *"Your kindness had come back to you."* /
-   *"A tidy room is a happy room."* Make it feel earned, not preachy.
-6. **No image-prompt machinery.** No `{TOKEN}`, no "input image", no camera/shot
-   words, no style or face-preservation text. (If you catch yourself writing
-   `{`, stop.)
+   gently implies the `lesson` field — *"{NAME}'s kindness had come back around."*
+   / *"A tidy room is a happy room."* Make it feel earned, not preachy.
+6. **`{NAME}` only; no image-prompt machinery.** The only `{` allowed in a text is
+   `{NAME}`. No character `{TOKEN}`, no "input image", no camera/shot words, no
+   style or face-preservation text. Gists carry **no** `{` at all.
 
 ## Per-panel checklist
 
-For every entry in `texts`, confirm:
+For every panel, confirm:
 
-- [ ] Narrates the **same scene** as the matching `prompts[i]`.
-- [ ] Second person ("you"); tense consistent with the rest of the story.
-- [ ] Short (~1–2 sentences) and simple enough to read aloud to a young child.
+- [ ] **Gist** is one boilerplate-free sentence (setting + who + key action/beat),
+      protagonist as "the child", cast by role, **no `{`**.
+- [ ] **Text** narrates the **same beat** as the gist (and the matching `prompts[i]`
+      if it exists).
+- [ ] Third person; the hero is named **`{NAME}`** (never "you"); tense consistent
+      with the rest of the story.
+- [ ] Where two characters share the scene, a **named, multi-turn conversation**
+      (2–4 turns), every spoken line attributed to its speaker.
 - [ ] Supporting cast named by a warm role (no `{TOKEN}`, no appearance dump).
-- [ ] Has spoken dialogue where the scene invites it.
-- [ ] No image-prompt mechanics anywhere.
+- [ ] Only `{NAME}` appears as a `{…}` in the text; **no other placeholder**.
 - [ ] (Final panel only) lands the `lesson`.
 
 ## Worked reference
 
-See `imagegen/prompts/1_1.json` ("Kindness Comes Back Around"): its `texts`
-array narrates each of the six prompt panels in second person with dialogue, and
-the last line ("Your kindness had come back to you.") lands the lesson.
+See `imagegen/prompts/1_1.json` ("Kindness Comes Back Around"): its `gists` state
+each panel's beat boilerplate-free, and its `texts` narrate those six beats in
+third person with `{NAME}` and named, multi-turn dialogue, landing the lesson on
+the last line.
 
 ## Validate before done
 
-- [ ] File is valid JSON; `texts` is a list of non-empty strings placed right
-      after `prompts`.
-- [ ] `len(texts) == len(prompts)` (quick check:
-      `python3 -c "import json;d=json.load(open('imagegen/prompts/1_1.json'));assert len(d['texts'])==len(d['prompts'])"`).
-- [ ] No `{` appears in any `texts` entry (grep to confirm).
-- [ ] Re-run the per-panel checklist on each line.
+- [ ] File is valid JSON; `gists` and `texts` are lists of non-empty strings.
+- [ ] `len(gists) == len(texts) == len(prompts)` (quick check:
+      `python3 -c "import json;d=json.load(open('imagegen/prompts/1_1.json'));assert len(d['texts'])==len(d['gists'])==len(d['prompts'])"`).
+- [ ] No `{` other than `{NAME}` appears in any `texts` entry, and **no `{`** in any
+      `gists` entry (grep to confirm).
+- [ ] Run `story-text-eval` to grade gist↔text alignment, voice, and dialogue.
+- [ ] Re-run the per-panel checklist on each panel.
 
 ## Propagate to the catalog
 
-After editing `texts`, run the appropriate per-stage wrapper so the API server
-serves the new `story_text` (it maps the JSON's `texts` → the catalog's
+After editing `gists`/`texts`, run the appropriate per-stage wrapper so the API
+server serves the new `story_text` (it maps the JSON's `texts` → the catalog's
 `story_text`):
 
 ```bash

@@ -1,4 +1,4 @@
-"""Unit tests for prompt-eval/fetch_outputs.py manifest-building behavior.
+"""Unit tests for image-eval/fetch_outputs.py manifest-building behavior.
 
 The helper lives under .claude/skills (not a package), so load it by path. Tests
 use --local-root to avoid GCS and monkeypatch the live-template variant count so
@@ -13,11 +13,11 @@ from pathlib import Path
 from types import ModuleType
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_MODULE_PATH = _REPO_ROOT / ".claude" / "skills" / "prompt-eval" / "fetch_outputs.py"
+_MODULE_PATH = _REPO_ROOT / ".claude" / "skills" / "image-eval" / "fetch_outputs.py"
 
 
 def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("prompt_eval_fetch_outputs", _MODULE_PATH)
+    spec = importlib.util.spec_from_file_location("image_eval_fetch_outputs", _MODULE_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

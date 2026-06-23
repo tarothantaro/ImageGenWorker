@@ -23,12 +23,12 @@
     "At the playground in golden light, the child and the boy kneel playing with the blocks together, both happy — helping a friend made both glad."
   ],
   "texts": [
-    "It was a bright morning at the park. You skipped happily past the swings and the sandbox.",
-    "Then you saw your friend trip and fall. His basket tipped, and toys spilled everywhere. He looked so sad.",
-    "\"I'll help you!\" you called, hurrying over. Your friend looked up, full of hope.",
-    "You knelt down and gathered every toy back into the basket. Your friend smiled to see you help.",
-    "You reached out your hand and helped him stand up. \"Thank you!\" he said, holding his basket again.",
-    "Then you played together in the sunshine, laughing and glad. Helping a friend made you both happy."
+    "It was a bright morning at the park. {NAME} skipped happily past the swings and the sandbox. \"What a lovely day!\" sang {NAME}.",
+    "Then {NAME} saw a friend trip and fall. His basket tipped and toys spilled everywhere. \"Oh no, are you okay?\" asked {NAME}. The friend looked so sad.",
+    "\"I'll help you!\" called {NAME}, hurrying over. \"Really?\" said the friend, looking up full of hope. \"Of course!\" said {NAME}.",
+    "{NAME} knelt down and gathered every toy back into the basket. \"There we go,\" said {NAME}. The friend smiled to see such kind help.",
+    "{NAME} reached out a hand and helped the friend stand up. \"Thank you so much!\" he said, holding his basket again. \"You're welcome!\" said {NAME}.",
+    "Then they played together in the sunshine, laughing and glad. \"Helping is fun!\" said {NAME}. Helping a friend made them both happy."
   ],
   "version": 1
 }

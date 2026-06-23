@@ -26,12 +26,12 @@
     "On the classroom rug in golden light, the child is in a happy group hug with three friends, all delighted — exactly four children. Everyone is special."
   ],
   "texts": [
-    "You sat in a circle with your friends on the colourful classroom rug. Everyone was chatting happily.",
-    "One friend held up her favourite picture book to share. You watched, curious and interested.",
-    "Then you showed your favourite toy. \"This is mine!\" you said proudly. Your friends clapped.",
-    "You all looked so different from each other — and that made you laugh and smile together.",
-    "You held hands in one big circle, all of you together. Different and special, side by side.",
-    "Then came a great big group hug! Everyone is special, and that makes the best friends."
+    "{NAME} sat in a circle with three friends on the colourful classroom rug. Everyone was chatting happily. \"I love story time!\" said {NAME}.",
+    "One friend held up her favourite picture book. \"This one is mine,\" she said. {NAME} leaned in, curious. \"Ooh, I like that one too!\"",
+    "Then {NAME} showed a favourite toy. \"And this one is mine!\" said {NAME} proudly. \"Wow!\" cheered the friends, clapping.",
+    "They all looked so different from one another. \"You have curly hair, and I have glasses!\" laughed {NAME}. Being different made them smile.",
+    "They held hands in one big circle, all together. \"We're all friends,\" said {NAME}. Different and special, side by side.",
+    "Then came a great big group hug! \"Everyone is special!\" said {NAME}. And that made them the very best of friends."
   ],
   "version": 1
 }

@@ -8,7 +8,7 @@ workflow JSON. This module captures that, so two consumers can read it back:
 
 * **debug** — when a panel looks wrong, the exact prompt + the full workflow that
   produced it sit on disk next to the story id, no re-derivation needed.
-* **the ``prompt-eval`` skill** — it judges generated panels against the prompt
+* **the ``image-eval`` skill** — it judges generated panels against the prompt
   that actually drove them, instead of reconstructing the substitution itself.
 
 One JSON file per panel run (one ComfyUI ``/prompt`` submission), under

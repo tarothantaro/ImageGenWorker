@@ -23,12 +23,12 @@
     "In the night-light-lit bedroom, the child rests peacefully alone on the pillow with the teddy close, content and no longer afraid of the dark."
   ],
   "texts": [
-    "It was bedtime. You sat up in bed hugging your teddy, feeling unsure about the dark.",
-    "\"I'm a little bit scared,\" you said. Dad knelt down and switched on a soft, glowing night-light.",
-    "The room filled with a warm, cosy glow. Dad tucked your blanket in snug and gave you a smile.",
-    "You lay back on your pillow with teddy beside you. The dark didn't feel so scary now.",
-    "You snuggled down and gave a brave little smile. \"I can be brave,\" you whispered.",
-    "Soon you rested, calm and cosy, not afraid at all. You were safe, and you were brave."
+    "It was bedtime. {NAME} sat up in bed hugging a teddy, feeling unsure about the dark. \"It's so dark in here,\" {NAME} whispered.",
+    "\"I'm a little bit scared,\" said {NAME}. Dad knelt down. \"Let's switch on your night-light,\" he said softly, and click — on it glowed.",
+    "The room filled with a warm, cosy glow. \"That's better, isn't it?\" said Dad, tucking the blanket in snug. \"Much better,\" said {NAME}.",
+    "{NAME} lay back on the soft pillow with teddy close by. \"The dark isn't so scary now,\" {NAME} said quietly.",
+    "{NAME} snuggled down and gave a brave little smile. \"I can be brave,\" {NAME} whispered to teddy.",
+    "Soon {NAME} rested, calm and cosy, not afraid at all. \"Goodnight,\" murmured {NAME}. Safe and snug, {NAME} was brave."
   ],
   "version": 1
 }

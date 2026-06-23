@@ -2,7 +2,7 @@
 """A tiny, dependency-free web UI for reviewing a local story-eval run.
 
 The ``local-batch-eval`` skill generates every story locally, builds a per-story
-``manifest.json`` (via ``prompt-eval/fetch_outputs.py``) and writes a per-story
+``manifest.json`` (via ``image-eval/fetch_outputs.py``) and writes a per-story
 ``report.md`` from the vision judge. This server stitches those together into one
 page so a human can review the whole batch at a glance — for each story it shows:
 
@@ -386,7 +386,7 @@ def _render_index(run: dict, run_dir_name: str) -> bytes:
         bits.append(
             '<p class="empty">No stories found. Generate a run first '
             "(.claude/skills/local-batch-eval/generate_stories.py) and build manifests "
-            "(prompt-eval/fetch_outputs.py --local-root …).</p>"
+            "(image-eval/fetch_outputs.py --local-root …).</p>"
         )
     bits.append("</div>")
 

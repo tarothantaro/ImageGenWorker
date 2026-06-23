@@ -23,12 +23,12 @@
     "In the living room in golden afternoon light, the child sits with the healthy happy puppy in their lap, proud and joyful, while the mother kneels with a hand on their shoulder, approving — caring is the child's job."
   ],
   "texts": [
-    "One morning you cuddled a little brown puppy. \"He's so soft!\" you said. Mum smiled nearby.",
-    "\"A puppy needs care every day,\" said Mum, pointing to the food and water bowls. You listened closely.",
-    "You knelt down and poured the puppy's food into the bowl. The puppy waited happily beside you.",
-    "Out in the garden, you took the puppy for a walk on the leash. Trot, trot, trot!",
-    "Back inside, you gently brushed and cuddled your puppy. He felt happy and loved.",
-    "The healthy, happy puppy snuggled in your lap. \"You take good care of him,\" said Mum. Caring is your job!"
+    "One morning, {NAME} cuddled a little brown puppy. \"He's so soft!\" said {NAME}. \"He likes you,\" said Mum, smiling nearby.",
+    "\"A puppy needs care every single day,\" said Mum, pointing to the food and water bowls. \"Can I help?\" asked {NAME}. \"Of course,\" said Mum.",
+    "{NAME} knelt down and poured the puppy's food into the bowl. \"Here you go, puppy,\" said {NAME}. The puppy waited happily, tail wagging.",
+    "Out in the garden, {NAME} took the puppy for a walk on the leash. Trot, trot, trot! \"Good boy!\" said {NAME}.",
+    "Back inside, {NAME} gently brushed and cuddled the puppy. \"All clean and cosy,\" said {NAME}. The puppy felt happy and loved.",
+    "The healthy, happy puppy snuggled in {NAME}'s lap. \"You take such good care of him,\" said Mum. \"Caring for him is my job!\" said {NAME} proudly."
   ],
   "version": 1
 }

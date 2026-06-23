@@ -1,9 +1,9 @@
 ---
-name: prompt-eval
-description: Evaluate a story's image prompts by judging the generated panel images that already sit in the Application local stack's GCS (fake-gcs bucket tarostory-local-images). Use when asked to evaluate/grade/review a story's prompts, check whether a story's generated outputs match their prompts, or verify that the image is realistic, each person performs the action/interaction the prompt asks, each person is a reasonable size for their depth in the camera, the scene/setting matches the one the panel's prompt describes, that it matches the prompt (composition, clothes, age), and that the image satisfies the panel's authored gist (its intended narrative beat). Judges each panel's output image with the vision model and writes a per-panel + per-story markdown report. Pairs with the `story-prompts` and `prompt-lint` skills.
+name: image-eval
+description: Evaluate a story's generated panel images with the vision model — the final, image-side eval for pictures the worker already produced in the Application local stack's GCS, fake-gcs bucket tarostory-local-images, or a local run dir. Use when asked to evaluate/grade/review generated story images or outputs, check whether outputs match their prompts, or verify realism, person actions/interactions, depth-relative person size, scene/setting, composition, clothes, age, and whether each panel satisfies its authored gist. Writes a per-panel + per-story markdown report. The image-side counterpart of `story-prompts-eval` (which grades prompt text without rendering). Pairs with the `story-prompts` and `story-prompts-eval` skills.
 ---
 
-# prompt-eval
+# image-eval
 
 Judge the **already-generated** panel images for a story against the prompts that
 produced them, and write a markdown report. This is the read-and-grade half of
@@ -62,7 +62,7 @@ Confirm the local stack is up, then discover which `<user>/<story>` sets exist:
 
 ```bash
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-eval/fetch_outputs.py --list
+    .claude/skills/image-eval/fetch_outputs.py --list
 ```
 
 If the user already named a `--user-id`/`--story-id` (or a story to evaluate),
@@ -75,7 +75,7 @@ Pick the prompt stem (`--story`, e.g. `1_1`) and the GCS components for the set:
 
 ```bash
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-eval/fetch_outputs.py \
+    .claude/skills/image-eval/fetch_outputs.py \
     --story 1_1 --user-id <uid> --story-id <sid>
 ```
 
@@ -85,7 +85,7 @@ output `story_id` is also the prompt stem, and writes one manifest per story. Us
 `--out <eval-dir>` as the eval root; each manifest lands under
 `<eval-dir>/<story>__<story>/manifest.json`.
 
-This downloads the PNGs to `/tmp/prompt_eval/<story>__<story_id>/` (override with
+This downloads the PNGs to `/tmp/image_eval/<story>__<story_id>/` (override with
 `--out`; in batch mode `--out` is a root directory) and writes `manifest.json`
 there. The manifest joins each downloaded file to the panel prompt that produced
 it. For `resolved_prompt` it prefers the
@@ -105,7 +105,7 @@ Each entry also carries a **`gist`** — the story author's one-sentence stateme
 of what *this panel must show* (setting, who is present, the key
 action/interaction, the narrative beat), stripped of
 style/camera/identity boilerplate. It is the panel's intent, parallel to the
-prompt, authored by the `story-prompts` skill (the JSON `gists` array). The
+prompt, authored by the `story-text` skill (the JSON `gists` array). The
 manifest's `has_gists` says whether the story carries them. Grade the image
 against the gist as its own rubric row (below); when `gist` is `null` (a pre-gist
 story) score that row **NA** and say so.
@@ -173,7 +173,7 @@ Write markdown to the `report_path` from the manifest
 (`<out_dir>/report.md`). Structure:
 
 ```markdown
-# Prompt eval — <title> (<story>)
+# Image eval — <title> (<story>)
 
 - **Lesson:** <lesson>
 - **Source:** gs://<bucket>/<user>/<story>/outputs/  (<P> panels, one image each)

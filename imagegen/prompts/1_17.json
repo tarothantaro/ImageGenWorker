@@ -23,12 +23,12 @@
     "At the dinner table, the child happily eats from the plate, joyful, while the mother claps, proud — being brave to try was tasty."
   ],
   "texts": [
-    "At dinner you looked at the green broccoli and orange carrots. Hmm — you weren't so sure about them.",
-    "You pushed the plate away with a frown. \"I don't want to,\" you said. Mum waited patiently.",
-    "\"Just try one little taste,\" said Mum with a kind nod. You picked up your fork with one piece.",
-    "You scrunched your eyes shut and took a tiny, brave bite. Crunch!",
-    "Then your eyes popped wide open. It was yummy! What a delicious surprise!",
-    "You happily ate up your veggies. Mum clapped, so proud. Being brave was tasty after all!"
+    "At dinner, {NAME} looked at the green broccoli and orange carrots. \"Hmm, I'm not so sure about these,\" said {NAME}. Mum just smiled.",
+    "{NAME} pushed the plate away with a frown. \"I don't want to,\" said {NAME}. \"That's okay — take your time,\" said Mum, waiting patiently.",
+    "\"Just try one little taste,\" said Mum with a kind nod. \"Only one?\" asked {NAME}. \"Only one,\" she smiled. {NAME} picked up a fork.",
+    "{NAME} scrunched both eyes shut tight and took a tiny, brave bite. \"Crunch!\" went the broccoli.",
+    "Then {NAME}'s eyes popped wide open. \"Mmm — it's yummy!\" said {NAME}. \"What a delicious surprise!\"",
+    "{NAME} happily ate up every bit. \"More, please!\" said {NAME}. \"So brave!\" said Mum, clapping. Being brave was tasty after all."
   ],
   "version": 1
 }

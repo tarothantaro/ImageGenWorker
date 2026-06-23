@@ -23,12 +23,12 @@
     "On the garden blanket at golden hour, the child and the girl rest together sharing a bowl of fruit snacks, the tall block tower still standing beside them — contented friends after playing."
   ],
   "texts": [
-    "You sat in the sunny garden with a big pile of colourful blocks. Building was so much fun!",
-    "A friend came over and watched. She wanted to play too, but you held your block tight.",
-    "You thought for a moment, then held one out. \"Here, you can play with me!\" you said.",
-    "Together you stacked the blocks higher and higher. Sharing made the tower grow and grow!",
-    "\"We did it!\" you both cheered. The tower was taller than ever, and you laughed and laughed.",
-    "At the end, you shared a yummy snack side by side. Playing together was the very best fun."
+    "{NAME} sat in the sunny garden with a big pile of colourful blocks. \"Building is so much fun!\" said {NAME}, stacking them up high.",
+    "A friend came over and watched. \"Can I play too?\" she asked. {NAME} held one block tight. \"Hmm...\" said {NAME}, not quite sure.",
+    "Then {NAME} thought for a moment and held a block out. \"Here — you can play with me!\" said {NAME}. \"Yes, please!\" said the friend, beaming.",
+    "Together they stacked the blocks higher and higher. \"Up it goes!\" laughed {NAME}. \"Look at our tower grow!\" said the friend. Sharing made it better.",
+    "\"We did it!\" they both cheered. The tower was taller than ever! {NAME} pointed up high and laughed and laughed.",
+    "At the end, they sat side by side and shared a yummy snack. \"Best day ever,\" said {NAME}. Playing together was the very most fun of all."
   ],
   "version": 1
 }

@@ -24,12 +24,12 @@
     "By the red slide in golden light, the child and the two friends hold hands in a row, all happy — everyone got a turn and had fun."
   ],
   "texts": [
-    "You came to the playground and saw a shiny red slide. Two friends were there too. \"Let's play!\" you said.",
-    "But everyone rushed to the ladder at once. It was too crowded, and nobody could climb.",
-    "\"Let's take turns,\" you said gently, raising your hand. Your friends nodded and stepped back.",
-    "One friend slid down first — wheee! You clapped and cheered for her.",
-    "Then it was your turn. Down you zoomed to the bottom with a great big smile!",
-    "Everyone got a turn, and everyone had fun. You all held hands, as happy as can be."
+    "{NAME} came to the playground and saw a shiny red slide. Two friends were there too. \"Let's play!\" said {NAME}, waving hello.",
+    "But everyone rushed to the ladder at once — even {NAME}! \"Hey, I can't climb!\" said the boy. It was far too crowded, and nobody could go up.",
+    "\"Let's take turns,\" said {NAME} gently, raising a hand. \"Good idea,\" said the girl, and the friends stepped back and nodded.",
+    "One friend slid down first — wheee! \"Go, go, go!\" cheered {NAME}, clapping. \"That was so fast!\" laughed the girl.",
+    "Then it was {NAME}'s turn. \"Here I go!\" Down {NAME} zoomed to the bottom with a great big smile.",
+    "Everyone got a turn, and everyone had fun. \"That was the best!\" said {NAME}. They all held hands, as happy as can be. Taking turns means everyone gets to play."
   ],
   "version": 1
 }

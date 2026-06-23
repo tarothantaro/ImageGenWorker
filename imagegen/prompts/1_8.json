@@ -23,12 +23,12 @@
     "On the park path in golden light, the child stands proudly by the red bike with a big grin while the father kneels giving a proud thumbs-up — never gave up."
   ],
   "texts": [
-    "You sat on your little red bike, helmet on tight. \"I'm going to ride!\" you said. Dad smiled beside you.",
-    "You pushed off — but wibble, wobble! The bike tipped to one side. \"Whoa!\" you cried.",
-    "Down you went onto the soft green grass. It didn't hurt, but you felt a little sad.",
-    "Dad held out his hand. \"You can try again,\" he said kindly. You stood up and brushed off the grass.",
-    "You pushed off once more and — you were riding! \"Look at me go!\" you laughed. Dad cheered with his arms up high.",
-    "You stood proudly by your bike with a great big grin. \"You did it!\" said Dad. You never gave up."
+    "{NAME} sat on a little red bike, helmet on tight. \"I'm going to ride!\" said {NAME}. \"You can do it,\" said Dad, smiling beside the bike.",
+    "{NAME} pushed off — but wibble, wobble! The bike tipped to one side. \"Whoa!\" cried {NAME}.",
+    "Down {NAME} went onto the soft green grass. It didn't hurt, but {NAME} felt a little sad. \"I can't do it,\" {NAME} sighed.",
+    "Dad held out his hand. \"You can try again,\" he said kindly. \"Okay,\" said {NAME}, standing up and brushing off the grass.",
+    "{NAME} pushed off once more and — was riding! \"Look at me go!\" laughed {NAME}. \"Hooray!\" cheered Dad, arms up high.",
+    "{NAME} stood proudly by the red bike with a great big grin. \"You did it!\" said Dad. \"I never gave up!\" said {NAME}."
   ],
   "version": 1
 }

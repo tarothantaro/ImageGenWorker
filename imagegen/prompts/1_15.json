@@ -25,12 +25,12 @@
     "At the school gate in golden afternoon light, the child runs toward the gate with a big joyful smile while the mother kneels with open arms, proud — being brave found new friends."
   ],
   "texts": [
-    "You stood at the gate of your new school, holding your backpack tight. It felt so scary. Mum held your hand.",
-    "Mum knelt down. \"You can be brave,\" she said, pointing kindly to the door. You gave a brave little smile.",
-    "At the classroom door, your teacher gave a warm wave. \"Welcome!\" she said. You felt a little shy.",
-    "You took a brave step inside and waved goodbye to Mum. You could do this!",
-    "At the craft table, a new friend shared her crayons. You drew and smiled — this was fun!",
-    "At the end of the day, you ran out happily. Mum opened her arms wide. Being brave found you new friends!"
+    "{NAME} stood at the gate of a new school, holding a backpack tight. \"It feels so scary,\" said {NAME}. Mum held {NAME}'s hand.",
+    "Mum knelt down. \"You can be brave,\" she said, pointing kindly to the door. \"I'll try,\" said {NAME}, with a brave little smile.",
+    "At the classroom door, the teacher gave a warm wave. \"Welcome! We're so happy you're here,\" she said. \"Hello,\" said {NAME} shyly.",
+    "{NAME} took a brave step inside and waved goodbye. \"Bye, Mum — I can do this!\" said {NAME}.",
+    "At the craft table, a new friend shared her crayons. \"Want to draw with me?\" she asked. \"Yes please!\" said {NAME}. This was fun!",
+    "At the end of the day, {NAME} ran out happily into Mum's open arms. \"I made a friend!\" said {NAME}. Being brave had found new friends."
   ],
   "version": 1
 }

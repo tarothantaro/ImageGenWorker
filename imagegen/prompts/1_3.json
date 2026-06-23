@@ -23,12 +23,12 @@
     "In the living room with the tower rebuilt tall behind them, the child and the boy share a happy hug — saying sorry has mended the friendship."
   ],
   "texts": [
-    "You were playing blocks with your friend. He had built a tall, wobbly tower. \"Look how high!\" he said.",
-    "As you reached across — crash! Your arm bumped the tower and all the blocks tumbled down.",
-    "Your friend looked at the fallen blocks and felt sad. You weren't sure what to do.",
-    "You took a deep breath. It was hard to say, but you knew the right thing to do.",
-    "\"I'm sorry,\" you said, and you helped build the tower again. Your friend started to smile.",
-    "Soon you were laughing and hugging. Saying sorry had made everything better."
+    "{NAME} was playing blocks with a friend. He had built a tall, wobbly tower. \"Look how high it is!\" he said proudly. \"Wow!\" said {NAME}.",
+    "As {NAME} reached across — crash! {NAME}'s arm bumped the tower and all the blocks tumbled down. \"Oh no!\" gasped {NAME}.",
+    "The friend looked at the fallen blocks and felt sad. \"My tower...\" he said quietly. {NAME} wasn't sure what to do.",
+    "{NAME} took a deep breath. It felt hard to say. \"I know the right thing to do,\" {NAME} whispered bravely.",
+    "\"I'm sorry I knocked it over,\" said {NAME}. \"Can I help you build it again?\" \"Yes!\" said the friend, starting to smile. Together they stacked it back up.",
+    "Soon they were laughing and hugging by the tall new tower. \"Friends again!\" said {NAME}. Saying sorry had made everything better."
   ],
   "version": 1
 }

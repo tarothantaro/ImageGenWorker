@@ -23,12 +23,12 @@
     "In the tidy bright bedroom, the child stands proudly with hands on hips while the mother claps happily beside them — a tidy room, a proud child."
   ],
   "texts": [
-    "Uh oh — your room was a big mess! Toys, books and blocks lay all over the floor.",
-    "\"It's tidy-up time,\" said Mum, pointing to the toy box with a gentle smile.",
-    "You started picking up the blocks, one by one. \"I can do this!\" you said.",
-    "You popped your teddy in the box while Mum lined up the books. You worked together as a team.",
-    "Soon every toy was put away. Your room was neat and bright! You looked around, so happy.",
-    "\"You did it!\" Mum cheered, clapping. You stood tall and proud. A tidy room is a happy room."
+    "Uh oh — {NAME}'s room was a big mess! Toys, books and blocks lay all over the floor. \"Oh dear,\" said {NAME}, looking around.",
+    "\"It's tidy-up time,\" said Mum, pointing to the toy box with a gentle smile. \"All of it?\" asked {NAME}. \"We can do it together,\" said Mum.",
+    "{NAME} started picking up the blocks, one by one. \"I can do this!\" said {NAME}, dropping them in with a clatter.",
+    "{NAME} popped the teddy in the box while Mum lined up the books. \"We make a great team!\" said Mum. \"Almost done!\" said {NAME}.",
+    "Soon every single toy was put away. {NAME}'s room was neat and bright! {NAME} looked all around. \"Wow, it's so clean!\"",
+    "\"You did it!\" cheered Mum, clapping. {NAME} stood tall and proud. \"A tidy room is a happy room!\" said {NAME}."
   ],
   "version": 1
 }

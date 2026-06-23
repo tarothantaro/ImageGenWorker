@@ -30,9 +30,9 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python tests/smoke/smoke_real_comfyui.py
 PYTHONPATH=. ~/python_env/torch-env/bin/python .claude/skills/local-batch-eval/generate_stories.py \
     --input tests/assets/leo.jpg --age "4-year-old" --run-dir eval_runs/latest
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
+    .claude/skills/image-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
     --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
-    --out eval_runs/latest/eval/1_1__1_1            # then judge via prompt-eval rubric
+    --out eval_runs/latest/eval/1_1__1_1            # then judge via image-eval rubric
 ~/python_env/torch-env/bin/python tools/review_app/server.py --run-dir eval_runs/latest
 
 # Story catalog sync (writes story metadata → API server's Firestore templates/ collection)
@@ -101,7 +101,7 @@ imagegen/
 ├── templates/{1,2}/config.json    # render templates: 6 per-panel field presets each
 └── prompts/
     ├── character.json          # {TOKEN} → description for supporting characters
-    └── <type>_<id>.json        # story prompts (`story-prompts` skill) + read-aloud `texts` (`story-text` skill)
+    └── <type>_<id>.json        # gists + read-aloud texts (`story-text`) + image prompts + characters (`story-prompts`)
 ```
 
 Two parallel render templates ship (`templates/1`+`workflows/1` = Flux; `templates/2`+`workflows/2` = Qwen-Image-Edit-2511), each 6 panels. The live worker renders **every** story through `_RENDER_TEMPLATE_ID = "2"` (`model.py`); template 1 stays in the asset library as the legacy/alternate. The job's `type`/`id` select which `prompts/<type>_<id>.json` set fills the panels' `text` — the template no longer binds a story inline. `prepare(template_id, story_ref)` loads + validates the template and applies that prompt set; `.render()` applies per-panel values + `USER_ID`/`STORY_ID` substitution. `{TOKEN}` character placeholders resolve at `prepare()` from `character.json`; `USER_ID`/`STORY_ID` at `render()` per job. Panel count = `len(prompts)` (must equal the template's 6).
@@ -124,21 +124,23 @@ tests/
 
 ### Prompts / character skill boundary
 
-Three Claude Code skills in `.claude/skills/` own specific files (and, within
-`<type>_<id>.json`, specific fields):
+Skills in `.claude/skills/` own specific files (and, within `<type>_<id>.json`,
+specific fields). The authoring pipeline runs **story-text → story-prompts**:
 
-- **`story-prompts`** — writes/edits `imagegen/prompts/<type>_<id>.json` (the image `prompts` + metadata, everything but `texts`)
-- **`story-text`** — writes/edits the `texts` array of `imagegen/prompts/<type>_<id>.json` (the per-panel read-aloud storybook narration + dialog; never seen by the image model, carries no `{TOKEN}`)
-- **`character-config`** — edits `imagegen/prompts/character.json` (the generated supporting cast)
+- **`story-text`** — writes/edits the **narrative spine** of `imagegen/prompts/<type>_<id>.json`: `title`, `lesson`, the per-panel `gists` (the intended beat), and the read-aloud `texts` (narration + dialog). Runs first. Texts are never seen by the image model; they carry no character `{TOKEN}`, only the `{NAME}` protagonist placeholder that `../Application` substitutes with the role name at runtime. Gists carry no placeholders.
+- **`story-prompts`** — writes/edits the image `prompts` + `characters` of the same file, turning each `story-text` gist into a Qwen-Image-Edit panel prompt.
+- **`character-config`** — edits `imagegen/prompts/character.json` (the generated supporting cast).
 
-After editing prompts, story text, or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons + the per-panel `story_text` to the API server's Firestore `templates/` collection.
+After editing gists/text, prompts, or character tokens, re-run the appropriate `operation/stages/<stage>/sync_story_catalog.sh` to propagate story titles/lessons + the per-panel `story_text` to the API server's Firestore `templates/` collection.
 
-### Evaluating generated outputs
+### Evaluating outputs
 
-Two more skills (no file ownership — they read + grade):
+Three eval skills (no file ownership — they read + grade), one per pipeline stage, plus the local generate-and-grade loop:
 
-- **`prompt-eval`** — judges already-generated panel images against their prompts with the vision model and writes a per-story `report.md`. Its `fetch_outputs.py` reads outputs from the **Application stack's GCS by default**, or from a **local dir tree** when given `--local-root` / `LOCAL_OUTPUT_ROOT` (same `<user>/<story>/outputs/<i>.png` layout).
-- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `.claude/skills/local-batch-eval/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `prompt-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + output image + eval) for review. `eval_runs/` is gitignored.
+- **`story-text-eval`** — grades the `story-text` output: gist↔text alignment, the `{NAME}` third-person voice, and the named multi-turn dialogue (text-only, no rendering).
+- **`story-prompts-eval`** — grades the `story-prompts` output from the text alone: would each prompt, rendered faithfully, satisfy its gist + obey the rules (no ComfyUI/GCS/vision).
+- **`image-eval`** — judges the **already-generated** panel images against their prompts + gists with the vision model and writes a per-story `report.md`. Its `fetch_outputs.py` reads outputs from the **Application stack's GCS by default**, or from a **local dir tree** when given `--local-root` / `LOCAL_OUTPUT_ROOT` (same `<user>/<story>/outputs/<i>.png` layout).
+- **`local-batch-eval`** — the generate-**and**-grade loop that runs entirely on this machine (live ComfyUI only, no Pub/Sub/GCS/Application stack): `.claude/skills/local-batch-eval/generate_stories.py` drives `ComfyUIModel` directly for the whole catalog from one input photo at a fixed age, writing PNGs + prompt logs to `eval_runs/<run>/`; then `image-eval` (in `--local-root` mode) grades them; then `tools/review_app/server.py` serves a one-page web UI (input photo + actual prompts + output image + eval) for review. `eval_runs/` is gitignored.
 
 ### Key invariants
 

@@ -12,22 +12,22 @@ the **same single input photo** to produce one panel image. Read
 `imagegen/prompts/README.md` first — it defines the file schema, naming, and
 story-type registry. Generated supporting characters come from
 `imagegen/prompts/character.json` (owned by the `character-config` skill). The
-read-aloud `texts` array in the same file is owned by the `story-text` skill,
-not this one — this skill writes the image `prompts`, their per-panel `gists`,
-and the metadata.
+narrative spine of the file — `title`, `lesson`, the per-panel `gists`, and the
+read-aloud `texts` — is owned by the `story-text` skill, which runs **first**;
+this skill writes the image `prompts` and the `characters` list from those gists.
 
-This skill also owns the **`gists`** array — one eval gist per panel, parallel to
-`prompts`. A gist is a single sentence capturing what *that panel must show*: its
-setting, who is present, the key action/interaction, and the narrative beat —
-**with the style, camera and
-identity-preservation boilerplate stripped out**. It is the panel's testable
-*intent*, and the spec both eval skills grade against: `prompt-eval` (vision)
-checks "does the image satisfy the gist?" and `prompt-lint` (text-only, no image
-gen) checks "would this prompt, rendered faithfully, satisfy the gist?". Write a
-gist for **every** panel whenever you write or edit its prompt, and keep the two
-in sync — if you change what a panel depicts, update its gist to match. Refer to
-the supporting cast by **role** ("the elderly woman", "a friend"), never by
-`{TOKEN}` — the gist carries no placeholders (see `imagegen/prompts/1_1.json`).
+The **gist** is your spec. Authored by `story-text` (the JSON `gists` array,
+parallel to `prompts`), each is a single sentence capturing what *that panel must
+show*: its setting, who is present, the key action/interaction, and the narrative
+beat — with style, camera and identity-preservation boilerplate stripped out.
+**Your job is to write a prompt that, rendered faithfully, satisfies its gist.**
+The gist is the spec both eval skills grade against: `image-eval` (vision) checks
+"does the image satisfy the gist?" and `story-prompts-eval` (text-only, no image
+gen) checks "would this prompt, rendered faithfully, satisfy the gist?". Keep
+prompt and gist in sync — if a prompt must diverge from its gist to render well,
+fix the gist via `story-text` so the beat stays the single source of truth. The
+gist refers to the supporting cast by **role** ("the elderly woman", "a friend"),
+never by `{TOKEN}` — it carries no placeholders (see `imagegen/prompts/1_1.json`).
 
 ## How the pipeline shapes every prompt
 
@@ -278,10 +278,14 @@ For every prompt in the array, confirm:
 
 ## Writing a story (type 1 = life_lesson)
 
-1. **Pick the lesson** and a 1-sentence statement of it (`lesson` field).
+1. **Start from the gists.** The `story-text` skill has already written the
+   `title`, `lesson`, and the per-panel `gists` (and `texts`). Read them — each
+   gist is the beat your prompt must land. (If they don't exist yet, write them
+   with `story-text` first.)
 2. **Decide the cast.** Protagonist = input person (implicit). Choose generated
-   characters; ensure each token exists in `character.json` — if not, add it with
-   the `character-config` skill *before* referencing it.
+   characters for the roles the gists name; ensure each token exists in
+   `character.json` — if not, add it with the `character-config` skill *before*
+   referencing it.
 3. **Plan the arc across 6 panels** (the render template `templates/1` has 6
    panels, so a story has exactly 6 prompts). A clean life-lesson arc:
    *establish → encounter/choice → action → consequence → turn → resolution that
@@ -293,15 +297,13 @@ For every prompt in the array, confirm:
    panels naturally; **every person in every panel is given a concrete action**
    (rule 4) — never left standing/sitting with only an expression. State a
    person's position only when the beat needs it (see "Composition & position").
-5. **Write the gists** — one per panel, parallel to `prompts`. For each panel,
-   state in a sentence what the image must show (setting + who is present + the
-   key action/interaction + the narrative beat), referring to the cast by role and
-   dropping all style/camera/
-   identity boilerplate. This is the panel's intent both eval skills check
-   against — so it must describe the *same beat* the prompt does.
-6. **Fill the metadata** (`type`, `id`, `title`, `lesson`, `characters` = every
-   token used, `version`). The panel count is just `len(prompts)` — no
-   `panel_count` field.
+5. **Keep prompt ↔ gist aligned.** Re-read each gist and confirm your prompt
+   instructs its setting, cast, and key action/beat. If a gist itself reads wrong,
+   fix it via `story-text` — don't silently diverge from it.
+6. **Fill `characters`** = every `{TOKEN}` used, plus the structural `type` / `id`
+   / `version` if the file is new. The panel count is just `len(prompts)` — no
+   `panel_count` field. (`title`, `lesson`, `gists`, and `texts` belong to the
+   `story-text` skill.)
 
 ## Worked reference
 
@@ -322,10 +324,10 @@ breaks then is cleaned up).
 
 - [ ] File is `imagegen/prompts/<type>_<id>.json`, valid JSON, schema per README.
 - [ ] `len(prompts) == 6` (matches the render template `templates/1`).
-- [ ] `len(gists) == len(prompts)`; each gist is one boilerplate-free sentence
-      describing the same beat as its prompt (setting + cast/placement + action +
-      point), cast named by role and **no** `{TOKEN}`. Run `prompt-lint` to grade
-      prompt↔gist alignment + rule compliance before generating any images.
+- [ ] `len(gists) == len(prompts)` (the `gists` come from `story-text`); each
+      prompt instructs the same beat as its gist (setting + cast/placement +
+      action + point). Run `story-prompts-eval` to grade prompt↔gist alignment +
+      rule compliance before generating any images.
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
 - [ ] Re-run the per-panel checklist on each prompt.

@@ -23,12 +23,12 @@
     "At a sunny kitchen table set for a snack, the child sits with clean hands beside a plate of fruit while the mother passes over a piece of fruit — clean hands, happy snack."
   ],
   "texts": [
-    "You played outside in the garden, digging in the dirt. What fun! But your hands got all muddy.",
-    "\"Time for a snack — but first, wash your hands,\" said Mum, pointing toward the sink.",
-    "You climbed up on your little stool and reached for the soap. Twist, twist — on came the water.",
-    "You rubbed your hands together and made lots of fluffy bubbles. Scrub-a-dub, so many bubbles!",
-    "Then you rinsed all the bubbles away. Your hands were squeaky clean! You held them up, so proud.",
-    "You sat down for your snack with clean, happy hands. No more germs — hooray!"
+    "{NAME} played outside in the garden, digging in the dirt. \"What fun!\" said {NAME}. But oh — {NAME}'s hands got all muddy.",
+    "\"Time for a snack — but first, wash your hands,\" said Mum, pointing toward the sink. \"Okay, Mum!\" said {NAME}, hurrying inside.",
+    "{NAME} climbed up on the little stool and reached for the soap. Twist, twist — on came the water. \"Here we go!\" said {NAME}.",
+    "{NAME} rubbed both hands together and made lots of fluffy bubbles. \"Scrub-a-dub-dub!\" giggled {NAME}. So many bubbles!",
+    "Then {NAME} rinsed all the bubbles away. \"Squeaky clean!\" said {NAME}, holding both hands up high, so proud.",
+    "{NAME} sat down for a snack with clean, happy hands. \"No more germs — hooray!\" said {NAME}. \"Well washed!\" said Mum, passing a piece of fruit."
   ],
   "version": 1
 }

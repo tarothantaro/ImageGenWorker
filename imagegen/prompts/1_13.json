@@ -23,12 +23,12 @@
     "In the garden, the child holds up the clay pot now with a blooming yellow flower, proud and joyful, while the grandmother claps with pride — good things took time."
   ],
   "texts": [
-    "One sunny morning in the garden, Grandma gave you a little pot and some seeds. \"Let's plant!\" she said.",
-    "You pressed a tiny seed into the soft brown soil, careful and gentle. There — all planted!",
-    "You peeked into the pot, but nothing had grown yet. \"Where's my flower?\" you said, a little sad.",
-    "\"Plants need time and care,\" said Grandma, pointing to the sky. So you gave it water and waited.",
-    "Then one day — a tiny green sprout! Your eyes went wide. \"It's growing!\" you cheered.",
-    "At last a bright yellow flower bloomed. You held it up high, so proud. Good things take time!"
+    "One sunny morning in the garden, Grandma gave {NAME} a little pot and some seeds. \"Let's plant them!\" she said. \"Yes!\" said {NAME}.",
+    "{NAME} pressed a tiny seed into the soft brown soil, careful and gentle. \"There — all planted!\" said {NAME} proudly.",
+    "{NAME} peeked into the pot, but nothing had grown. \"Where's my flower?\" said {NAME}, a little sad.",
+    "\"Plants need time and care,\" said Grandma, pointing to the sky. \"How long?\" asked {NAME}. \"You'll see,\" she smiled. So {NAME} gave it water and waited.",
+    "Then one day — a tiny green sprout! {NAME}'s eyes went wide. \"It's growing! It's really growing!\" cheered {NAME}.",
+    "At last a bright yellow flower bloomed. {NAME} held the pot up high. \"I grew it!\" said {NAME}. \"Good things take time,\" said Grandma, clapping."
   ],
   "version": 1
 }

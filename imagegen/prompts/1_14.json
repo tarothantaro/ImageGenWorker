@@ -24,12 +24,12 @@
     "At the playground in golden light, three children stand side by side arm in arm in a row — the child, then the girl, then the boy — all grinning, exactly three with no duplicates. Including everyone made the best day."
   ],
   "texts": [
-    "You were at the playground, tossing a ball with your friend. Catch! You both laughed.",
-    "Then you saw a boy sitting all alone on a bench. He looked sad and left out.",
-    "You walked right over with a friendly smile. \"Come play with us!\" you said, reaching out your hand.",
-    "His face lit up, and he took your hand and stood. Now he had friends to play with!",
-    "Everyone played together with the ball. Nobody was left out, and everyone was happy.",
-    "You wrapped your arms around your friends with a proud smile. Including everyone made the best day."
+    "{NAME} was at the playground, tossing a ball with a friend. \"Catch!\" called {NAME}. \"Got it!\" laughed the girl. They both giggled.",
+    "Then {NAME} saw a boy sitting all alone on a bench. He looked sad and left out. \"He has no one to play with,\" thought {NAME}.",
+    "{NAME} walked right over with a friendly smile. \"Come play with us!\" said {NAME}, reaching out a hand. \"Me?\" said the boy, hopeful.",
+    "His face lit up, and he took {NAME}'s hand and stood up. \"Yes please!\" he said. \"Now you have friends too!\" said {NAME}.",
+    "{NAME}, the girl and the boy all played together with the ball. \"This way!\" \"Over here!\" they called. Nobody was left out, and everyone was happy.",
+    "{NAME} wrapped both arms around the two friends. \"Best friends!\" said {NAME}. Including everyone had made the very best day."
   ],
   "version": 1
 }

@@ -23,12 +23,12 @@
     "In the living room with a fresh flower in a new cup on the shelf, the child rests a hand over their heart in relief, happy, while the mother rests a hand on their shoulder — the truth feels lighter."
   ],
   "texts": [
-    "You were bouncing your red ball in the living room. Boing, boing — what fun!",
-    "Then crash! The blue vase fell and broke into pieces. You gasped and covered your mouth.",
-    "You looked at the broken pieces and felt worried inside. What should you do?",
-    "You found Mum and pointed to the vase. \"I broke it. I'm sorry,\" you said honestly.",
-    "\"Thank you for telling the truth,\" said Mum gently, and together you picked up the pieces.",
-    "Mum gave your shoulder a warm pat, and you smiled with relief. The truth made you feel light inside."
+    "{NAME} was bouncing a red ball in the living room. Boing, boing! \"Catch!\" laughed {NAME}. What fun!",
+    "Then — crash! The blue vase fell and broke into pieces. \"Oh no!\" gasped {NAME}, both hands flying up.",
+    "{NAME} looked at all the broken pieces and felt worried inside. \"What should I do?\" {NAME} whispered.",
+    "{NAME} found Mum and pointed to the vase. \"I broke it,\" said {NAME}. \"I'm sorry — it was an accident.\"",
+    "\"Thank you for telling the truth,\" said Mum gently. \"Let's clean it up together.\" \"Okay,\" said {NAME}, and they picked up every piece.",
+    "Mum gave {NAME}'s shoulder a warm pat. \"I feel better now,\" said {NAME}, smiling. The truth had made everything feel light inside."
   ],
   "version": 1
 }

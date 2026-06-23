@@ -377,7 +377,7 @@ class ComfyUIModel:
         prefixes = self._builder.output_prefixes(workflow)
 
         # Capture the actual prompt + rendered workflow before we submit, so a
-        # hung or failing run is still on disk for debugging (the prompt-eval
+        # hung or failing run is still on disk for debugging (the image-eval
         # skill + manual inspection). No-op unless PROMPT_LOG_DIR is set.
         def _log(status: str, **extra: Any) -> None:
             self._prompt_logger.log_panel(

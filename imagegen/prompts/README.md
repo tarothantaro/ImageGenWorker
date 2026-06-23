@@ -6,13 +6,17 @@ A **story** is an ordered set of prompts; each prompt is run against the **same
 single input photo** to produce one panel image, so the user's photo appears in
 every panel of the story.
 
-Three skills own this directory:
+Three skills own this directory (the authoring pipeline runs top-to-bottom):
 
 | Skill | Owns | Use it to |
 |---|---|---|
-| `story-prompts` | `<type>_<id>.json` (everything but `texts`) | Write/edit a story's prompt array + metadata |
-| `story-text` | the `texts` field of `<type>_<id>.json` | Write/edit a story's per-panel read-aloud storybook text |
+| `story-text` | `title`, `lesson`, `gists`, `texts` of `<type>_<id>.json` | Write a story's beats (gists) + read-aloud text/dialog |
+| `story-prompts` | the `prompts` + `characters` of `<type>_<id>.json` | Turn each gist into a per-panel image prompt |
 | `character-config` | `character.json` | Add/edit the generated supporting cast |
+
+Three more skills read + grade (no file ownership): `story-text-eval` (gist +
+dialog), `story-prompts-eval` (the prompt text), `image-eval` (the rendered
+images).
 
 ## Files
 
@@ -73,22 +77,25 @@ new categories are added (and add them to `_TYPE_NAMES`).
   the render template `templates/1`'s panel count (6).
 - `gists` — the per-panel **eval gist**: a one-sentence statement of what *this
   panel must show* — its setting, who is present, the key action/interaction, and
-  the narrative beat —
-  with all style/camera/identity boilerplate stripped out. **Same length and
-  order as `prompts`** (`gists[i]` is the intent of panel *i*). It is the panel's
-  testable *intent*, parallel to but distinct from the literal prompt, and is the
-  shared spec both eval skills grade against: `prompt-eval` (vision) asks "does
-  the generated image satisfy the gist?"; `prompt-lint` (text-only) asks "would
-  this prompt, rendered faithfully, satisfy the gist?". Authored by the
-  `story-prompts` skill alongside the prompts; the image pipeline never reads it.
-  Like `texts` (and unlike `prompts`) it carries **no** `{TOKEN}` placeholders —
-  refer to the supporting cast by role ("the elderly woman", "a friend").
+  the narrative beat — with all style/camera/identity boilerplate stripped out.
+  **Same length and order as `prompts`** (`gists[i]` is the intent of panel *i*).
+  It is the panel's testable *intent*, parallel to but distinct from the literal
+  prompt, and is the shared spec the eval skills grade against: `story-prompts-eval`
+  (text-only) asks "would this prompt, rendered faithfully, satisfy the gist?" and
+  `image-eval` (vision) asks "does the generated image satisfy the gist?".
+  Authored by the **`story-text`** skill (it is the narrative beat); the
+  `story-prompts` skill renders each gist into its prompt, and the image pipeline
+  never reads it. It carries **no** placeholders at all — refer to the protagonist
+  as "the child" and the supporting cast by role ("the elderly woman", "a friend").
 - `texts` — the per-panel **read-aloud storybook narration** (scene + dialog),
   one string per panel and the **same length/order as `prompts`** (`texts[i]`
   is what the reader sees on panel *i*'s page). Authored by the `story-text`
   skill; the image pipeline never reads it — it is synced to the API catalog as
   `story_text` (`operation/sync_story_catalog.py`) and shown alongside the
-  generated images. Unlike `prompts`, it carries **no** `{TOKEN}` placeholders.
+  generated images. It carries no character `{TOKEN}`; the **only** placeholder it
+  uses is **`{NAME}`** — the protagonist's name, which `../Application` substitutes
+  with the photo subject's role `name` at runtime (see "Runtime placeholder
+  substitution").
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
 
@@ -115,3 +122,9 @@ Prompts contain `{TOKEN}` placeholders for the **generated** supporting cast
 mechanism `workflow.py` uses for `USER_ID` / `STORY_ID`). Authoring templates
 keep the placeholder verbatim. See `character.json` and the `character-config`
 skill for the placeholder/runtime contract.
+
+The read-aloud `texts` use one different placeholder — **`{NAME}`** — for the
+**protagonist's name**. The worker never touches `texts`; instead the API server
+(`../Application`) substitutes `{NAME}` with the photo subject's role `name` (e.g.
+"Leo") when it serves the catalog `story_text`. So `texts` carry `{NAME}` but no
+`{TOKEN}` character placeholders, and `gists` carry no placeholders at all.

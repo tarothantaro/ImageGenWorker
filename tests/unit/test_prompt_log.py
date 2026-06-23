@@ -1,7 +1,7 @@
 """Unit tests for the actual-prompt logger (imagegen/prompt_log.py).
 
 The logger persists, per panel, the *real* prompt + rendered workflow the model
-submits to ComfyUI — read back by the prompt-eval skill and by humans debugging a
+submits to ComfyUI — read back by the image-eval skill and by humans debugging a
 bad panel. These tests pin down: it is a no-op when disabled, it writes one
 JSON-per-panel with the placeholder-substituted prompt text, it preserves the
 workflow verbatim, and a write failure never propagates (generation must not

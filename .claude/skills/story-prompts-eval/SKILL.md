@@ -1,9 +1,9 @@
 ---
-name: prompt-lint
-description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (shot/framing cue, one action per person, position cued only when the beat needs it, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `prompt-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `prompt-eval` skills.
+name: story-prompts-eval
+description: Evaluate and improve a story's image prompts from the text alone — no image generation, no ComfyUI, no GCS, no vision model. Use when asked to lint/check/review/critique a story's prompts before rendering, improve prompts cheaply or "without generating images", catch prompt problems early, verify a prompt would actually produce its intended panel, or check that each prompt matches its gist and follows the story-prompts rules (shot/framing cue, one action per person, position cued only when the beat needs it, verbatim scene anchor, identity-preserve ending, no cross-panel reference words, valid {TOKEN}s). The cheap, fast counterpart to `image-eval` (which grades generated images). Reads imagegen/prompts/<type>_<id>.json; pairs with the `story-prompts` and `image-eval` skills.
 ---
 
-# prompt-lint
+# story-prompts-eval
 
 Grade a story's **prompt text** against its **gists** and the `story-prompts`
 rules, and recommend concrete edits — **before** spending a ComfyUI run on it.
@@ -13,17 +13,21 @@ an unresolvable `{TOKEN}`) are visible in the
 text and can be fixed for free here. This skill **reads and grades only** — it
 generates nothing and edits nothing; apply the fixes via the `story-prompts` skill.
 
-This is the text-only sibling of `prompt-eval`:
+This is the text-only sibling of `image-eval`:
 
 | Skill | Input | Question it answers | Cost |
 |---|---|---|---|
-| **prompt-lint** (this) | the prompt + gist **text** | "Would this prompt, rendered faithfully, satisfy its gist — and does it obey the rules?" | free / instant |
-| `prompt-eval` | the **generated images** | "Does the image the model actually produced satisfy the prompt + gist?" | a ComfyUI run + vision judging |
+| **story-prompts-eval** (this) | the prompt + gist **text** | "Would this prompt, rendered faithfully, satisfy its gist — and does it obey the rules?" | free / instant |
+| `image-eval` | the **generated images** | "Does the image the model actually produced satisfy the prompt + gist?" | a ComfyUI run + vision judging |
 
-The **gist** (`imagegen/prompts/README.md`, the JSON `gists` array) is the shared
-spec: a one-sentence statement of what each panel must show. prompt-lint checks
-the prompt against that intent in text; prompt-eval checks the pixels against the
-same intent. Run prompt-lint first; only generate once it's clean.
+The **gist** (`imagegen/prompts/README.md`, the JSON `gists` array, authored by
+the `story-text` skill) is the shared spec: a one-sentence statement of what each
+panel must show. The pipeline is `story-text` (writes gist + dialog) →
+`story-text-eval` (grades them) → `story-prompts` (writes the prompt from the
+gist) → **story-prompts-eval** (this — grades prompt↔gist in text) → render →
+`image-eval` (grades the pixels against the same gist). story-prompts-eval checks
+the prompt against the gist's intent in text; image-eval checks the pixels against
+the same intent. Run story-prompts-eval first; only generate once it's clean.
 
 ## Workflow
 
@@ -31,9 +35,9 @@ same intent. Run prompt-lint first; only generate once it's clean.
 
 ```bash
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-lint/lint_prompts.py --story 1_1     # one story
+    .claude/skills/story-prompts-eval/lint_prompts.py --story 1_1     # one story
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-lint/lint_prompts.py --all           # whole catalog
+    .claude/skills/story-prompts-eval/lint_prompts.py --all           # whole catalog
 ```
 
 `lint_prompts.py` decides everything that is deterministic from the text and
@@ -97,10 +101,10 @@ to match the gist; only change the gist when the gist itself mis-states the inte
 Give a per-story verdict (`✅ ready to generate` / `⚠️ fix prompts first` /
 `❌ rework`), the FAIL/WARN counts, the panels needing edits with their fixes, and
 note that this is a **text-only** check — the image-side confirmation is
-`prompt-eval` after a render. Structure the written report like:
+`image-eval` after a render. Structure the written report like:
 
 ```markdown
-# Prompt lint — <title> (<story>)
+# Story-prompts eval — <title> (<story>)
 
 - **Verdict:** ✅ ready to generate / ⚠️ fix prompts first / ❌ rework — one line
 - **Mechanical:** <F> FAIL, <W> WARN (from lint_prompts.py)
@@ -120,10 +124,11 @@ note that this is a **text-only** check — the image-side confirmation is
 
 ## Notes
 
-- prompt-lint grades the **same rules** `story-prompts` writes to and the **same
-  gist** `prompt-eval` grades the image against — so a clean lint is the
-  pre-condition for generating, and `prompt-eval` is the post-condition.
-- The natural loop: `prompt-lint` → fix via `story-prompts` → re-lint until clean →
-  generate (`local-batch-eval`) → `prompt-eval` on the images.
+- story-prompts-eval grades the **same rules** `story-prompts` writes to and the **same
+  gist** `image-eval` grades the image against — so a clean lint is the
+  pre-condition for generating, and `image-eval` is the post-condition.
+- The natural loop: `story-text` (gist + dialog) → `story-text-eval` → `story-prompts`
+  (prompt from the gist) → `story-prompts-eval` (this) → fix via `story-prompts` →
+  re-lint until clean → generate (`local-batch-eval`) → `image-eval` on the images.
 - The linter reuses the worker's own `{TOKEN}` composer when importable, so its
   "resolvable" verdict matches what `workflow.py` would actually render.

@@ -24,12 +24,12 @@
     "At the bus stop, the child looks up gratefully with a hand to their chest as a young man holds a large umbrella over them both — kindness returning as the light warms."
   ],
   "texts": [
-    "One sunny morning, you set off down the street. The birds were singing, and you felt happy.",
-    "Up ahead, an old lady's bag tore open and oranges rolled everywhere. \"Oh no!\" you said.",
-    "You knelt down and helped pick up every single orange. \"Thank you, dear,\" the old lady smiled.",
-    "You carried her heavy bags all the way home. \"You are so kind,\" she said warmly.",
-    "A few days later, rain poured down at the bus stop. You had no umbrella and got cold and wet.",
-    "Then a kind young man held his umbrella over you. \"Stay dry!\" he smiled. Your kindness had come back to you."
+    "One sunny morning, {NAME} set off down the street. The birds were singing, and the sky was bright and blue. \"What a lovely day!\" said {NAME}, skipping along.",
+    "Up ahead, an old lady's bag tore open and her oranges rolled everywhere. \"Oh no — your oranges!\" cried {NAME}, hurrying over. \"They're rolling away!\" said the old lady. \"Don't worry, I'll help!\" said {NAME}.",
+    "{NAME} knelt down and picked up every single orange, one by one. \"Here you are,\" said {NAME}, popping the last one in. \"Thank you, dear, you're so kind,\" said the old lady.",
+    "\"Let me carry these for you,\" said {NAME}, lifting the heavy bags. \"Why, thank you! My house is just there, with the blue door,\" said the old lady, smiling all the way home.",
+    "A few days later, rain poured down at the bus stop. {NAME} had no umbrella and hugged both arms tight. \"Brrr, I'm so cold and wet,\" {NAME} shivered.",
+    "Then a kind young man held his big umbrella over them both. \"Here, stay dry!\" he said warmly. \"Thank you so much!\" said {NAME} with a happy smile. {NAME}'s kindness had come back around."
   ],
   "version": 1
 }

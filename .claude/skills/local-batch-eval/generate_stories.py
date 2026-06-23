@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Drive the real :class:`~imagegen.model.ComfyUIModel` directly for a batch of
 stories — no Pub/Sub, no GCS, no Application stack — and write everything the
-``local-batch-eval`` / ``prompt-eval`` skills need straight to a local run dir.
+``local-batch-eval`` / ``image-eval`` skills need straight to a local run dir.
 
 This is the *generate* half of the local eval loop. Where ``smoke_real_comfyui``
 runs one story, this iterates **all** story prompt sets (``imagegen/prompts/<type>_<id>.json``,

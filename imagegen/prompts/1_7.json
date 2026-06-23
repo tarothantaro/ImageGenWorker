@@ -23,12 +23,12 @@
     "In the kitchen in golden light, the child shares the plate of cookies while the grandmother leans close with a hand on their shoulder — cosy, happy, kind words shared."
   ],
   "texts": [
-    "You sat at the kitchen table. Grandma had a plate of warm cookies. Mmm, they smelled delicious!",
-    "You really, really wanted one, and you reached your hand toward the plate.",
-    "Then you remembered the magic word. \"Please may I have a cookie?\" you asked with a smile.",
-    "\"Of course you may!\" said Grandma, and she happily held out the plate.",
-    "You took a cookie and hugged it close. \"Thank you, Grandma!\" Her heart felt warm and glad.",
-    "You shared the cookies together, cosy and happy. Kind words made you both smile."
+    "{NAME} sat at the kitchen table. Grandma had a plate of warm cookies. \"Mmm, they smell delicious!\" said {NAME}.",
+    "{NAME} really, really wanted one and reached a hand toward the plate. \"Ooh, cookies...\" said {NAME}, eyes wide.",
+    "Then {NAME} remembered the magic word. \"Please may I have a cookie?\" {NAME} asked with a smile. Grandma's eyes twinkled.",
+    "\"Of course you may!\" said Grandma, holding the plate out to {NAME}. \"Thank you for asking so nicely.\"",
+    "{NAME} took a cookie and held it close. \"Thank you, Grandma!\" said {NAME}. Grandma put a hand on her heart, feeling warm and glad.",
+    "Together they shared the cookies, cosy and happy. \"Kind words are the best,\" said Grandma. \"Please and thank you make everyone smile!\" said {NAME}."
   ],
   "version": 1
 }

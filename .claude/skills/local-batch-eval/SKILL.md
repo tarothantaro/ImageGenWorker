@@ -1,6 +1,6 @@
 ---
 name: local-batch-eval
-description: Generate every story locally by driving the image-gen worker directly against a live ComfyUI (no Pub/Sub, no GCS, no Application stack), then evaluate the outputs with the prompt-eval rubric and open a local web UI to review them. Use when asked to "generate all stories and evaluate", "run the local batch eval", "render every story from <photo> and review", regenerate-and-grade the whole catalog, or eyeball a story's outputs (input photo + actual prompts + output image + eval) in a browser. Defaults to tests/assets/leo.jpg at age 4. Pairs with the `prompt-eval`, `story-prompts`, and `character-config` skills.
+description: Generate every story locally by driving the image-gen worker directly against a live ComfyUI (no Pub/Sub, no GCS, no Application stack), then evaluate the outputs with the image-eval rubric and open a local web UI to review them. Use when asked to "generate all stories and evaluate", "run the local batch eval", "render every story from <photo> and review", regenerate-and-grade the whole catalog, or eyeball a story's outputs (input photo + actual prompts + output image + eval) in a browser. Defaults to tests/assets/leo.jpg at age 4. Pairs with the `image-eval`, `story-prompts`, and `character-config` skills.
 ---
 
 # local-batch-eval
@@ -11,16 +11,16 @@ the results, end to end, without any of the production plumbing:
 ```
 .claude/skills/local-batch-eval/generate_stories.py   →  outputs + prompt logs on local disk
    (drives imagegen.model.ComfyUIModel directly against live ComfyUI :8188)
-prompt-eval/fetch_outputs.py  →  per-story manifest.json   (--local-root mode)
-prompt-eval rubric (vision)   →  per-story report.md
+image-eval/fetch_outputs.py  →  per-story manifest.json   (--local-root mode)
+image-eval rubric (vision)   →  per-story report.md
 tools/review_app/server.py    →  one web page to review every story
 ```
 
-This is the generate-**and**-grade counterpart to `prompt-eval` (which only
+This is the generate-**and**-grade counterpart to `image-eval` (which only
 grades images that the Application stack already produced into GCS). Here the
 worker is driven directly from *this* repo, outputs land in a local run dir, and
 `fetch_outputs.py` reads them with `--local-root` instead of GCS. The judging
-itself **reuses the `prompt-eval` skill** — same rubric, same report format.
+itself **reuses the `image-eval` skill** — same rubric, same report format.
 
 ## Preconditions
 
@@ -66,14 +66,14 @@ Read `run.json` to see which stories produced images.
 
 ### 2. Build the per-story manifests (local source)
 
-Run `prompt-eval`'s `fetch_outputs.py` in local batch mode — it reads the PNGs
+Run `image-eval`'s `fetch_outputs.py` in local batch mode — it reads the PNGs
 off disk (no GCS / no Application stack), discovers every generated story under
 `--local-root`, assumes each output story id is also the prompt stem, and joins
 each image to its **actual logged prompt**:
 
 ```bash
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
-    .claude/skills/prompt-eval/fetch_outputs.py \
+    .claude/skills/image-eval/fetch_outputs.py \
     --local-root eval_runs/latest/outputs \
     --log-dir   eval_runs/latest/prompt_logs \
     --out eval_runs/latest/eval
@@ -86,10 +86,10 @@ received, with the real age word substituted in. Each manifest lands under
 `eval_runs/<run>/eval/<story>__<story>/` so the review app finds it. For one
 story only, pass `--story`, `--user-id`, `--story-id`, and an exact `--out` dir.
 
-### 3. Judge each story (vision) — via `prompt-eval`
+### 3. Judge each story (vision) — via `image-eval`
 
-Now grade exactly as the **`prompt-eval` skill** describes — read
-`.claude/skills/prompt-eval/SKILL.md` §3 (per-panel rubric) and §4 (report
+Now grade exactly as the **`image-eval` skill** describes — read
+`.claude/skills/image-eval/SKILL.md` §3 (per-panel rubric) and §4 (report
 structure) and follow them verbatim for each story:
 
 - Read the story's `manifest.json`, then Read each panel's delivered PNG (the
@@ -155,11 +155,11 @@ URL.
 ## Notes
 
 - **Skill boundaries.** This skill drives generation + orchestration and opens
-  the UI. The **rubric and report format are owned by `prompt-eval`** — don't
+  the UI. The **rubric and report format are owned by `image-eval`** — don't
   fork them here. When a fix is warranted, edit `imagegen/prompts/<story>.json`
   via `story-prompts` (or `character.json` via `character-config`), regenerate
   that story (step 1 with `--stories`), and re-judge.
 - `eval_runs/` is gitignored (generated artifacts: images, manifests, reports).
 - No GCP creds, no emulator, no Application stack are involved in local mode —
   only a live ComfyUI. The same `fetch_outputs.py` still serves the GCS-backed
-  `prompt-eval` flow when `--local-root` is omitted.
+  `image-eval` flow when `--local-root` is omitted.

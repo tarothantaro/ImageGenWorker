@@ -50,7 +50,7 @@ class WorkerConfig:
     comfyui_request_timeout_seconds: int = _DEFAULT_REQUEST_TIMEOUT_SECONDS
     max_delivery_attempts: int = _DEFAULT_MAX_DELIVERY_ATTEMPTS
     # Directory the model writes a per-panel record of the *actual* prompt +
-    # rendered workflow it submits to ComfyUI (debug + the prompt-eval skill).
+    # rendered workflow it submits to ComfyUI (debug + the image-eval skill).
     # Unset (the default) disables logging — production leaves it off; the dev
     # stack points it at a host-mounted volume so the logs survive the container
     # and are readable from the host (deploy/stages/dev). DESIGN.md §7.2.

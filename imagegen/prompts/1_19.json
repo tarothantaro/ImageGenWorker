@@ -23,12 +23,12 @@
     "In the playroom, the child calmly rebuilds the block tower with a peaceful smile while the father helps place a block, proud — deep breaths chased the storm away."
   ],
   "texts": [
-    "In the playroom you stacked your blocks into a tall, wobbly tower. Higher and higher!",
-    "Then it all tumbled down. You felt SO angry, your fists clenched up tight.",
-    "Dad knelt down beside you. \"Let's take a deep breath,\" he said, his hand on his belly.",
-    "You closed your eyes and breathed in slow... and out. The angry storm began to fade away.",
-    "Soon you felt calm again, your shoulders soft and a little smile on your face.",
-    "Feeling better, you built your tower again — this time with Dad. Deep breaths chase the storm away."
+    "In the playroom, {NAME} stacked the blocks into a tall, wobbly tower. \"Higher and higher!\" said {NAME}, reaching up.",
+    "Then it all tumbled down. {NAME} felt SO angry, with two fists clenched tight. \"Grrr!\" cried {NAME}.",
+    "Dad knelt down close to {NAME}. \"Let's take a deep breath together,\" he said, his hand on his belly. \"In, and out.\"",
+    "{NAME} closed both eyes and breathed in slow... and out. \"In... and out,\" said {NAME}. The angry storm began to fade away.",
+    "Soon {NAME} felt calm again, shoulders soft and a little smile peeking out. \"I feel better now,\" said {NAME}.",
+    "Feeling better, {NAME} built the tower again — this time with Dad. \"Deep breaths chase the storm away,\" said {NAME}."
   ],
   "version": 1
 }

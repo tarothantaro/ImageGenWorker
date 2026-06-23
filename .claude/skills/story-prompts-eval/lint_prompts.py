@@ -8,15 +8,15 @@ invariants and the deterministic `story-prompts` rules (shot/framing cue,
 identity-preserve ending, banned cross-panel reference words, `{TOKEN}` validity,
 gist↔prompt parity). It does **not** judge
 the semantic prompt↔gist alignment or whether every person has a concrete action
-— that is the agent's job in the `prompt-lint` skill, reading the prompts + gists
+— that is the agent's job in the `story-prompts-eval` skill, reading the prompts + gists
 this script prints. No image generation, no LLM, no GCS.
 
 Usage (from the repo root):
 
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
-        .claude/skills/prompt-lint/lint_prompts.py --story 1_1
+        .claude/skills/story-prompts-eval/lint_prompts.py --story 1_1
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
-        .claude/skills/prompt-lint/lint_prompts.py --all
+        .claude/skills/story-prompts-eval/lint_prompts.py --all
     # machine-readable findings (one JSON object):
     ... lint_prompts.py --story 1_1 --json
 
@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 
 _SKILL_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/prompt-lint -> repo root
+_REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/story-prompts-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 
 # Identity-preserve sentence every prompt must end with (story-prompts rule 6).

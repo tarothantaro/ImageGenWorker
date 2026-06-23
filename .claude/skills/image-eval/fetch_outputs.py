@@ -8,7 +8,7 @@ server and worker share — DESIGN.md §5.1):
 
     gs://$GCS_BUCKET/<user_id>/<story_id>/outputs/<index>.png
 
-This script does the I/O half of the `prompt-eval` skill: it lists / downloads
+This script does the I/O half of the `image-eval` skill: it lists / downloads
 those PNGs from the local emulator and writes ``manifest.json`` joining each
 downloaded file to the panel prompt it was generated from — with ``{TOKEN}``
 characters resolved from ``character.json`` and ``{INPUT_n_AGE}`` dropped, so the
@@ -29,11 +29,11 @@ fake-gcs is published on :4443):
 
     # discover which <user>/<story> output sets exist in the bucket
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
-        .claude/skills/prompt-eval/fetch_outputs.py --list
+        .claude/skills/image-eval/fetch_outputs.py --list
 
     # download one set + build the manifest for prompt set 1_1
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
-        .claude/skills/prompt-eval/fetch_outputs.py \
+        .claude/skills/image-eval/fetch_outputs.py \
         --story 1_1 --user-id <uid> --story-id <sid>
 
 ``--story`` is the prompt-file stem (the worker ``type_id``). ``--story-id`` is
@@ -62,7 +62,7 @@ import sys
 from pathlib import Path
 
 _SKILL_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/prompt-eval -> repo root
+_REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/image-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 # Where the dev worker writes its per-panel actual-prompt records (PROMPT_LOG_DIR
 # host mount, deploy/stages/dev). Each story_id is a subdir of panel_NN.json.
@@ -269,7 +269,7 @@ def _batch_download(args: argparse.Namespace) -> int:
     elif args.local_root:
         out_root = Path(args.local_root).expanduser().parent / "eval"
     else:
-        out_root = Path("/tmp/prompt_eval")
+        out_root = Path("/tmp/image_eval")
 
     status = 0
     for (user_id, story_id), _ in sorted(sets.items()):
@@ -316,7 +316,7 @@ def _download(args: argparse.Namespace) -> int:
         )
 
     out_dir = Path(
-        args.out or f"/tmp/prompt_eval/{args.story}__{args.story_id}"
+        args.out or f"/tmp/image_eval/{args.story}__{args.story_id}"
     ).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -438,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--user-id", help="GCS path user_id component")
     parser.add_argument("--story-id", help="GCS path story_id (the job/story id)")
     parser.add_argument(
-        "--out", help="download dir (default /tmp/prompt_eval/<story>__<story_id>)"
+        "--out", help="download dir (default /tmp/image_eval/<story>__<story_id>)"
     )
     parser.add_argument(
         "--bucket", default=os.environ.get("GCS_BUCKET", _DEFAULT_BUCKET)

@@ -23,12 +23,12 @@
     "Safely on the far pavement, the child gives a happy thumbs-up, proud, while the father gives a thumbs-up and a warm smile — crossed the road safely."
   ],
   "texts": [
-    "You walked along the busy pavement with Dad. Up ahead was the road. \"Stay close,\" said Dad.",
-    "You started to step toward the road, but Dad gently held you back. \"We must stop first,\" he said.",
-    "\"Look left, look right,\" said Dad. You turned your head and looked both ways along the road.",
-    "The light showed red, so you waited patiently, holding Dad's hand. Not yet — we wait.",
-    "The light turned green. Holding hands, you walked safely across the stripes. Step, step, step.",
-    "Safe on the other side! Dad gave you a thumbs-up. \"Well done!\" You crossed the road safely."
+    "{NAME} walked along the busy pavement with Dad. Up ahead was the road. \"Stay close to me,\" said Dad. \"Okay!\" said {NAME}.",
+    "{NAME} started to step toward the road, but Dad gently held {NAME} back. \"Wait — we must always stop first,\" he said. \"Oops!\" said {NAME}.",
+    "\"Now look left, and look right,\" said Dad. {NAME} turned and looked both ways along the road. \"All clear?\" asked {NAME}. \"Not yet,\" said Dad.",
+    "The light showed red, so they waited patiently, holding hands. \"When can we go?\" asked {NAME}. \"When it turns green,\" said Dad. \"We wait.\"",
+    "The light turned green. \"Now we can go,\" said Dad. Holding hands, {NAME} and Dad walked safely across the stripes. Step, step, step!",
+    "Safe on the other side! Dad gave a big thumbs-up. \"Well done!\" he said. \"Stop, look, and hold hands!\" cheered {NAME}."
   ],
   "version": 1
 }

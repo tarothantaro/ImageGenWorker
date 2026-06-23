@@ -2,7 +2,7 @@
 
 A tiny, dependency-free (Python stdlib `http.server`) web UI for reviewing a
 **local story-eval run** — the artifacts produced by `.claude/skills/local-batch-eval/generate_stories.py`
-plus the `local-batch-eval` / `prompt-eval` skills.
+plus the `local-batch-eval` / `image-eval` skills.
 
 For each story it shows, on one scrollable page:
 
@@ -30,8 +30,8 @@ For each story it shows, on one scrollable page:
 ├── run.json                       # batch metadata (optional)
 ├── input.<ext>                    # the input photo
 └── eval/<story>__<story_id>/      # one per story
-    ├── manifest.json              # from prompt-eval/fetch_outputs.py
-    ├── report.md                  # from the prompt-eval rubric (vision judge)
+    ├── manifest.json              # from image-eval/fetch_outputs.py
+    ├── report.md                  # from the image-eval rubric (vision judge)
     └── *.png                      # the downloaded panel images (one per panel)
 ```
 

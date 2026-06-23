@@ -24,12 +24,12 @@
     "On the beach in golden light, the child stands with arms raised in celebration beside the grand sandcastle while the two friends cheer — better together."
   ],
   "texts": [
-    "On the sunny beach you worked hard, building a sandcastle all by yourself.",
-    "But the wall crumbled down! You frowned. It was tricky to do all alone.",
-    "Just then two friends came over. \"Can we help?\" they asked. \"Yes, please!\" you said.",
-    "Together you patted sand, carried water and dug. Working as a team, the castle grew tall!",
-    "At last your sandcastle stood proud, with towers and a little flag. \"We made it!\" you cheered.",
-    "You threw your arms up high and celebrated together. Better together — teamwork is much more fun!"
+    "On the sunny beach, {NAME} worked hard, building a sandcastle all alone. \"Almost there,\" said {NAME}, patting the sand.",
+    "But the wall crumbled down! \"Oh, not again,\" frowned {NAME}. It was tricky to build it all alone.",
+    "Just then two friends came over. \"Can we help you?\" they asked. \"Yes please!\" said {NAME}, hopeful again.",
+    "Together they patted sand, carried water and dug. \"You build, I'll fetch water!\" said the boy. \"Look — it's growing!\" cheered {NAME}.",
+    "At last the sandcastle stood proud, with towers and a little flag. \"We made it!\" cheered {NAME}. The friends clapped and pointed.",
+    "{NAME} threw both arms up high, and they all celebrated together. \"Better together!\" laughed {NAME}. Teamwork was so much more fun."
   ],
   "version": 1
 }
