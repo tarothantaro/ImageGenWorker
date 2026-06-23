@@ -36,6 +36,12 @@ fake-gcs is published on :4443):
         .claude/skills/image-eval/fetch_outputs.py \
         --story 1_1 --user-id <uid> --story-id <sid>
 
+    # use customized log and output folder
+    PYTHONPATH=. ~/python_env/torch-env/bin/python \
+    .claude/skills/image-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
+    --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
+    --out eval_runs/latest/eval/1_1__1_1    
+
 ``--story`` is the prompt-file stem (the worker ``type_id``). ``--story-id`` is
 the GCS path component (the Application's job/story id) — they are *not* the same
 thing, which is why both are required for a download.
@@ -363,7 +369,9 @@ def _download(args: argparse.Namespace) -> int:
                 "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
                 "resolved_prompt": resolved,
-                "panel_dialog": texts[panel_index] if panel_index < len(texts) else None,
+                "panel_dialog": (
+                    texts[panel_index] if panel_index < len(texts) else None
+                ),
                 "gist": gists[panel_index] if panel_index < len(gists) else None,
                 # Provenance so the judge/report knows which prompt it graded.
                 "prompt_source": "worker_log" if logged_prompt else "reconstructed",
