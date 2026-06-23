@@ -50,7 +50,7 @@ photo** through a Qwen-Image-Edit-2511 image-edit graph, once per panel:
 **Let the model compose the scene. Mention a person's position only when the
 narrative beat needs it** — an exchange that reads a particular way across the
 frame, who is in front vs behind, or an explicit left-to-right row that keeps a
-group of children from fusing (rule 11). Otherwise give each person a concrete
+group of children from fusing (rule 12). Otherwise give each person a concrete
 action and an expression and let the model place them; do **not** pin the
 protagonist (or anyone) to a fixed spot out of habit. When you *do* need
 placement, spatial words are the lever (rule 2): *to the left*, *beside them*,
@@ -74,7 +74,7 @@ face is visible, or the edit can't carry the input face. There is **no** "face
 Derived from the model's prompt guidance — instruction-style, specific, spatial.
 
 1. **Lead with the scene, then introduce each person — once.** Open every panel
-   with the canonical setting-anchor clause (rule 9) and keep **all people out of
+   with the canonical setting-anchor clause (rule 10) and keep **all people out of
    that clause**: *"In a cozy living room — a wooden shelf, a wooden floor, warm
    afternoon light — the person from the input image …"*. Then introduce the
    protagonist **exactly once**, in a **single uninterrupted block** carrying
@@ -82,7 +82,7 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    the person, insert the scene (or another character), then name them again
    (*"Place the person into `<scene>` … the person smiling …"*): each panel
    is a memory-less edit, so two separated mentions of the same person read as **two
-   different people** and the model renders a duplicate child (see rule 9, "split
+   different people** and the model renders a duplicate child (see rule 10, "split
    reference"). Short and specific beats long and flowery — *"a torn grocery bag,
    oranges rolling out"* over a paragraph of adjectives. Don't open with *"Place the
    person into …"* ahead of the setting, or with *"Transform the scene"* — the input
@@ -112,23 +112,36 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    "standing there". A bare verb of being present (`stands`, `sits`, `is in the
    frame`) does not count; `kneeling`, `walking`, `holding`, `reaching`,
    `clapping`, `pointing`, `hands on hips` do.
-5. **Reference the protagonist as "the person from the input image"** (consistent,
+5. **Make interactions physically connected.** When the gist is about people
+   playing, helping, offering, receiving, teaching, comforting, or approaching,
+   don't leave the people as parallel isolated figures. Give the interaction a
+   visible physical link: each person's gaze, hands, and body angle should point
+   toward the other person or the shared object. For handoffs and games, say
+   there is **one shared prop** in the space between them (*"one colourful ball
+   through the air between them"*, *"the friend reaches both hands toward the
+   single ball"*, *"one block held between the child's offering hand and the
+   friend's reaching hand"*). For approach/invitation beats, name the target
+   character directly (*"walks directly toward {TOKEN} seated on the bench, body
+   angled toward him"*), not just the furniture or general area. This avoids the
+   model rendering two separate props or two unrelated children who happen to be
+   near each other.
+6. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
    from `character.json`.
-6. **Pin identity at the end of every prompt:** *"Preserve the facial features,
+7. **Pin identity at the end of every prompt:** *"Preserve the facial features,
    skin tone and hairstyle of the person from the input image."* The edit + swap
    will otherwise drift the protagonist's look.
-7. **Never describe a generated character's fixed appearance.** Their age,
+8. **Never describe a generated character's fixed appearance.** Their age,
    ethnicity, build, hair and clothing live in `character.json` and arrive via
    the placeholder. In the prompt, give them only **position, action, and
    expression** (`stands to the right, watching gratefully`). Re-describing
    appearance fights the resolved description and breaks consistency. (Exception:
    a deliberate, story-driven change — e.g. *"… now wearing a raincoat over their
    usual clothes"* — added *after* the placeholder.)
-8. **Keep style consistent across the story.** Pick one visual register in panel 1
+9. **Keep style consistent across the story.** Pick one visual register in panel 1
    (e.g. *"soft storybook illustration style"*) and repeat the same phrase in
    every panel so the set reads as one book.
-9. **Keep each prompt self-contained — repeat one verbatim setting anchor per
+10. **Keep each prompt self-contained — repeat one verbatim setting anchor per
    scene.** Because each panel is an independent edit with **no memory of any
    other panel**, re-establish the protagonist, the supporting cast
    tokens present, the style, **and the setting** every time. Slightly *reworded*
@@ -224,10 +237,10 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      contiguous block (action + expression, plus position only if the beat needs
      it): *"In `<anchor>` — the person from the input image kneels, gathering the
      blocks with a kind smile."*
-10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
+11. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts (*"no extra fingers"*), not concept changes.
-11. **Guard tight close-ups and dense groups against child duplication.** A
-   *separate* failure from the split reference (rule 9): even a single-block,
+12. **Guard tight close-ups and dense groups against child duplication.** A
+   *separate* failure from the split reference (rule 10): even a single-block,
    scene-first prompt can make the **base model** invent an extra child — a
    prompt problem to fix here, not a render/setting artifact. Two
    patterns trigger it, with two fixes:
@@ -261,6 +274,10 @@ For every prompt in the array, confirm:
       forced to face the camera.
 - [ ] **Every person** (protagonist + each supporting character) is given a
       **concrete action/gesture**, not just a placement and an expression.
+- [ ] **Every interaction is physically connected**: shared props are one visible
+      object between the people, handoffs/games name both sides of the action,
+      and approach/invitation beats name the target person directly rather than
+      only a bench, doorway, or general area.
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/
       expression only, no appearance, no re-described clothing.
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
@@ -291,7 +308,7 @@ For every prompt in the array, confirm:
    *establish → encounter/choice → action → consequence → turn → resolution that
    lands the lesson.* Keep location/time continuity unless the story moves on.
    List the story's distinct scenes up front and write **one canonical
-   setting-anchor clause for each** (rule 9); every panel in a scene pastes that
+   setting-anchor clause for each** (rule 10); every panel in a scene pastes that
    exact clause, so continuity is locked before you write the per-panel action.
 4. **Write each panel** with the rules above. Alternate solo and multi-person
    panels naturally; **every person in every panel is given a concrete action**
@@ -312,7 +329,7 @@ See `imagegen/prompts/1_1.json` — a 6-panel life-lesson story
 naturally (position called out only where the beat needs it), supporting cast via
 tokens only, consistent storybook style, identity preserved each panel. Every
 panel **leads with
-the scene** and names the protagonist exactly once. It also shows rule 9's
+the scene** and names the protagonist exactly once. It also shows rule 10's
 anchor reuse across a two-scene story — panels 1–4 repeat the verbatim clause
 *"a tree-lined suburban pavement in the morning sunlight"*, then panels 5–6 switch
 to *"a roadside bus stop with wet reflective pavement, rain falling"* (with only

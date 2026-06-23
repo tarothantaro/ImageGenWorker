@@ -49,10 +49,12 @@ prints, per panel, the prompt, its gist, and any findings:
   still carries a `{TOKEN}`; a banned cross-panel reference (`the same`, `back at`,
   `as before`, `transform the scene`, `place the person into`).
 - **WARN** (review) — no named camera/shot cue (medium shot, eye-level, … — the
-  lever for framing, rule 3); a missing/inconsistent style phrase (rule 8); a `{TOKEN}`
+  lever for framing, rule 3); a missing/inconsistent style phrase (rule 9); a `{TOKEN}`
   used but not listed in `characters` (or listed but unused); a `\bagain\b` /
   `once more` that *might* be a cross-panel reference; **anchor drift** — panels
-  that share a scene but whose setting-anchor wording isn't verbatim (rule 9).
+  that share a scene but whose setting-anchor wording isn't verbatim (rule 10);
+  **interaction risk** — ball handoffs without one shared ball, or approach
+  wording aimed only at furniture/areas instead of the target character.
 
 Exit code is non-zero if any FAIL exists. Add `--json` for machine-readable
 findings. **Resolve every FAIL** (via `story-prompts`); judge each WARN — many are
@@ -78,16 +80,24 @@ panel** on the things only a reader can:
   each `{TOKEN}`) has a physical verb/gesture, never just placement + expression.
   A bare `stands`/`sits` + an expression (no action) is a defect; the
   model invents a pose for the idle body.
-- **Scene-first, single-block person** (rule 1 / rule 9 "split reference") — the
+- **Physically connected interactions** (rule 5) — any play/help/handoff/
+  invitation/teaching beat should read as one shared action, not isolated poses
+  in the same scene. Shared props must be a single object linking hands or gaze
+  across the people. Movement toward another character must name that character
+  as the target, not only a bench, doorway, toy, or general area. Flag prompts
+  like "child tosses a ball; friend catches the ball" unless they specify one
+  ball between them, and prompts like "walks toward the bench" unless they direct
+  the child toward the seated friend.
+- **Scene-first, single-block person** (rule 1 / rule 10 "split reference") — the
   panel opens with the scene anchor (no person inside it), then introduces each
   person **once** in a contiguous position+action+expression block. A
   protagonist named near the scene and **again** later reads as two children.
-- **Verbatim scene anchor across a scene** (rule 9) — panels set in the same place
+- **Verbatim scene anchor across a scene** (rule 10) — panels set in the same place
   repeat the **identical** anchor string (same adjectives/landmarks/light, only the
   leading article free to differ). The linter's `anchor` WARN points at candidates;
   confirm by reading. A recurring changed-state object (a shattered vase, a tidied
   room) must be worded identically too.
-- **Cast by token only** (rule 7) — supporting characters get position/action/
+- **Cast by token only** (rule 8) — supporting characters get position/action/
   expression only, never a re-described appearance.
 
 ### 3. Recommend concrete prompt fixes

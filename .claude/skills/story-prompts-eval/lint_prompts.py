@@ -76,6 +76,22 @@ _BANNED_WARN = (
     re.compile(r"\bonce more\b", re.I),
 )
 
+# Interaction warnings: common prompt phrasings that render as isolated figures
+# instead of one shared action. These stay WARN-level because the human
+# prompt↔gist review decides whether the panel actually needs the interaction.
+_BALL_HANDOFF_RE = re.compile(
+    r"\b(toss(?:es|ing)?|throw(?:s|ing)?)\b.*\bball\b.*\bcatch", re.I
+)
+_ONE_SHARED_BALL_RE = re.compile(
+    r"\b(one|single)\b[^.]*\bball\b|\bball\b[^.]*\bbetween them\b", re.I
+)
+_FURNITURE_APPROACH_RE = re.compile(
+    r"\b(walks?|hurries|runs|steps)\b[^.]{0,80}\btoward the "
+    r"(bench|doorway|gate|table|counter|shelf|toy box|sink)\b",
+    re.I,
+)
+_TOKEN_TARGET_RE = re.compile(r"\btoward\s+\{GENDER_[A-Z0-9_]+\}", re.I)
+
 # A supporting-character placeholder (workflow.py's contract): GENDER_/AGE_/RACE_.
 _CHAR_TOKEN_RE = re.compile(r"^GENDER_[A-Z]+_AGE_[A-Z0-9]+_RACE_[A-Z_]+$")
 _PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
@@ -213,6 +229,20 @@ def lint_story(stem: str, f: Findings) -> dict:
                     "cross-panel",
                     f"possible cross-panel word {rx.pattern!r}",
                 )
+        if _BALL_HANDOFF_RE.search(prompt) and not _ONE_SHARED_BALL_RE.search(prompt):
+            f.add(
+                "WARN",
+                p,
+                "interaction",
+                "ball handoff/play should specify one shared ball between the people",
+            )
+        if _FURNITURE_APPROACH_RE.search(prompt) and not _TOKEN_TARGET_RE.search(prompt):
+            f.add(
+                "WARN",
+                p,
+                "interaction",
+                "approach/invitation should name the target character, not only furniture or an area",
+            )
 
         anchors.setdefault(_norm_anchor(_leading_anchor(prompt)), []).append(p)
 

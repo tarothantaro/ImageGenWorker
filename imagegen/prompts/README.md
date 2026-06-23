@@ -114,6 +114,12 @@ and downward-glancing poses are all welcome. The only floor is identity: avoid a
 pure back-of-head shot where no face is visible, or the edit can't carry the
 input face.
 
+For interactive beats, make the physical connection explicit. Shared games and
+handoffs should describe one shared prop between the people, with both sets of
+hands/gaze/body direction aimed at that prop. Approach or invitation beats should
+name the target person directly, not only the bench, doorway, toy, or area they
+are near.
+
 ## Runtime placeholder substitution
 
 Prompts contain `{TOKEN}` placeholders for the **generated** supporting cast
