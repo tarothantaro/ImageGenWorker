@@ -83,8 +83,9 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python \
 GCS-bound script read locally. With the prompt logs present, the manifest's
 `prompt_source` is `worker_log` — i.e. you grade against the exact text ComfyUI
 received, with the real age word substituted in. Each manifest lands under
-`eval_runs/<run>/eval/<story>__<story>/` so the review app finds it. For one
-story only, pass `--story`, `--user-id`, `--story-id`, and an exact `--out` dir.
+`eval_runs/latest/eval/<story>__<story>/` so the review app finds it. For one
+story only, pass `--story`, `--user-id`, and `--story-id`; omit `--out` unless
+the user explicitly asked for a different result folder.
 
 ### 3. Judge each story (vision) — via `image-eval`
 

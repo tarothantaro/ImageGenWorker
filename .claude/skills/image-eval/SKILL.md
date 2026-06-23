@@ -82,13 +82,15 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python \
 In local mode, if `--story`, `--user-id`, and `--story-id` are all omitted, the
 helper discovers every generated output set under `--local-root`, assumes each
 output `story_id` is also the prompt stem, and writes one manifest per story. Use
-`--out <eval-dir>` as the eval root; each manifest lands under
-`<eval-dir>/<story>__<story>/manifest.json`.
+`--out <eval-dir>` as the eval root when you need a non-default location;
+otherwise results land under `eval_runs/latest/eval/`, with each manifest at
+`eval_runs/latest/eval/<story>__<story>/manifest.json`.
 
-This downloads the PNGs to `/tmp/image_eval/<story>__<story_id>/` (override with
-`--out`; in batch mode `--out` is a root directory) and writes `manifest.json`
-there. The manifest joins each downloaded file to the panel prompt that produced
-it. For `resolved_prompt` it prefers the
+This downloads the PNGs to
+`eval_runs/latest/eval/<story>__<story_id>/` by default (override with `--out`;
+in batch mode `--out` is a root directory) and writes `manifest.json` there. The
+manifest joins each downloaded file to the panel prompt that produced it. For
+`resolved_prompt` it prefers the
 **actual prompt the worker logged** for this run — the dev worker writes one
 record per panel of the exact prompt + workflow it submitted to ComfyUI under
 `PROMPT_LOG_DIR` (host-mounted `prompt_logs/<story_id>/panel_NN.json`; see

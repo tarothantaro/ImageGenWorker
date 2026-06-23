@@ -42,6 +42,9 @@ fake-gcs is published on :4443):
     --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
     --out eval_runs/latest/eval/1_1__1_1    
 
+Without ``--out``, fetched images, ``manifest.json``, and ``report.md`` are
+written under ``eval_runs/latest/eval/`` so the review app sees them by default.
+
 ``--story`` is the prompt-file stem (the worker ``type_id``). ``--story-id`` is
 the GCS path component (the Application's job/story id) — they are *not* the same
 thing, which is why both are required for a download.
@@ -70,6 +73,7 @@ from pathlib import Path
 _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/image-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
+_DEFAULT_EVAL_DIR = _REPO_ROOT / "eval_runs" / "latest" / "eval"
 # Where the dev worker writes its per-panel actual-prompt records (PROMPT_LOG_DIR
 # host mount, deploy/stages/dev). Each story_id is a subdir of panel_NN.json.
 _DEFAULT_LOG_DIR = _REPO_ROOT / "prompt_logs"
@@ -275,7 +279,7 @@ def _batch_download(args: argparse.Namespace) -> int:
     elif args.local_root:
         out_root = Path(args.local_root).expanduser().parent / "eval"
     else:
-        out_root = Path("/tmp/image_eval")
+        out_root = _DEFAULT_EVAL_DIR
 
     status = 0
     for (user_id, story_id), _ in sorted(sets.items()):
@@ -322,7 +326,7 @@ def _download(args: argparse.Namespace) -> int:
         )
 
     out_dir = Path(
-        args.out or f"/tmp/image_eval/{args.story}__{args.story_id}"
+        args.out or _DEFAULT_EVAL_DIR / f"{args.story}__{args.story_id}"
     ).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -446,7 +450,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--user-id", help="GCS path user_id component")
     parser.add_argument("--story-id", help="GCS path story_id (the job/story id)")
     parser.add_argument(
-        "--out", help="download dir (default /tmp/image_eval/<story>__<story_id>)"
+        "--out",
+        help=(
+            "download dir (default "
+            "eval_runs/latest/eval/<story>__<story_id>)"
+        ),
     )
     parser.add_argument(
         "--bucket", default=os.environ.get("GCS_BUCKET", _DEFAULT_BUCKET)
