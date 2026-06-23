@@ -600,7 +600,7 @@ services:
       JOBS_SUBSCRIPTION: projects/tarostory-prod/subscriptions/image-gen-jobs-worker-sub
       COMPLETION_TOPIC: projects/tarostory-prod/topics/job-completed
       MAX_CONCURRENCY: ${MAX_CONCURRENCY:-4}
-      MAX_PROCESSING_SECONDS: 540      # under the 600s ack deadline
+      MAX_PROCESSING_SECONDS: 3600     # total job lease window
       MODEL_DIR: /app/models
       LOG_LEVEL: info
       METRICS_PORT: 9100
@@ -676,7 +676,7 @@ The key is **never** baked into the image and **never** committed to a repo.
 | `STORAGE_EMULATOR_HOST` | `http://fake-gcs-server:4443` | (unset) | Likewise for GCS. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | (unset; emulators are unauthenticated) | `/run/secrets/gcp_sa_key` | Always read-only inside the container. |
 | `MAX_CONCURRENCY` | 2 | 4 (per GPU) | Caps in-flight model runs. |
-| `MAX_PROCESSING_SECONDS` | 60 | 540 | Must stay under the 600s ack deadline. |
+| `MAX_PROCESSING_SECONDS` | 3600 | 3600 | Total Pub/Sub lease extension window for one full story job. The client renews the lease in smaller increments under Pub/Sub's 600s per-extension ceiling. |
 | `LOG_LEVEL` | `debug` | `info` | |
 | `MODEL_DIR` | `/app/dev-model` (stub) | `/app/models` (mounted from host) | Read-only in both. |
 | `COMFYUI_URL` | `http://host.docker.internal:8188` | `http://host.docker.internal:8188` | ComfyUI container the model submits to (§7.2). |

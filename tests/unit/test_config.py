@@ -22,7 +22,7 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.completion_topic.endswith("/job-completed")
     assert cfg.gcs_bucket == "growstory-prod-media"
     assert cfg.max_concurrency == 4
-    assert cfg.max_processing_seconds == 540
+    assert cfg.max_processing_seconds == 3600
     assert cfg.log_level == "info"
     assert cfg.metrics_port == 9100
     assert cfg.pubsub_emulator_host is None
@@ -160,11 +160,12 @@ def test_max_concurrency_rejects_zero_or_negative() -> None:
         load_config(env)
 
 
-def test_max_processing_seconds_must_be_under_pubsub_ack_deadline() -> None:
-    env = _VALID_ENV | {"MAX_PROCESSING_SECONDS": "600"}
+def test_max_processing_seconds_allows_job_level_lease_above_single_ack_extension() -> None:
+    env = _VALID_ENV | {"MAX_PROCESSING_SECONDS": "1800"}
 
-    with pytest.raises(ConfigError, match="600"):
-        load_config(env)
+    cfg = load_config(env)
+
+    assert cfg.max_processing_seconds == 1800
 
 
 def test_metrics_port_rejects_non_integer() -> None:

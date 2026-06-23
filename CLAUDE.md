@@ -144,7 +144,7 @@ Three eval skills (no file ownership — they read + grade), one per pipeline st
 
 ### Key invariants
 
-- `MAX_PROCESSING_SECONDS` must be < 600 (Pub/Sub ack deadline). For N panels: `N × COMFYUI_REQUEST_TIMEOUT_SECONDS < MAX_PROCESSING_SECONDS`.
+- `MAX_PROCESSING_SECONDS` is the total Pub/Sub lease extension window for one full story job. It can exceed 600s because the client renews in smaller per-extension increments; for N panels: `N × COMFYUI_REQUEST_TIMEOUT_SECONDS < MAX_PROCESSING_SECONDS`.
 - `MAX_DELIVERY_ATTEMPTS` must mirror the subscription's `dead_letter_policy.max_delivery_attempts` (default 5). Mismatch silently changes when the handler converts transients to terminal failures.
 - The worker SA (`imagegen-worker@<project>.iam.gserviceaccount.com`) has no Firestore access. The `operation/sync_story_catalog.py` script runs under operator ADC, not the worker SA.
 - Message wire format is defined in the sibling repo `../ImageGenContract`. Both repos import `from image_gen_contract import JobMessage, ...` — no local copy of the schema.

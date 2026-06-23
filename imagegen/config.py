@@ -16,6 +16,7 @@ _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 # before treating it as a transient failure. Per-request, not per-job: a job
 # with N panels can take up to N × this. DESIGN.md §7.2.
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180
+_DEFAULT_MAX_PROCESSING_SECONDS = 3600
 # Must mirror the jobs subscription's dead_letter_policy.max_delivery_attempts
 # (DESIGN.md §4.1 — Pub/Sub's floor is 5). The worker uses it to recognise the
 # FINAL delivery: on that attempt a would-be transient nack instead publishes a
@@ -81,8 +82,9 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
         max_concurrency=_parse_positive_int(
             src.get("MAX_CONCURRENCY", "4"), "MAX_CONCURRENCY"
         ),
-        max_processing_seconds=_parse_max_processing_seconds(
-            src.get("MAX_PROCESSING_SECONDS", "540")
+        max_processing_seconds=_parse_positive_int(
+            src.get("MAX_PROCESSING_SECONDS", str(_DEFAULT_MAX_PROCESSING_SECONDS)),
+            "MAX_PROCESSING_SECONDS",
         ),
         log_level=src.get("LOG_LEVEL", "info").lower(),
         metrics_port=_parse_positive_int(
@@ -134,12 +136,3 @@ def _parse_positive_int(value: str, name: str) -> int:
         raise ConfigError(f"{name} must be > 0, got {n}")
     return n
 
-
-def _parse_max_processing_seconds(value: str) -> int:
-    n = _parse_positive_int(value, "MAX_PROCESSING_SECONDS")
-    # Pub/Sub max ack deadline is 600s; we must publish completion + ack before then.
-    if n >= 600:
-        raise ConfigError(
-            f"MAX_PROCESSING_SECONDS must be < 600 (Pub/Sub ack deadline), got {n}"
-        )
-    return n

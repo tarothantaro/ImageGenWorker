@@ -14,10 +14,11 @@ export GCP_PROJECT_ID="${GCP_PROJECT_ID:-tarostory-prod}"
 export JOBS_SUBSCRIPTION="${JOBS_SUBSCRIPTION:-projects/${GCP_PROJECT_ID}/subscriptions/image-gen-jobs-worker-sub}"
 export COMPLETION_TOPIC="${COMPLETION_TOPIC:-projects/${GCP_PROJECT_ID}/topics/job-completed}"
 
-# Worker knobs (DESIGN.md §10.4 prod column). MAX_PROCESSING_SECONDS must stay
-# under the 600s Pub/Sub ack deadline.
+# Worker knobs (DESIGN.md §10.4 prod column). MAX_PROCESSING_SECONDS is the
+# total lease extension window for one full story job; the client library renews
+# the lease in smaller increments under Pub/Sub's per-extension 600s ceiling.
 export MAX_CONCURRENCY="${MAX_CONCURRENCY:-4}"
-export MAX_PROCESSING_SECONDS="${MAX_PROCESSING_SECONDS:-540}"
+export MAX_PROCESSING_SECONDS="${MAX_PROCESSING_SECONDS:-3600}"
 export MODEL_VERSION="${MODEL_VERSION:-comfyui-flux2}"
 export LOG_LEVEL="${LOG_LEVEL:-info}"
 
