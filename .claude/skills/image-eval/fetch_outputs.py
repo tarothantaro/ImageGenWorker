@@ -45,9 +45,15 @@ fake-gcs is published on :4443):
 Without ``--out``, fetched images, ``manifest.json``, and ``report.md`` are
 written under ``eval_runs/latest/eval/`` so the review app sees them by default.
 
-``--story`` is the prompt-file stem (the worker ``type_id``). ``--story-id`` is
-the GCS path component (the Application's job/story id) — they are *not* the same
-thing, which is why both are required for a download.
+``--story`` is the prompt-file stem (the worker ``type_id``, e.g. ``1_1``) — used
+to load ``imagegen/prompts/1_1.json`` for panel prompts/gists/texts. ``--story-id``
+is the GCS path component (the Application's opaque job/story id, e.g. a ULID) —
+used to build ``<user_id>/<story_id>/outputs/`` to find the output PNGs. In the
+Application stack these are genuinely different: prompt set ``1_1`` might write its
+outputs under a UUID the Application assigned at job creation. In the
+``local-batch-eval`` flow they happen to be the same value because
+``generate_stories.py`` uses the prompt stem as the output directory name — but both
+params are still required here because this script serves both contexts.
 
 Output source is **configurable**. By default the script reads from the
 Application local stack's fake-gcs (the flow above). Pass ``--local-root`` (or set
@@ -446,9 +452,9 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="list <user>/<story> output sets in the bucket and exit",
     )
-    parser.add_argument("--story", help="prompt-file stem / worker type_id, e.g. 1_1")
+    parser.add_argument("--story", help="prompt-file stem / worker type_id, e.g. 1_1 (loads imagegen/prompts/<story>.json)")
     parser.add_argument("--user-id", help="GCS path user_id component")
-    parser.add_argument("--story-id", help="GCS path story_id (the job/story id)")
+    parser.add_argument("--story-id", help="GCS path story_id (Application job id; equals --story in local-batch-eval, differs in the Application stack)")
     parser.add_argument(
         "--out",
         help=(
