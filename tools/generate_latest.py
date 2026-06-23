@@ -2,7 +2,9 @@
 """Generate local story renders into eval_runs/latest without running eval.
 
 By default this generates every story. Pass one story id, such as ``1_8``, to
-generate only that prompt set.
+generate only that prompt set. After generation, this refreshes the review-app
+manifests and copied PNGs under ``eval_runs/latest/eval`` but preserves any
+existing eval reports with an outdated warning.
 """
 
 from __future__ import annotations
@@ -17,16 +19,36 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _GENERATOR_PATH = (
     _REPO_ROOT / ".claude" / "skills" / "local-batch-eval" / "generate_stories.py"
 )
+_FETCH_OUTPUTS_PATH = (
+    _REPO_ROOT / ".claude" / "skills" / "image-eval" / "fetch_outputs.py"
+)
 
 _INPUT = "tests/assets/leo.jpg"
 _AGE = "4-year-old"
 _RUN_DIR = "eval_runs/latest"
+_LOCAL_ROOT = f"{_RUN_DIR}/outputs"
+_LOG_DIR = f"{_RUN_DIR}/prompt_logs"
+_EVAL_DIR = f"{_RUN_DIR}/eval"
+_OUTDATED_WARNING = (
+    "> WARNING: This eval report is outdated. The story outputs, prompts, gists, "
+    "or dialog were refreshed after this report was written, so keep the report "
+    "for history only and regenerate eval before using it for quality decisions."
+)
 
 
 def _load_generator() -> ModuleType:
     spec = importlib.util.spec_from_file_location("local_generate_stories", _GENERATOR_PATH)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load generator script: {_GENERATOR_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_fetch_outputs() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("image_eval_fetch_outputs", _FETCH_OUTPUTS_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load fetch script: {_FETCH_OUTPUTS_PATH}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -61,6 +83,50 @@ def _generator_args(
     return args
 
 
+def _fetch_args(*, story_id: str | None, user_id: str | None) -> list[str]:
+    args = [
+        "--local-root",
+        _LOCAL_ROOT,
+        "--log-dir",
+        _LOG_DIR,
+        "--out",
+        _EVAL_DIR,
+    ]
+    if story_id:
+        args.extend(
+            [
+                "--story",
+                story_id,
+                "--story-id",
+                story_id,
+                "--user-id",
+                user_id or Path(_INPUT).stem,
+            ]
+        )
+    return args
+
+
+def _mark_reports_outdated(*, story_id: str | None) -> None:
+    eval_root = _REPO_ROOT / _EVAL_DIR
+    if story_id:
+        reports = [eval_root / f"{story_id}__{story_id}" / "report.md"]
+    else:
+        reports = sorted(eval_root.glob("*__*/report.md"))
+
+    for report in reports:
+        if not report.exists():
+            continue
+        text = report.read_text()
+        if _OUTDATED_WARNING in text:
+            continue
+        lines = text.splitlines()
+        if lines and lines[0].startswith("# "):
+            updated = "\n".join([lines[0], "", _OUTDATED_WARNING, "", *lines[1:]])
+        else:
+            updated = _OUTDATED_WARNING + "\n\n" + text
+        report.write_text(updated.rstrip() + "\n")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -86,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("story_id must look like <type>_<id>, for example 1_8")
 
     generator = _load_generator()
-    return generator.main(
+    generation_result = generator.main(
         _generator_args(
             story_id=args.story_id,
             url=args.url,
@@ -95,6 +161,13 @@ def main(argv: list[str] | None = None) -> int:
             user_id=args.user_id,
         )
     )
+    fetch_outputs = _load_fetch_outputs()
+    fetch_result = fetch_outputs.main(
+        _fetch_args(story_id=args.story_id, user_id=args.user_id)
+    )
+    if fetch_result == 0:
+        _mark_reports_outdated(story_id=args.story_id)
+    return generation_result or fetch_result
 
 
 if __name__ == "__main__":
