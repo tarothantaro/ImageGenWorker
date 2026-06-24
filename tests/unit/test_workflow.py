@@ -204,11 +204,12 @@ def test_prepare_injects_story_prompts_and_resolves_characters(
     )
     # The render-time token survives prepare (resolved later, like USER_ID).
     assert "{INPUT_1_AGE} person from the input image" in panel0_text
-    # Panel 1 references {GENDER_F_AGE_70_RACE_ASIAN}: resolved to its
-    # description here. The only braces left are the render-time {INPUT_1_AGE}.
+    # Panel 1 references the race-free {GENDER_F_AGE_70}: composed to a look here
+    # (a random race per job). The only braces left are the render-time
+    # {INPUT_1_AGE}.
     panel1_text = next(f["text"] for f in prepared.panels[1] if "text" in f)
     assert "{GENDER" not in panel1_text
-    assert "elderly East Asian woman" in panel1_text
+    assert "elderly" in panel1_text and "woman" in panel1_text
     assert "in the mid-ground" in panel1_text
     assert "{INPUT_1_AGE}" in panel1_text
 
@@ -394,6 +395,83 @@ def test_compose_resolves_race_with_trailing_disambiguator() -> None:
         "GENDER_M_AGE_30_RACE_ASIAN_PARENT", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
     )
     assert text == _COMPOSED_SINGLE_LOOK
+
+
+# A composed look from ``_SINGLE_LOOK_CHARACTER_JSON`` for either of its two
+# defined races — the only thing that varies when the token omits ``_RACE_``.
+_COMPOSED_RACELESS = {
+    f"a 30-year-old {adj} man with short black hair, "
+    "an average build, wearing a blue shirt, with a kind smile"
+    for adj in ("East Asian", "South Asian")
+}
+
+
+def test_compose_picks_a_random_race_when_token_omits_race() -> None:
+    # ``GENDER_M_AGE_30`` has no ``_RACE_`` segment, so a race is drawn from the
+    # dimensions table (one of the two defined here); the rest is the fixed look.
+    text = _compose_random_character(
+        "GENDER_M_AGE_30", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+    )
+    assert text in _COMPOSED_RACELESS
+
+
+def test_compose_random_race_varies_across_seeds() -> None:
+    # Both defined races turn up across seeds → the race really is drawn at random.
+    looks = {
+        _compose_random_character(
+            "GENDER_M_AGE_30", _SINGLE_LOOK_CHARACTER_JSON, random.Random(seed)
+        )
+        for seed in range(12)
+    }
+    assert looks == _COMPOSED_RACELESS
+
+
+def test_compose_raceless_token_with_disambiguator_suffix() -> None:
+    # A trailing suffix that is *not* ``_RACE_...`` (e.g. ``_FRIEND2``) only keeps
+    # the token distinct; the race is still drawn at random and composition works.
+    text = _compose_random_character(
+        "GENDER_M_AGE_30_FRIEND2", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+    )
+    assert text in _COMPOSED_RACELESS
+
+
+def test_prepare_composes_one_random_race_held_across_panels(tmp_path: Path) -> None:
+    """A race-free token draws its race once per job, so every panel of the story
+    shows the *same* composed character (race included)."""
+    builder = _write_assets(
+        tmp_path,
+        template={
+            "workflow_id": "w",
+            "story": "s",
+            "panels": [
+                [{"text": "{PROMPT}"}],
+                [{"text": "{PROMPT}"}],
+                [{"text": "{PROMPT}"}],
+            ],
+        },
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={
+            "prompts": [
+                "A {GENDER_M_AGE_30}.",
+                "B {GENDER_M_AGE_30}.",
+                "C {GENDER_M_AGE_30}.",
+            ]
+        },
+        character_json=_SINGLE_LOOK_CHARACTER_JSON,
+        rng=random.Random(0),
+    )
+
+    prepared = builder.prepare("t")
+
+    texts = [
+        next(f["text"] for f in panel if "text" in f) for panel in prepared.panels
+    ]
+    assert all("{GENDER" not in text for text in texts)
+    # Identical description (same randomly-picked race) in every panel.
+    descriptions = {text[2:] for text in texts}  # drop the "A "/"B "/"C " prefix
+    assert len(descriptions) == 1
+    assert descriptions.pop() in {f"{look}." for look in _COMPOSED_RACELESS}
 
 
 @pytest.mark.parametrize(

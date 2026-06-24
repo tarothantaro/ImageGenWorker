@@ -26,13 +26,15 @@ Vocabulary (unchanged from the legacy service):
   single render template (``templates/1``) it comes from the job's ``type``/
   ``id`` (e.g. ``"1_1"``); a legacy template may instead carry its own
   ``"story"`` field. Those prompts may contain character ``{TOKEN}``
-  placeholders (e.g. ``{GENDER_F_AGE_70_RACE_ASIAN}``) which :meth:`prepare`
-  resolves against ``prompts/character.json`` so the same generated character
-  looks identical across every panel of the story. A character token that has
-  *no* enumerated description (only the ``GENDER_<g>_AGE_<a>_RACE_<r>`` config
-  baked into the token) instead gets a look composed on the fly — the hair,
-  build, wardrobe and features picked at random from ``character.json``'s
-  modular tables, once per job so it too stays identical across the panels.
+  placeholders (e.g. ``{GENDER_F_AGE_70}`` or ``{GENDER_F_AGE_70_RACE_ASIAN}``)
+  which :meth:`prepare` resolves against ``prompts/character.json`` so the same
+  generated character looks identical across every panel of the story. A
+  character token that has *no* enumerated description (only the
+  ``GENDER_<g>_AGE_<a>`` config baked into the token, with an optional
+  ``_RACE_<r>``) instead gets a look composed on the fly — the race (when the
+  token omits ``_RACE_``) plus the hair, build, wardrobe and features all picked
+  at random from ``character.json``'s modular tables, once per job so it too
+  stays identical across the panels.
   ``USER_ID`` / ``STORY_ID`` are still resolved later, at :meth:`render` time,
   since they are per-job.
 
@@ -74,13 +76,17 @@ FINAL_OUTPUT_SUFFIX = "_V2"
 PROMPT_PLACEHOLDER = "{PROMPT}"
 
 # A supporting-character placeholder encodes its *fixed* traits in the token
-# itself — ``GENDER_<g>_AGE_<a>_RACE_<r>`` — plus an optional trailing
-# ``_<suffix>`` that only disambiguates two otherwise-identical configs (e.g.
-# ``..._RACE_ASIAN_PARENT``). Everything past gender/age/race is the character's
-# *look* (hair, build, wardrobe, features), filled in at random when the token
-# carries no enumerated description in character.json.
+# itself — ``GENDER_<g>_AGE_<a>`` with an **optional** ``_RACE_<r>`` segment —
+# plus an optional trailing ``_<suffix>`` that only disambiguates two otherwise
+# identical configs (e.g. ``..._RACE_ASIAN_PARENT``, or race-free
+# ``GENDER_F_AGE_06_FRIEND2``). Everything after gender/age is captured as
+# ``rest`` and split into race vs. disambiguator in code: when ``rest`` carries
+# no ``_RACE_`` segment the race is picked at random per job, and when the token
+# has no enumerated description in character.json the rest of the *look* (hair,
+# build, wardrobe, features) is filled in at random too.
+_RACE_PREFIX = "_RACE_"
 _CHARACTER_TOKEN_RE = re.compile(
-    r"^GENDER_(?P<gender>[A-Z]+)_AGE_(?P<age>[A-Z0-9]+)_RACE_(?P<race>[A-Z_]+)$"
+    r"^GENDER_(?P<gender>[A-Z]+)_AGE_(?P<age>[A-Z0-9]+)(?P<rest>_[A-Z0-9_]+)?$"
 )
 # Any ``{TOKEN}`` in a prompt string. Used to discover which character tokens a
 # story references so the un-enumerated ones can be composed.
@@ -147,7 +153,7 @@ def _resolve_race_key(race: str, race_table: dict[str, Any]) -> str | None:
 def _compose_random_character(
     token: str, data: dict[str, Any], rng: random.Random
 ) -> str | None:
-    """Compose a description for a ``GENDER_<g>_AGE_<a>_RACE_<r>`` character token.
+    """Compose a description for a ``GENDER_<g>_AGE_<a>`` character token.
 
     The fixed traits (gender / age / race) are read from the token; the hair,
     build, wardrobe and features are drawn **at random** from ``character.json``'s
@@ -170,6 +176,12 @@ def _compose_random_character(
     if a table is emptied entirely, its filter is dropped rather than yielding
     nothing.
 
+    The ``_RACE_<r>`` segment is **optional**: a token that omits it (e.g.
+    ``GENDER_F_AGE_70``) draws a race at random from the ``dimensions.race``
+    table for this job — picked once here, so it stays identical across the
+    panels — while a token that names a race (``GENDER_F_AGE_70_RACE_ASIAN``)
+    pins that exact one.
+
     Returns ``None`` when ``token`` isn't shaped like a character config, or
     names a gender / age / race the ``dimensions`` table doesn't define — the
     caller then leaves the placeholder untouched rather than failing the job.
@@ -182,10 +194,19 @@ def _compose_random_character(
     gender = dimensions.get("gender", {}).get(match["gender"])
     age = dimensions.get("age", {}).get(match["age"])
     race_table = dimensions.get("race", {})
-    race_key = _resolve_race_key(match["race"], race_table)
-    race = race_table.get(race_key) if race_key is not None else None
-    if not (gender and age and race):
+    if not (gender and age and race_table):
         return None
+
+    rest = match["rest"]
+    if rest and rest.startswith(_RACE_PREFIX):
+        race_key = _resolve_race_key(rest[len(_RACE_PREFIX) :], race_table)
+        if race_key is None:
+            return None
+    else:
+        # No ``_RACE_`` segment in the token → pick a race at random for this job
+        # (any trailing ``rest`` is a bare disambiguator, not a race).
+        race_key = rng.choice(sorted(race_table))
+    race = race_table[race_key]
 
     # The restriction groups this character must skip, gathered from its age and
     # gender (e.g. a child woman avoids ``adult_only`` + ``elderly_only`` +
@@ -381,13 +402,14 @@ class WorkflowBuilder:
         1. **Enumerated** — ``characters[TOKEN].description`` is used verbatim, so
            an authored character's look stays byte-for-byte identical across every
            panel *and* every job.
-        2. **Composed** — a token shaped like ``GENDER_<g>_AGE_<a>_RACE_<r>`` but
-           with no enumerated description gets a look composed on the fly: the
-           gender / age / race come from the token (the "config in the
-           placeholder"); the hair, build, wardrobe and features are picked at
-           random from the modular tables (see :func:`_compose_random_character`).
-           Each distinct token is composed once here, so its random look is the
-           same in every panel of this job.
+        2. **Composed** — a token shaped like ``GENDER_<g>_AGE_<a>`` (with an
+           optional ``_RACE_<r>``) but with no enumerated description gets a look
+           composed on the fly: the gender / age come from the token (the "config
+           in the placeholder"), the race too when ``_RACE_`` is present
+           (otherwise one is picked at random); the hair, build, wardrobe and
+           features are picked at random from the modular tables (see
+           :func:`_compose_random_character`). Each distinct token is composed
+           once here, so its random look is the same in every panel of this job.
 
         Tokens that are neither enumerated nor a valid character config (e.g.
         ``{INPUT_1_AGE}``, ``{USER_ID}``, an unknown name) are left out of the

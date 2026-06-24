@@ -92,8 +92,9 @@ _FURNITURE_APPROACH_RE = re.compile(
 )
 _TOKEN_TARGET_RE = re.compile(r"\btoward\s+\{GENDER_[A-Z0-9_]+\}", re.I)
 
-# A supporting-character placeholder (workflow.py's contract): GENDER_/AGE_/RACE_.
-_CHAR_TOKEN_RE = re.compile(r"^GENDER_[A-Z]+_AGE_[A-Z0-9]+_RACE_[A-Z_]+$")
+# A supporting-character placeholder (workflow.py's contract): GENDER_/AGE_ with
+# an OPTIONAL _RACE_<r> segment and/or a trailing disambiguator suffix.
+_CHAR_TOKEN_RE = re.compile(r"^GENDER_[A-Z]+_AGE_[A-Z0-9]+(_[A-Z0-9_]+)?$")
 _PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
 
@@ -101,8 +102,9 @@ def _token_resolvable(token: str, char_data: dict) -> bool:
     """True if ``token`` resolves to a description the worker would render.
 
     Enumerated (``characters[token].description``) or composable from the modular
-    tables (``GENDER_<g>_AGE_<a>_RACE_<r>`` with known dimensions). Reuses the
-    worker's own composer when importable so this stays in lockstep with runtime.
+    tables (``GENDER_<g>_AGE_<a>`` with an optional ``_RACE_<r>`` and known
+    dimensions). Reuses the worker's own composer when importable so this stays
+    in lockstep with runtime.
     """
     enumerated = char_data.get("characters", {}).get(token, {})
     if isinstance(enumerated, dict) and enumerated.get("description"):
@@ -117,10 +119,10 @@ def _token_resolvable(token: str, char_data: dict) -> bool:
         return _compose_random_character(token, char_data, random.Random(0)) is not None
     except Exception:  # noqa: BLE001 - fall back to a shallow dimensions check
         dims = char_data.get("dimensions", {})
-        m = re.match(r"^GENDER_([A-Z]+)_AGE_([A-Z0-9]+)_RACE_([A-Z_]+)$", token)
+        m = re.match(r"^GENDER_([A-Z]+)_AGE_([A-Z0-9]+)(?:_[A-Z0-9_]+)?$", token)
         if not m:
             return False
-        g, a, _ = m.groups()
+        g, a = m.groups()
         return g in dims.get("gender", {}) and a in dims.get("age", {})
 
 

@@ -52,7 +52,7 @@ new categories are added (and add them to `_TYPE_NAMES`).
   "id": 1,
   "title": "Kindness Comes Back Around",
   "lesson": "A small act of kindness returns to you when you least expect it.",
-  "characters": ["GENDER_F_AGE_70_RACE_ASIAN", "GENDER_M_AGE_25_RACE_ASIAN"],
+  "characters": ["GENDER_F_AGE_70", "GENDER_M_AGE_25"],
   "prompts": [
     "…panel 1 prompt…",
     "…panel 2 prompt…"
@@ -123,11 +123,14 @@ are near.
 ## Runtime placeholder substitution
 
 Prompts contain `{TOKEN}` placeholders for the **generated** supporting cast
-(e.g. `{GENDER_F_AGE_70_RACE_ASIAN}`). At runtime each is replaced by
-`character.json → characters[TOKEN].description` (a flat string replace, the same
-mechanism `workflow.py` uses for `USER_ID` / `STORY_ID`). Authoring templates
-keep the placeholder verbatim. See `character.json` and the `character-config`
-skill for the placeholder/runtime contract.
+(e.g. `{GENDER_F_AGE_70}`). At runtime each resolves via `character.json` (a flat
+string replace, the same mechanism `workflow.py` uses for `USER_ID` /
+`STORY_ID`): an enumerated `characters[TOKEN].description` if one exists,
+otherwise a look composed from the modular tables. **Race is optional in the
+token** — omit `_RACE_<r>` (`GENDER_F_AGE_70`) and a race is drawn at random per
+job; add it (`GENDER_F_AGE_70_RACE_ASIAN`) to pin an exact one. Authoring
+templates keep the placeholder verbatim. See `character.json` and the
+`character-config` skill for the placeholder/runtime contract.
 
 The read-aloud `texts` use one different placeholder — **`{NAME}`** — for the
 **protagonist's name**. The worker never touches `texts`; instead the API server

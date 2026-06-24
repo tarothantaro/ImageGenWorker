@@ -302,7 +302,11 @@ For every prompt in the array, confirm:
 2. **Decide the cast.** Protagonist = input person (implicit). Choose generated
    characters for the roles the gists name; ensure each token exists in
    `character.json` — if not, add it with the `character-config` skill *before*
-   referencing it.
+   referencing it. **Default to race-free tokens** (`GENDER_F_AGE_70`,
+   `GENDER_M_AGE_06`) so each job draws a random race; **only add `_RACE_<r>`**
+   (`GENDER_F_AGE_70_RACE_ASIAN`) when the gist or the user explicitly calls for
+   a specific race. Two same-demographic characters in one story stay distinct
+   via a role suffix (`GENDER_M_AGE_06_FRIEND1` / `..._FRIEND2`).
 3. **Plan the arc across 6 panels** (the render template `templates/1` has 6
    panels, so a story has exactly 6 prompts). A clean life-lesson arc:
    *establish → encounter/choice → action → consequence → turn → resolution that

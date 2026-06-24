@@ -5,8 +5,8 @@
   "runtime": {
     "placeholder_format": "{<TOKEN>}",
     "resolution": "Strip the curly braces from a placeholder found in a prompt string, look up characters[<TOKEN>].description, and substitute it in. This is the same flat string-replace mechanism workflow.py already uses for USER_ID / STORY_ID. characters[*].description is the ONLY field read at runtime; everything else in this file is authoring metadata.",
-    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a>_RACE_<r> prefix (see _recipe). The hair/build/wardrobe/features fragments are then picked at RANDOM (a fresh look per job, identical across that job's panels), filtered by `restrictions`: each dimension value lists under `avoid` the restriction groups it must skip, so a child never draws an adult-only fragment, a man never a feminine one, a non-binary character neither, etc. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
-    "example": "{GENDER_M_AGE_30_RACE_ASIAN}  ->  characters['GENDER_M_AGE_30_RACE_ASIAN'].description"
+    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a> prefix (see _recipe). The _RACE_<r> segment is OPTIONAL: include it (GENDER_F_AGE_70_RACE_ASIAN) to pin an exact race, or omit it (GENDER_F_AGE_70) to have a race drawn at RANDOM from `dimensions.race` for that job. The hair/build/wardrobe/features fragments are likewise picked at RANDOM (a fresh look per job, identical across that job's panels), filtered by `restrictions`: each dimension value lists under `avoid` the restriction groups it must skip, so a child never draws an adult-only fragment, a man never a feminine one, a non-binary character neither, etc. A trailing _<suffix> (GENDER_F_AGE_06_FRIEND2) is ignored at compose time -- it only keeps two otherwise-identical raceless tokens distinct. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
+    "example": "{GENDER_F_AGE_70}  ->  random race + random look (per job);  {GENDER_M_AGE_30_RACE_ASIAN}  ->  East Asian + random look (race pinned, rest composed)"
   },
 
   "_recipe": {
@@ -128,7 +128,7 @@
   },
 
   "restrictions": {
-    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_..._RACE_... token has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid). Age is a THREE-way band, not binary: a child (06-16) avoids both `adult_only` and `elderly_only`; a middle adult (25-45) avoids `child_only` and `elderly_only`; only an elderly character (60, 70) may draw `elderly_only` looks (grey/thinning hair, smile lines) on top of `adult_only` — so a 25-year-old never rolls a grey bun. Gender: a man avoids `fem_only`, a woman `masc_only`, a non-binary character both. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only; thinning grey hair is masc_only AND elderly_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
+    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_... token (with or without the optional _RACE_...) has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid). Race carries no restrictions -- when _RACE_ is omitted a race is simply drawn at random from `dimensions.race`. Age is a THREE-way band, not binary: a child (06-16) avoids both `adult_only` and `elderly_only`; a middle adult (25-45) avoids `child_only` and `elderly_only`; only an elderly character (60, 70) may draw `elderly_only` looks (grey/thinning hair, smile lines) on top of `adult_only` — so a 25-year-old never rolls a grey bun. Gender: a man avoids `fem_only`, a woman `masc_only`, a non-binary character both. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only; thinning grey hair is masc_only AND elderly_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
     "child_only": {
       "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],
       "build":    ["CHILD_SMALL", "CHILD_SLIGHT", "CHILD_STURDY"],
@@ -156,49 +156,6 @@
   },
 
   "characters": {
-    "GENDER_F_AGE_70_RACE_ASIAN": {
-      "refs": {"gender": "F", "age": "70", "race": "ASIAN", "hair": "GREY_BUN", "build": "PETITE", "wardrobe": "CARDIGAN_FLORAL", "features": "WRINKLES_GENTLE"},
-      "description": "an elderly East Asian woman with grey hair tied in a low bun, a petite build, wearing a soft beige cardigan over a floral blouse and a long grey skirt, with gentle smile lines"
-    },
-    "GENDER_M_AGE_25_RACE_ASIAN": {
-      "refs": {"gender": "M", "age": "25", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "SLIM_TALL", "wardrobe": "HOODIE_GREEN"},
-      "description": "a 25-year-old East Asian man with short, neatly combed black hair, a slim build and tall stature, wearing a forest-green hoodie and black joggers"
-    },
-    "GENDER_M_AGE_08_RACE_ASIAN": {
-      "refs": {"gender": "M", "age": "08", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "CHILD_SMALL", "wardrobe": "SCHOOL_UNIFORM_BLUE"},
-      "description": "an 8-year-old East Asian boy with short, neatly combed black hair, a small child's frame, wearing a navy school uniform with a white collared shirt"
-    },
-    "GENDER_M_AGE_35_RACE_WHITE": {
-      "refs": {"gender": "M", "age": "35", "race": "WHITE", "hair": "SHORT_BROWN", "build": "AVERAGE_MEDIUM", "wardrobe": "BUSINESS_GREY_SUIT", "features": "STUBBLE"},
-      "description": "a 35-year-old White man with short brown hair, an average build and medium height, wearing a charcoal-grey business suit with a white shirt, with light stubble"
-    },
-    "GENDER_F_AGE_30_RACE_BLACK": {
-      "refs": {"gender": "F", "age": "30", "race": "BLACK", "hair": "CURLY_BLACK_SHORT", "build": "SLIM_TALL", "wardrobe": "SUMMER_DRESS_YELLOW", "features": "KIND_SMILE"},
-      "description": "a 30-year-old Black woman with short curly black hair, a slim build and tall stature, wearing a light yellow summer dress, with a warm, kind smile"
-    },
-    "GENDER_F_AGE_35_RACE_ASIAN_PARENT": {
-      "refs": {"gender": "F", "age": "35", "race": "ASIAN", "hair": "LONG_BLACK_STRAIGHT", "build": "AVERAGE_MEDIUM", "wardrobe": "CASUAL_HOME_LILAC", "features": "KIND_SMILE"},
-      "description": "a 35-year-old East Asian woman with long straight black hair, an average build and medium height, wearing a lilac knit jumper and comfortable beige trousers, with a warm, kind smile"
-    },
-    "GENDER_M_AGE_35_RACE_ASIAN_PARENT": {
-      "refs": {"gender": "M", "age": "35", "race": "ASIAN", "hair": "SHORT_BLACK_NEAT", "build": "AVERAGE_MEDIUM", "wardrobe": "CASUAL_HOME_BLUE", "features": "KIND_SMILE"},
-      "description": "a 35-year-old East Asian man with short, neatly combed black hair, an average build and medium height, wearing a light-blue checked shirt and grey chinos, with a warm, kind smile"
-    },
-    "GENDER_F_AGE_06_RACE_BLACK": {
-      "refs": {"gender": "F", "age": "06", "race": "BLACK", "hair": "PUFFS_BLACK", "build": "CHILD_SMALL", "wardrobe": "DUNGAREES_RED", "features": "KIND_SMILE"},
-      "description": "a 6-year-old Black girl with black hair in two puff buns, a small child's frame, wearing red dungarees over a white t-shirt, with a warm, kind smile"
-    },
-    "GENDER_M_AGE_06_RACE_WHITE": {
-      "refs": {"gender": "M", "age": "06", "race": "WHITE", "hair": "SHORT_BROWN", "build": "CHILD_SMALL", "wardrobe": "TSHIRT_STRIPED", "features": "FRECKLES"},
-      "description": "a 6-year-old White boy with short brown hair, a small child's frame, wearing a striped orange t-shirt and blue shorts, with light freckles across the cheeks"
-    },
-    "GENDER_F_AGE_06_RACE_ASIAN": {
-      "refs": {"gender": "F", "age": "06", "race": "ASIAN", "hair": "PIGTAILS_BLACK", "build": "CHILD_SMALL", "wardrobe": "DRESS_PINK_FLORAL", "features": "KIND_SMILE"},
-      "description": "a 6-year-old East Asian girl with black hair in two pigtails, a small child's frame, wearing a pink dress with a small flower print, with a warm, kind smile"
-    },
-    "GENDER_M_AGE_06_RACE_SOUTH_ASIAN": {
-      "refs": {"gender": "M", "age": "06", "race": "SOUTH_ASIAN", "hair": "CURLY_BLACK_SHORT", "build": "CHILD_SMALL", "wardrobe": "TEE_TEAL_SHORTS", "features": "KIND_SMILE"},
-      "description": "a 6-year-old South Asian boy with short curly black hair, a small child's frame, wearing a teal t-shirt and grey shorts, with a warm, kind smile"
-    }
+    "_comment": "Enumerated, fixed-look characters (TOKEN -> { refs, description }). Empty by design: every story currently relies on the RANDOM fallback (see runtime.fallback), so each job rolls a fresh race + look that stays consistent across that job's panels. Add an entry here only when you need a character whose look is byte-for-byte identical across every panel AND every job; an enumerated description wins over the random composition for that exact token."
   }
 }

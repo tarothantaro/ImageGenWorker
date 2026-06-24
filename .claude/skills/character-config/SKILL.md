@@ -40,9 +40,10 @@ characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
 
 ### `restrictions` + `avoid` (consumed at runtime by the random fallback)
 
-When a `GENDER_..._AGE_..._RACE_...` token has **no** `characters` entry,
-`workflow.py` composes a look on the fly and picks the hair/build/wardrobe/
-features fragments **at random**. Two fields keep that draw plausible (the only
+When a `GENDER_..._AGE_...` token (with or without the optional `_RACE_...`) has
+**no** `characters` entry, `workflow.py` composes a look on the fly: it picks the
+hair/build/wardrobe/features fragments **at random**, plus a **random race** when
+the token omits `_RACE_`. Two fields keep the look draw plausible (the only
 runtime-read fields besides `characters[*].description`):
 
 - `restrictions.<group>.<table>` lists the fragment keys reserved to a
@@ -74,12 +75,20 @@ references it → every character (and every story) updates consistently.
 
 ## Token naming convention
 
-`GENDER_<g>_AGE_<a>_RACE_<r>` where `<g>`∈`dimensions.gender`,
-`<a>`∈`dimensions.age`, `<r>`∈`dimensions.race`
-(e.g. `GENDER_M_AGE_30_RACE_ASIAN`). Need two distinct characters of the same
-demographic in one story? Append a role suffix to keep them separate, e.g.
-`GENDER_M_AGE_30_RACE_ASIAN_MENTOR`. The `characters` key is matched **exactly**;
-the prefix is a human-readable convention, not a parser requirement.
+`GENDER_<g>_AGE_<a>` with an **optional** `_RACE_<r>`, where `<g>`∈
+`dimensions.gender`, `<a>`∈`dimensions.age`, `<r>`∈`dimensions.race`.
+
+**Race is opt-in — do NOT add `_RACE_<r>` unless the story or the user explicitly
+asks for a specific race.** A token that omits race (e.g. `GENDER_F_AGE_70`) has
+a race **drawn at random** from `dimensions.race` per job (a fresh, plausible
+race each time, identical across that job's panels). Add `_RACE_<r>` (e.g.
+`GENDER_M_AGE_30_RACE_ASIAN`) only to **pin** an exact race.
+
+Need two distinct characters of the same demographic in one story? Append a role
+suffix to keep them separate — `GENDER_M_AGE_30_MENTOR`, or with a pinned race
+`GENDER_M_AGE_30_RACE_ASIAN_MENTOR`. The suffix is ignored at compose time; it
+only keeps the tokens distinct. The `characters` key is matched **exactly**; the
+prefix is a human-readable convention, not a parser requirement.
 
 ## The composition recipe (single source of truth = `_recipe`)
 
