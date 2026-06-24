@@ -44,7 +44,8 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python \
 prints, per panel, the prompt, its gist, and any findings:
 
 - **FAIL** (load-bearing, unambiguous) — wrong prompt/gist counts; a panel missing
-  the preserve-identity ending; no `"person from the input image"` reference; a
+  the preserve-identity ending (`{INPUT_IMAGE_IDENTITY}` or the expanded
+  sentence); no `"person from the input image"` reference; a
   `{TOKEN}` that doesn't resolve in `character.json`; an empty gist or a gist that
   still carries a `{TOKEN}`; a banned cross-panel reference (`the same`, `back at`,
   `as before`, `transform the scene`, `place the person into`).

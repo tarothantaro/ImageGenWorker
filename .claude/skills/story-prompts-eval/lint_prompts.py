@@ -35,11 +35,12 @@ _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/story-prompts-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 
-# Identity-preserve sentence every prompt must end with (story-prompts rule 6).
+# Identity-preserve instruction every prompt must end with (story-prompts rule 7).
 _IDENTITY_TAIL = (
     "Preserve the facial features, skin tone and hairstyle of the person "
     "from the input image."
 )
+_IDENTITY_PLACEHOLDER = "{INPUT_IMAGE_IDENTITY}"
 # How the protagonist must be referenced (rule 5).
 _PROTAGONIST_REF = "person from the input image"
 # Camera / shot cue that controls framing (rule 3) — any one suffices.
@@ -103,6 +104,12 @@ _GREETING_ROW_RE = re.compile(
 # an OPTIONAL _RACE_<r> segment and/or a trailing disambiguator suffix.
 _CHAR_TOKEN_RE = re.compile(r"^GENDER_[A-Z]+_AGE_[A-Z0-9]+(_[A-Z0-9_]+)?$")
 _PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
+
+
+def _has_identity_tail(prompt: str) -> bool:
+    """True when a prompt ends with the identity instruction or its token."""
+    prompt = prompt.strip()
+    return prompt.endswith(_IDENTITY_TAIL) or prompt.endswith(_IDENTITY_PLACEHOLDER)
 
 
 def _token_resolvable(token: str, char_data: dict) -> bool:
@@ -200,7 +207,7 @@ def lint_story(stem: str, f: Findings) -> dict:
         p = i + 1
         low = prompt.lower()
 
-        if not prompt.strip().endswith(_IDENTITY_TAIL):
+        if not _has_identity_tail(prompt):
             f.add("FAIL", p, "identity-tail", "missing the preserve-identity ending")
         if _PROTAGONIST_REF not in prompt:
             f.add("FAIL", p, "protagonist-ref", f"no '{_PROTAGONIST_REF}'")
