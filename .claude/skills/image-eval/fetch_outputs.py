@@ -44,6 +44,8 @@ fake-gcs is published on :4443):
 
 Without ``--out``, fetched images, ``manifest.json``, and ``report.md`` are
 written under ``eval_runs/latest/eval/`` so the review app sees them by default.
+When ``--out`` points elsewhere, the same PNGs plus a path-adjusted
+``manifest.json`` are also mirrored under that latest eval directory for review.
 
 ``--story`` is the prompt-file stem (the worker ``type_id``, e.g. ``1_1``) — used
 to load ``imagegen/prompts/1_1.json`` for panel prompts/gists/texts. ``--story-id``
@@ -80,6 +82,11 @@ _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/image-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 _DEFAULT_EVAL_DIR = _REPO_ROOT / "eval_runs" / "latest" / "eval"
+_OUTDATED_WARNING = (
+    "> WARNING: This eval report is outdated. The story outputs, prompts, gists, "
+    "or dialog were refreshed after this report was written, so keep the report "
+    "for history only and regenerate eval before using it for quality decisions."
+)
 # Where the dev worker writes its per-panel actual-prompt records (PROMPT_LOG_DIR
 # host mount, deploy/stages/dev). Each story_id is a subdir of panel_NN.json.
 _DEFAULT_LOG_DIR = _REPO_ROOT / "prompt_logs"
@@ -91,6 +98,83 @@ _OUTPUT_RE = re.compile(
     r"^(?P<user>[^/]+)/(?P<story>[^/]+)/outputs/(?P<index>\d+)\.png$"
 )
 _AGE_TOKEN_RE = re.compile(r"\{INPUT_\d+_AGE\}")
+
+
+# --- refreshed artifact / stale-report handling -----------------------------
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    return left.expanduser().resolve() == right.expanduser().resolve()
+
+
+def _review_dir(story: str, story_id: str) -> Path:
+    return _DEFAULT_EVAL_DIR / f"{story}__{story_id}"
+
+
+def _mark_report_outdated(report: Path) -> bool:
+    if not report.exists():
+        return False
+    text = report.read_text()
+    if _OUTDATED_WARNING in text:
+        return False
+    lines = text.splitlines()
+    if lines and lines[0].startswith("# "):
+        updated = "\n".join([lines[0], "", _OUTDATED_WARNING, "", *lines[1:]])
+    else:
+        updated = _OUTDATED_WARNING + "\n\n" + text
+    report.write_text(updated.rstrip() + "\n")
+    return True
+
+
+def mark_reports_outdated(eval_root: Path, story_id: str | None = None) -> None:
+    """Mark existing review reports stale after their artifacts are refreshed.
+
+    ``story_id`` keeps the legacy ``generate_latest.py`` behavior for local runs,
+    where ``story`` and ``story_id`` are the same stem. Direct fetches with
+    distinct ``story`` / ``story_id`` mark their concrete output dirs via
+    ``_mark_report_outdated``.
+    """
+    if story_id:
+        reports = [eval_root / f"{story_id}__{story_id}" / "report.md"]
+    else:
+        reports = sorted(eval_root.glob("*__*/report.md"))
+    for report in reports:
+        _mark_report_outdated(report)
+
+
+def _write_manifest(out_dir: Path, manifest: dict) -> None:
+    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+
+
+def _clear_pngs(out_dir: Path) -> None:
+    for image in out_dir.glob("*.png"):
+        image.unlink()
+
+
+def _manifest_for_dir(manifest: dict, out_dir: Path) -> dict:
+    mirrored = dict(manifest)
+    mirrored["out_dir"] = str(out_dir)
+    mirrored["report_path"] = str(out_dir / "report.md")
+    mirrored["images"] = []
+    for entry in manifest["images"]:
+        image_entry = dict(entry)
+        image_entry["file"] = str(out_dir / Path(str(entry["file"])).name)
+        mirrored["images"].append(image_entry)
+    return mirrored
+
+
+def _mirror_to_latest(out_dir: Path, manifest: dict) -> Path | None:
+    latest_dir = _review_dir(str(manifest["story"]), str(manifest["story_id"]))
+    if _same_path(out_dir, latest_dir):
+        return None
+
+    latest_dir.mkdir(parents=True, exist_ok=True)
+    _clear_pngs(latest_dir)
+    for entry in manifest["images"]:
+        image = Path(str(entry["file"]))
+        shutil.copyfile(image, latest_dir / image.name)
+    _write_manifest(latest_dir, _manifest_for_dir(manifest, latest_dir))
+    return latest_dir
 
 
 # --- actual-prompt logs ------------------------------------------------------
@@ -335,6 +419,7 @@ def _download(args: argparse.Namespace) -> int:
         args.out or _DEFAULT_EVAL_DIR / f"{args.story}__{args.story_id}"
     ).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
+    _clear_pngs(out_dir)
 
     prefix = f"{args.user_id}/{args.story_id}/outputs/"
     blobs = sorted(
@@ -414,7 +499,11 @@ def _download(args: argparse.Namespace) -> int:
         "report_path": str(out_dir / "report.md"),
         "images": entries,
     }
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    _write_manifest(out_dir, manifest)
+    _mark_report_outdated(out_dir / "report.md")
+    mirror_dir = _mirror_to_latest(out_dir, manifest)
+    if mirror_dir is not None:
+        _mark_report_outdated(mirror_dir / "report.md")
 
     print(f"[eval] story {args.story!r}: {spec.get('title')!r}")
     print(
@@ -422,6 +511,8 @@ def _download(args: argparse.Namespace) -> int:
         f"({len(prompts)} panels x {variants} image(s)/panel) -> {out_dir}"
     )
     print(f"[eval] manifest -> {out_dir / 'manifest.json'}")
+    if mirror_dir is not None:
+        print(f"[eval] mirrored latest review artifacts -> {mirror_dir}")
     print(f"[eval] write the report to -> {out_dir / 'report.md'}")
     if len(entries) != len(prompts) * variants:
         print(

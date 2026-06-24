@@ -94,47 +94,10 @@ def test_fetch_args_build_single_story_mode_with_default_user() -> None:
     ]
 
 
-def test_mark_reports_outdated_adds_warning_after_heading(
-    tmp_path: Path, monkeypatch
-) -> None:
-    mod = _load()
-    monkeypatch.setattr(mod, "_REPO_ROOT", tmp_path)
-    report = tmp_path / "eval_runs" / "latest" / "eval" / "1_14__1_14" / "report.md"
-    report.parent.mkdir(parents=True)
-    report.write_text("# Existing report\n\n- old verdict\n")
-
-    mod._mark_reports_outdated(story_id="1_14")
-    mod._mark_reports_outdated(story_id="1_14")
-
-    text = report.read_text()
-    assert text.startswith("# Existing report\n\n> WARNING: This eval report is outdated.")
-    assert text.count("> WARNING: This eval report is outdated.") == 1
-
-
-def test_mark_reports_outdated_can_mark_all_reports(
-    tmp_path: Path, monkeypatch
-) -> None:
-    mod = _load()
-    monkeypatch.setattr(mod, "_REPO_ROOT", tmp_path)
-    eval_root = tmp_path / "eval_runs" / "latest" / "eval"
-    report_1 = eval_root / "1_1__1_1" / "report.md"
-    report_2 = eval_root / "1_14__1_14" / "report.md"
-    report_1.parent.mkdir(parents=True)
-    report_2.parent.mkdir(parents=True)
-    report_1.write_text("# One\n")
-    report_2.write_text("# Two\n")
-
-    mod._mark_reports_outdated(story_id=None)
-
-    assert "> WARNING: This eval report is outdated." in report_1.read_text()
-    assert "> WARNING: This eval report is outdated." in report_2.read_text()
-
-
 def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
     mod = _load()
     generator_calls: list[list[str]] = []
     fetch_calls: list[list[str]] = []
-    marked: list[str | None] = []
 
     def fake_main(args: list[str]) -> int:
         generator_calls.append(args)
@@ -146,11 +109,6 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "_load_generator", lambda: SimpleNamespace(main=fake_main))
     monkeypatch.setattr(mod, "_load_fetch_outputs", lambda: SimpleNamespace(main=fake_fetch))
-    monkeypatch.setattr(
-        mod,
-        "_mark_reports_outdated",
-        lambda *, story_id: marked.append(story_id),
-    )
 
     result = mod.main(["1_8", "--url", "http://comfy:8188", "--timeout", "120"])
 
@@ -189,7 +147,6 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
             "leo",
         ]
     ]
-    assert marked == ["1_8"]
 
 
 def test_main_returns_generation_failure_after_refreshing_eval(monkeypatch) -> None:
@@ -205,6 +162,5 @@ def test_main_returns_generation_failure_after_refreshing_eval(monkeypatch) -> N
         "_load_fetch_outputs",
         lambda: SimpleNamespace(main=lambda args: 0),
     )
-    monkeypatch.setattr(mod, "_mark_reports_outdated", lambda *, story_id: None)
 
     assert mod.main([]) == 7

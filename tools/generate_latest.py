@@ -29,11 +29,6 @@ _RUN_DIR = "eval_runs/latest"
 _LOCAL_ROOT = f"{_RUN_DIR}/outputs"
 _LOG_DIR = f"{_RUN_DIR}/prompt_logs"
 _EVAL_DIR = f"{_RUN_DIR}/eval"
-_OUTDATED_WARNING = (
-    "> WARNING: This eval report is outdated. The story outputs, prompts, gists, "
-    "or dialog were refreshed after this report was written, so keep the report "
-    "for history only and regenerate eval before using it for quality decisions."
-)
 
 
 def _load_generator() -> ModuleType:
@@ -106,27 +101,6 @@ def _fetch_args(*, story_id: str | None, user_id: str | None) -> list[str]:
     return args
 
 
-def _mark_reports_outdated(*, story_id: str | None) -> None:
-    eval_root = _REPO_ROOT / _EVAL_DIR
-    if story_id:
-        reports = [eval_root / f"{story_id}__{story_id}" / "report.md"]
-    else:
-        reports = sorted(eval_root.glob("*__*/report.md"))
-
-    for report in reports:
-        if not report.exists():
-            continue
-        text = report.read_text()
-        if _OUTDATED_WARNING in text:
-            continue
-        lines = text.splitlines()
-        if lines and lines[0].startswith("# "):
-            updated = "\n".join([lines[0], "", _OUTDATED_WARNING, "", *lines[1:]])
-        else:
-            updated = _OUTDATED_WARNING + "\n\n" + text
-        report.write_text(updated.rstrip() + "\n")
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -165,8 +139,6 @@ def main(argv: list[str] | None = None) -> int:
     fetch_result = fetch_outputs.main(
         _fetch_args(story_id=args.story_id, user_id=args.user_id)
     )
-    if fetch_result == 0:
-        _mark_reports_outdated(story_id=args.story_id)
     return generation_result or fetch_result
 
 

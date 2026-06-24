@@ -81,6 +81,84 @@ def test_omitted_story_args_build_manifests_for_every_generated_story(
     assert manifest_2["images"][0]["panel_dialog"] == "Dialog for two."
 
 
+def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mod = _load()
+    prompts_dir = tmp_path / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "character.json").write_text(json.dumps({"characters": {}}))
+    _write_story(prompts_dir, "1_1", "Dialog for one.")
+    outputs = tmp_path / "outputs" / "leo" / "app-story" / "outputs"
+    outputs.mkdir(parents=True)
+    (outputs / "0.png").write_bytes(b"png bytes")
+    out_dir = tmp_path / "custom-eval"
+    latest_root = tmp_path / "latest" / "eval"
+    latest_dir = latest_root / "1_1__app-story"
+    out_dir.mkdir()
+    latest_dir.mkdir(parents=True)
+    (out_dir / "report.md").write_text("# Custom Report\n\nold\n")
+    (latest_dir / "report.md").write_text("# Latest Report\n\nold\n")
+    (out_dir / "stale.png").write_bytes(b"old")
+    (latest_dir / "stale.png").write_bytes(b"old")
+
+    monkeypatch.setattr(mod, "_PROMPTS_DIR", prompts_dir)
+    monkeypatch.setattr(mod, "_DEFAULT_EVAL_DIR", latest_root)
+    monkeypatch.setattr(mod, "_variants_for_live_template", lambda: 1)
+
+    result = mod.main(
+        [
+            "--local-root",
+            str(tmp_path / "outputs"),
+            "--log-dir",
+            str(tmp_path / "prompt_logs"),
+            "--out",
+            str(out_dir),
+            "--story",
+            "1_1",
+            "--story-id",
+            "app-story",
+            "--user-id",
+            "leo",
+        ]
+    )
+
+    assert result == 0
+    assert (out_dir / "00_panel1.png").read_bytes() == b"png bytes"
+    assert (latest_dir / "00_panel1.png").read_bytes() == b"png bytes"
+    assert not (out_dir / "stale.png").exists()
+    assert not (latest_dir / "stale.png").exists()
+    latest_manifest = json.loads((latest_dir / "manifest.json").read_text())
+    assert latest_manifest["images"][0]["file"] == str(latest_dir / "00_panel1.png")
+    assert latest_manifest["images"][0]["raw_prompt"] == "Prompt for 1_1"
+    assert latest_manifest["images"][0]["gist"] == "Gist for 1_1"
+    assert latest_manifest["images"][0]["panel_dialog"] == "Dialog for one."
+    assert latest_manifest["out_dir"] == str(latest_dir)
+    assert latest_manifest["report_path"] == str(latest_dir / "report.md")
+    assert "> WARNING: This eval report is outdated." in (
+        out_dir / "report.md"
+    ).read_text()
+    assert "> WARNING: This eval report is outdated." in (
+        latest_dir / "report.md"
+    ).read_text()
+
+
+def test_mark_reports_outdated_can_mark_all_reports(tmp_path: Path) -> None:
+    mod = _load()
+    eval_root = tmp_path / "eval"
+    report_1 = eval_root / "1_1__1_1" / "report.md"
+    report_2 = eval_root / "1_14__1_14" / "report.md"
+    report_1.parent.mkdir(parents=True)
+    report_2.parent.mkdir(parents=True)
+    report_1.write_text("# One\n")
+    report_2.write_text("# Two\n")
+
+    mod.mark_reports_outdated(eval_root)
+
+    assert "> WARNING: This eval report is outdated." in report_1.read_text()
+    assert "> WARNING: This eval report is outdated." in report_2.read_text()
+
+
 def test_partial_story_args_still_error() -> None:
     mod = _load()
 
