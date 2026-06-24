@@ -28,10 +28,10 @@ PYTHONPATH=. ~/python_env/torch-env/bin/python tests/smoke/smoke_real_comfyui.py
 # Local batch generate + eval + review (live ComfyUI on :8188; no GCS/Pub/Sub).
 # See the `local-batch-eval` skill for the full generate→grade→review loop.
 PYTHONPATH=. ~/python_env/torch-env/bin/python .claude/skills/local-batch-eval/generate_stories.py \
-    --input tests/assets/leo.jpg --age "4-year-old" --run-dir eval_runs/latest
+    --input tests/assets/liam.png --age "4-year-old" --run-dir eval_runs/latest
 PYTHONPATH=. ~/python_env/torch-env/bin/python \
     .claude/skills/image-eval/fetch_outputs.py --local-root eval_runs/latest/outputs \
-    --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
+    --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id liam --story-id 1_1 \
     --out eval_runs/latest/eval/1_1__1_1            # then judge via image-eval rubric
 ~/python_env/torch-env/bin/python tools/review_app/server.py --run-dir eval_runs/latest
 

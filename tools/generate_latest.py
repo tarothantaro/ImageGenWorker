@@ -23,7 +23,7 @@ _FETCH_OUTPUTS_PATH = (
     _REPO_ROOT / ".claude" / "skills" / "image-eval" / "fetch_outputs.py"
 )
 
-_INPUT = "tests/assets/leo.jpg"
+_INPUT = "tests/assets/liam.png"
 _AGE = "4-year-old"
 _RUN_DIR = "eval_runs/latest"
 _LOCAL_ROOT = f"{_RUN_DIR}/outputs"

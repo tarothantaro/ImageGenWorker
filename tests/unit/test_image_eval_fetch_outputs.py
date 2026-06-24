@@ -50,7 +50,7 @@ def test_omitted_story_args_build_manifests_for_every_generated_story(
     _write_story(prompts_dir, "1_2", "Dialog for two.")
     outputs = tmp_path / "outputs"
     for stem in ("1_1", "1_2"):
-        story_outputs = outputs / "leo" / stem / "outputs"
+        story_outputs = outputs / "liam" / stem / "outputs"
         story_outputs.mkdir(parents=True)
         (story_outputs / "0.png").write_bytes(b"png bytes")
     eval_dir = tmp_path / "eval"
@@ -74,7 +74,7 @@ def test_omitted_story_args_build_manifests_for_every_generated_story(
     manifest_2 = json.loads((eval_dir / "1_2__1_2" / "manifest.json").read_text())
     assert manifest_1["story"] == "1_1"
     assert manifest_1["story_id"] == "1_1"
-    assert manifest_1["user_id"] == "leo"
+    assert manifest_1["user_id"] == "liam"
     assert manifest_1["images"][0]["panel_dialog"] == "Dialog for one."
     assert manifest_2["story"] == "1_2"
     assert manifest_2["story_id"] == "1_2"
@@ -89,7 +89,7 @@ def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
     prompts_dir.mkdir()
     (prompts_dir / "character.json").write_text(json.dumps({"characters": {}}))
     _write_story(prompts_dir, "1_1", "Dialog for one.")
-    outputs = tmp_path / "outputs" / "leo" / "app-story" / "outputs"
+    outputs = tmp_path / "outputs" / "liam" / "app-story" / "outputs"
     outputs.mkdir(parents=True)
     (outputs / "0.png").write_bytes(b"png bytes")
     out_dir = tmp_path / "custom-eval"
@@ -119,7 +119,7 @@ def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
             "--story-id",
             "app-story",
             "--user-id",
-            "leo",
+            "liam",
         ]
     )
 

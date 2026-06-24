@@ -29,7 +29,7 @@ def test_generator_args_use_latest_run_defaults_for_all_stories() -> None:
 
     assert args == [
         "--input",
-        "tests/assets/leo.jpg",
+        "tests/assets/liam.png",
         "--age",
         "4-year-old",
         "--run-dir",
@@ -51,10 +51,10 @@ def test_generator_args_add_story_subset_and_user_id() -> None:
         url="http://comfy:8188",
         timeout=120.0,
         model_version="model-test",
-        user_id="leo",
+        user_id="liam",
     )
 
-    assert args[-4:] == ["--user-id", "leo", "--stories", "1_8"]
+    assert args[-4:] == ["--user-id", "liam", "--stories", "1_8"]
     assert args[args.index("--run-dir") + 1] == "eval_runs/latest"
 
 
@@ -90,7 +90,7 @@ def test_fetch_args_build_single_story_mode_with_default_user() -> None:
         "--story-id",
         "1_14",
         "--user-id",
-        "leo",
+        "liam",
     ]
 
 
@@ -116,7 +116,7 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
     assert generator_calls == [
         [
             "--input",
-            "tests/assets/leo.jpg",
+            "tests/assets/liam.png",
             "--age",
             "4-year-old",
             "--run-dir",
@@ -144,7 +144,7 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
             "--story-id",
             "1_8",
             "--user-id",
-            "leo",
+            "liam",
         ]
     ]
 
