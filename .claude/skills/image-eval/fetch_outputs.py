@@ -216,7 +216,19 @@ def _load_characters() -> dict[str, str]:
     path = _PROMPTS_DIR / "character.json"
     data = json.loads(path.read_text())
     chars = data.get("characters", {})
-    return {token: entry.get("description", "") for token, entry in chars.items()}
+    descriptions: dict[str, str] = {}
+    for token, entry in chars.items():
+        if not token.startswith("GENDER_"):
+            continue
+        if isinstance(entry, dict):
+            description = entry.get("description")
+        elif isinstance(entry, str):
+            description = entry
+        else:
+            description = None
+        if isinstance(description, str):
+            descriptions[token] = description
+    return descriptions
 
 
 def _resolve_prompt(raw: str, characters: dict[str, str]) -> str:

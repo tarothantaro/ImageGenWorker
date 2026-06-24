@@ -125,6 +125,14 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    angled toward him"*), not just the furniture or general area. This avoids the
    model rendering two separate props or two unrelated children who happen to be
    near each other.
+   For greetings, introductions, and "saying hello" beats, avoid a front-facing
+   row of people waving; it often reads as everyone waving at the camera instead
+   of at each other. Compose them as an inward-facing pair or small semicircle,
+   and state reciprocal direction explicitly: the protagonist's gaze, wave,
+   shoulders, and feet point toward the named classmate(s), while the
+   classmate(s)' gazes and waves point back toward the protagonist. If you need a
+   count guard for a group, keep it, but do not let the count/row wording
+   override the interaction.
 6. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
    from `character.json`.

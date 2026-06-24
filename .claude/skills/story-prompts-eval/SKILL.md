@@ -87,7 +87,11 @@ panel** on the things only a reader can:
   as the target, not only a bench, doorway, toy, or general area. Flag prompts
   like "child tosses a ball; friend catches the ball" unless they specify one
   ball between them, and prompts like "walks toward the bench" unless they direct
-  the child toward the seated friend.
+  the child toward the seated friend. For greetings or "saying hello" beats,
+  flag front-facing rows of people waving, or vague wording like "all look toward
+  one another" without a directed pose; those often render as everyone waving at
+  the camera. The prompt should make the group inward-facing and name reciprocal
+  gaze/body/hand direction between the protagonist and the classmate(s).
 - **Scene-first, single-block person** (rule 1 / rule 10 "split reference") — the
   panel opens with the scene anchor (no person inside it), then introduces each
   person **once** in a contiguous position+action+expression block. A

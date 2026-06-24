@@ -91,6 +91,13 @@ _FURNITURE_APPROACH_RE = re.compile(
     re.I,
 )
 _TOKEN_TARGET_RE = re.compile(r"\btoward\s+\{GENDER_[A-Z0-9_]+\}", re.I)
+_GREETING_ROW_RE = re.compile(
+    r"\b(say(?:ing)? hello|greeting|wave(?:s|d|ing)? back)\b"
+    r"(?=[^.]{0,140}\b(row|left-to-right|front-facing)\b)|"
+    r"\b(row|left-to-right|front-facing)\b"
+    r"(?=[^.]{0,140}\b(say(?:ing)? hello|greeting|wave(?:s|d|ing)? back)\b)",
+    re.I,
+)
 
 # A supporting-character placeholder (workflow.py's contract): GENDER_/AGE_ with
 # an OPTIONAL _RACE_<r> segment and/or a trailing disambiguator suffix.
@@ -244,6 +251,13 @@ def lint_story(stem: str, f: Findings) -> dict:
                 p,
                 "interaction",
                 "approach/invitation should name the target character, not only furniture or an area",
+            )
+        if _GREETING_ROW_RE.search(prompt):
+            f.add(
+                "WARN",
+                p,
+                "interaction",
+                "greeting/hello beats should avoid a front-facing row; cue an inward-facing pair or small semicircle with reciprocal gaze/body/wave direction",
             )
 
         anchors.setdefault(_norm_anchor(_leading_anchor(prompt)), []).append(p)
