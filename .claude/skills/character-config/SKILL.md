@@ -6,8 +6,10 @@ description: Create and update imagegen/prompts/character.json — the modular l
 # character-config
 
 Own `imagegen/prompts/character.json`: the library of **fully-generated supporting
-characters** that story prompts conjure via `{TOKEN}` placeholders. The
-input-photo protagonist is **never** defined here — only the conjured cast.
+characters** that story prompts conjure via `{TOKEN}` placeholders, plus shared
+non-character prompt snippets such as `{INPUT_IMAGE_IDENTITY}`. The input-photo
+protagonist is **never** defined here — only the conjured cast and reusable
+prompt text.
 Read `imagegen/prompts/README.md` and the current `character.json` first; this
 skill maintains the structure that the `story-prompts` skill consumes.
 
@@ -18,6 +20,9 @@ runtime the placeholder is replaced by that character's `description` string, so
 the **look and dress stay byte-for-byte identical across every panel** of a story
 (panels are independent edits — see the `story-prompts` skill — so a shared,
 centralized description is the *only* thing keeping a character consistent).
+The special `{INPUT_IMAGE_IDENTITY}` placeholder is not a character; it resolves
+to the shared identity-preservation instruction that belongs at the end of every
+story prompt.
 
 **Runtime contract (keep it this simple):** strip the `{}`, look up
 `characters[<TOKEN>].description`, string-replace it into the prompt — the same
@@ -36,6 +41,7 @@ hair build wardrobe features   reusable fragment libraries (the modular parts)
 restrictions      fragment keys reserved to a demographic group (child_only /
                   adult_only / elderly_only / masc_only / fem_only)
 characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
+                  or a documented special prompt-snippet token with description only
 ```
 
 ### `restrictions` + `avoid` (consumed at runtime by the random fallback)
@@ -55,7 +61,7 @@ runtime-read fields besides `characters[*].description`):
   children (06–16) avoid `adult_only` *and* `elderly_only`; middle adults
   (25–45) avoid `child_only` *and* `elderly_only`; only the elderly (60, 70)
   avoid just `child_only`, so they alone unlock `elderly_only` looks (grey/
-  thinning hair, smile lines) on top of `adult_only`.
+  thinning hair, fine wrinkles) on top of `adult_only`.
 
 At compose time the draw drops every key reserved to any group the character
 avoids. So a child never rolls a business suit/stubble, a 25-year-old never a
@@ -108,6 +114,11 @@ Rules:
 - **Appearance-only.** Never bake actions, expressions, poses, or positions into
   a `description` — those belong in the per-panel story prompt. The description is
   what the character *is*, not what they're *doing*.
+- `features` fragments must be fixed physical traits only. Do not add smiles,
+  frowns, tears, moods, gaze direction, or expression-coded wording such as
+  "friendly", "kind", "warm", "stern", "gentle", "happy", or "sad" to
+  `features`; put the scene-specific expression after the `{TOKEN}` in each
+  story prompt.
 
 Worked: `refs {gender:M, age:35, race:WHITE, hair:SHORT_BROWN,
 build:AVERAGE_MEDIUM, wardrobe:BUSINESS_GREY_SUIT, features:STUBBLE}` →
@@ -135,7 +146,13 @@ stubble"`.
   character's clothing/hair in a story prompt — that fights this file.
 - `refs` and `description` must stay in sync — `description` is generated from
   `refs` via the recipe, not hand-diverged.
-- Keep fragments reusable and atomic (one hairstyle, one outfit) so they compose.
+- Exception: special non-character prompt-snippet tokens such as
+  `INPUT_IMAGE_IDENTITY` may omit `refs`; keep their `description` as the exact
+  reusable prompt text that story prompts should reference.
+- Keep fragments reusable and atomic (one hairstyle, one outfit, one fixed
+  physical feature) so they compose. Facial features such as dimples, freckles,
+  cheek shape, wrinkles, teeth spacing, glasses, and facial hair are fine;
+  expressions such as smiles/frowns or mood-coded adjectives are not.
 - Don't define the input-photo protagonist here. This file is the *generated*
   cast only.
 
@@ -143,10 +160,12 @@ stubble"`.
 
 - [ ] `character.json` is valid JSON
       (`python3 -c "import json;json.load(open('imagegen/prompts/character.json'))"`).
-- [ ] Every `characters[*].refs` value resolves to an existing key in its library
-      / dimension.
-- [ ] Every `characters[*].description` is exactly what the recipe produces from
-      its `refs` (recompose and compare).
-- [ ] No description contains an action/expression/position (appearance-only).
+- [ ] Every generated-character `characters[*].refs` value resolves to an
+      existing key in its library / dimension.
+- [ ] Every generated-character `characters[*].description` is exactly what the
+      recipe produces from its `refs` (recompose and compare). Special
+      prompt-snippet tokens such as `INPUT_IMAGE_IDENTITY` may omit `refs`.
+- [ ] No description or fragment contains an action/expression/position
+      (appearance-only); `features` contains only fixed physical traits.
 - [ ] Any token already referenced by a story still exists (grep the story files
       under `imagegen/prompts/` for `{` placeholders before renaming/removing).

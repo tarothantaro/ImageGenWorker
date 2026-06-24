@@ -116,19 +116,19 @@
     "GLASSES_ROUND":   "round wire-frame glasses",
     "GLASSES_SQUARE":  "square dark-framed glasses",
     "FRECKLES":        "light freckles across the cheeks",
-    "KIND_SMILE":      "a warm, kind smile",
+    "FULL_CHEEKS":     "full cheeks",
     "DIMPLES":         "soft dimples",
-    "GAP_TEETH":       "a friendly gap-toothed smile",
+    "GAP_TEETH":       "a small gap between the front teeth",
     "BEAUTY_MARK":     "a small beauty mark on one cheek",
     "ROSY_CHEEKS":     "round rosy cheeks",
     "STUBBLE":         "light stubble",
     "FULL_BEARD":      "a full dark beard",
     "NEAT_MUSTACHE":   "a neat mustache",
-    "WRINKLES_GENTLE": "gentle smile lines"
+    "FINE_WRINKLES":   "fine facial wrinkles"
   },
 
   "restrictions": {
-    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_... token (with or without the optional _RACE_...) has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid). Race carries no restrictions -- when _RACE_ is omitted a race is simply drawn at random from `dimensions.race`. Age is a THREE-way band, not binary: a child (06-16) avoids both `adult_only` and `elderly_only`; a middle adult (25-45) avoids `child_only` and `elderly_only`; only an elderly character (60, 70) may draw `elderly_only` looks (grey/thinning hair, smile lines) on top of `adult_only` — so a 25-year-old never rolls a grey bun. Gender: a man avoids `fem_only`, a woman `masc_only`, a non-binary character both. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only; thinning grey hair is masc_only AND elderly_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
+    "_comment": "Fragment keys reserved to one demographic group, consumed by workflow.py's RANDOM fallback composition (NOT enumerated descriptions). When a GENDER_..._AGE_... token (with or without the optional _RACE_...) has no `characters` entry, the random hair/build/wardrobe/features draw drops the keys reserved to any group the character must `avoid` (see dimensions.gender[g].avoid / dimensions.age[a].avoid). Race carries no restrictions -- when _RACE_ is omitted a race is simply drawn at random from `dimensions.race`. Age is a THREE-way band, not binary: a child (06-16) avoids both `adult_only` and `elderly_only`; a middle adult (25-45) avoids `child_only` and `elderly_only`; only an elderly character (60, 70) may draw `elderly_only` looks (grey/thinning hair, fine wrinkles) on top of `adult_only` — so a 25-year-old never rolls a grey bun. Gender: a man avoids `fem_only`, a woman `masc_only`, a non-binary character both. A key listed under no group suits everyone; a key may appear in several groups (e.g. a beard is masc_only AND adult_only; thinning grey hair is masc_only AND elderly_only). If every option in a table is filtered away, the restriction is ignored for that table rather than producing nothing. Keep these in sync when you add a fragment whose look is clearly age- or gender-specific.",
     "child_only": {
       "hair":     ["PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],
       "build":    ["CHILD_SMALL", "CHILD_SLIGHT", "CHILD_STURDY"],
@@ -142,7 +142,7 @@
     },
     "elderly_only": {
       "hair":     ["GREY_BUN", "BALDING_GREY", "SHORT_GREY"],
-      "features": ["WRINKLES_GENTLE"]
+      "features": ["FINE_WRINKLES"]
     },
     "masc_only": {
       "hair":     ["BALDING_GREY", "BUZZ_CUT", "LOW_FADE_BLACK", "MAN_BUN_DARK"],
@@ -156,6 +156,9 @@
   },
 
   "characters": {
-    "_comment": "Enumerated, fixed-look characters (TOKEN -> { refs, description }). Empty by design: every story currently relies on the RANDOM fallback (see runtime.fallback), so each job rolls a fresh race + look that stays consistent across that job's panels. Add an entry here only when you need a character whose look is byte-for-byte identical across every panel AND every job; an enumerated description wins over the random composition for that exact token."
+    "_comment": "Enumerated, fixed-look characters (TOKEN -> { refs, description }). Most stories rely on the RANDOM fallback for generated supporting characters (see runtime.fallback), so each job rolls a fresh race + look that stays consistent across that job's panels. Add an entry here only when you need text that stays byte-for-byte identical across every panel AND every job; an enumerated description wins over the random composition for that exact token.",
+    "INPUT_IMAGE_IDENTITY": {
+      "description": "Preserve the facial features, skin tone and hairstyle of the person from the input image."
+    }
   }
 }

@@ -112,6 +112,11 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    "standing there". A bare verb of being present (`stands`, `sits`, `is in the
    frame`) does not count; `kneeling`, `walking`, `holding`, `reaching`,
    `clapping`, `pointing`, `hands on hips` do.
+   Because `character.json` is appearance-only, facial expression and mood must
+   be authored here in the panel prompt. Every person block, including each
+   supporting `{TOKEN}`, should include the expression that fits this specific
+   beat (`with an anxious expression`, `smiling proudly`, `looking relieved`,
+   etc.); do not rely on a character feature like "smile" to supply it.
 5. **Make interactions physically connected.** When the gist is about people
    playing, helping, offering, receiving, teaching, comforting, or approaching,
    don't leave the people as parallel isolated figures. Give the interaction a
@@ -136,9 +141,12 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
 6. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
    from `character.json`.
-7. **Pin identity at the end of every prompt:** *"Preserve the facial features,
-   skin tone and hairstyle of the person from the input image."* The edit + swap
-   will otherwise drift the protagonist's look.
+7. **Pin identity at the end of every prompt with `{INPUT_IMAGE_IDENTITY}`.**
+   This placeholder resolves through `character.json` to the shared instruction
+   "Preserve the facial features, skin tone and hairstyle of the person from the
+   input image." The edit + swap will otherwise drift the protagonist's look.
+   Keep the prompt-ending text centralized in that placeholder; do not paste the
+   literal sentence into story prompts.
 8. **Never describe a generated character's fixed appearance.** Their age,
    ethnicity, build, hair and clothing live in `character.json` and arrive via
    the placeholder. In the prompt, give them only **position, action, and
@@ -282,12 +290,17 @@ For every prompt in the array, confirm:
       forced to face the camera.
 - [ ] **Every person** (protagonist + each supporting character) is given a
       **concrete action/gesture**, not just a placement and an expression.
+- [ ] Every person block includes a scene-specific expression or mood cue; any
+      supporting `{TOKEN}` gets only position/action/expression in this prompt,
+      while fixed appearance stays in `character.json`.
 - [ ] **Every interaction is physically connected**: shared props are one visible
       object between the people, handoffs/games name both sides of the action,
       and approach/invitation beats name the target person directly rather than
       only a bench, doorway, or general area.
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/
-      expression only, no appearance, no re-described clothing.
+      expression only, no appearance, no re-described clothing. Add the
+      expression in the prompt for the current scene; never expect the
+      `{TOKEN}`'s `features` to include a smile, frown, or mood.
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
 - [ ] Panels sharing a location repeat the **one canonical setting-anchor clause
       verbatim** (same adjectives + location + key furniture/landmarks + time of
