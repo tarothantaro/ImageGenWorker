@@ -102,6 +102,7 @@ def _read_json(path: Path) -> dict | None:
 # --- report.md parsing -------------------------------------------------------
 
 _VERDICT_RE = re.compile(r"\*\*Verdict:\*\*\s*(.+)")
+_WARNING_RE = re.compile(r"^>\s*(WARNING:\s*.+)", re.IGNORECASE)
 _PANEL_HDR_RE = re.compile(r"^###\s+Panel\s+(\d+)", re.IGNORECASE)
 _PANEL_METADATA_RE = re.compile(
     r"^-\s*(Resolved prompt|Panel dialog|Prompt source):", re.IGNORECASE
@@ -123,14 +124,29 @@ def _parse_report(text: str) -> dict:
     UI can still show the whole report. ``panels`` maps ``int -> markdown``.
     """
     if not text.strip():
-        return {"verdict": "", "summary": "", "panels": {}, "rest": "", "raw": text}
+        return {
+            "verdict": "",
+            "warnings": [],
+            "summary": "",
+            "panels": {},
+            "rest": "",
+            "raw": text,
+        }
 
     verdict = ""
     m = _VERDICT_RE.search(text)
     if m:
         verdict = m.group(1).strip()
 
-    lines = text.splitlines()
+    warnings: list[str] = []
+    lines = []
+    for line in text.splitlines():
+        warning_match = _WARNING_RE.match(line.strip())
+        if warning_match:
+            warnings.append(warning_match.group(1).strip())
+            continue
+        lines.append(line)
+
     summary: list[str] = []
     rest: list[str] = []
     panels: dict[int, list[str]] = {}
@@ -171,6 +187,7 @@ def _parse_report(text: str) -> dict:
 
     return {
         "verdict": verdict,
+        "warnings": warnings,
         "summary": "\n".join(summary).strip(),
         "panels": {k: _strip_panel_metadata("\n".join(v)) for k, v in panels.items()},
         "rest": "\n".join(rest).strip(),
@@ -267,6 +284,11 @@ main { flex: 1 1 auto; min-width: 0; }
 .badge.regen { background: #fee2e2; color: #991b1b; }
 .badge.unknown { background: #e5e7eb; color: #374151; }
 .badge.failed { background: #fee2e2; color: #991b1b; }
+.warning-subblock { background: #fffbeb; border: 1px solid #f59e0b;
+    border-left: 5px solid #d97706; color: #78350f; border-radius: 8px;
+    padding: 12px 14px; margin: 14px 0 0; }
+.warning-subblock strong { display: block; margin-bottom: 4px; color: #92400e; }
+.warning-subblock p { margin: 0; }
 .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
     border-top: 1px solid #eef0f2; padding: 18px 0; }
 .panel .imgs { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -444,6 +466,12 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         f'<p class="meta">source: {source} &middot; prompt source: {prompt_source}</p>'
     )
     main.append("</div></div>")
+    for warning in report.get("warnings", []):
+        main.append(
+            '<div class="warning-subblock"><strong>Outdated Eval</strong><p>'
+            + html.escape(warning)
+            + "</p></div>"
+        )
     if report.get("summary"):
         main.append('<div class="report">' + _md_to_html(report["summary"]) + "</div>")
     main.append("</div>")
