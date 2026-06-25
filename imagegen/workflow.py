@@ -413,9 +413,14 @@ class WorkflowBuilder:
            :func:`_compose_random_character`). Each distinct token is composed
            once here, so its random look is the same in every panel of this job.
 
-        Tokens that are neither enumerated nor a valid character config (e.g.
-        ``{INPUT_1_AGE}``, ``{USER_ID}``, an unknown name) are left out of the
-        map, so the caller's substitution passes them through untouched.
+        Tokens that aren't character-shaped at all (e.g. ``{INPUT_1_AGE}``,
+        ``{USER_ID}``, an unknown name) are left out of the map, so the caller's
+        substitution passes them through untouched. A token that *does* match the
+        ``GENDER_<g>_AGE_<a>`` character shape but resolves to nothing (unknown
+        gender/age/race, or assets out of sync with this code) raises
+        :class:`UnsupportedTemplateError` — never silently passed through, since
+        a literal ``{GENDER_…}`` reaching the image model breaks the supporting
+        character's consistency across the story's panels.
         """
         data = self._load_json(self._prompts_root / "character.json")
         if story is not None and story.get("character_file"):
@@ -438,6 +443,20 @@ class WorkflowBuilder:
             composed = _compose_random_character(token, data, self._rng)
             if composed is not None:
                 substitutions[braced] = composed
+            elif _CHARACTER_TOKEN_RE.match(token):
+                # A character-shaped token (``GENDER_<g>_AGE_<a>`` …) that is
+                # neither enumerated nor composable names a gender / age / race
+                # ``character.json`` doesn't define (a typo, or assets out of sync
+                # with this code). Leaving it unresolved would ship the literal
+                # ``{TOKEN}`` to the image model, which then paints a *different*
+                # stranger in every panel — the supporting cast loses all
+                # cross-panel consistency. Fail the job terminally instead of
+                # silently producing broken art.
+                raise UnsupportedTemplateError(
+                    f"character token {token!r} matches the GENDER_…_AGE_… shape "
+                    "but resolves to no description in character.json "
+                    "(unknown gender/age/race, or stale assets)"
+                )
         return substitutions
 
     # -- rendering --------------------------------------------------------

@@ -409,6 +409,27 @@ def test_prepare_enumerated_description_wins_over_random_composition(
     assert text == "Here is the enumerated woman."
 
 
+def test_prepare_raises_on_character_token_that_resolves_to_nothing(
+    tmp_path: Path,
+) -> None:
+    """A ``GENDER_…_AGE_…``-shaped token naming an unknown dimension (here an age
+    the table doesn't define) must fail the job terminally rather than ship the
+    literal ``{TOKEN}`` to the image model — which would otherwise paint a
+    different stranger in every panel."""
+    builder = _write_assets(
+        tmp_path,
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": "{PROMPT}"}]]},
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={"prompts": ["A stranger {GENDER_M_AGE_99} walks by."]},
+        character_json=_SINGLE_LOOK_CHARACTER_JSON,
+        rng=random.Random(0),
+    )
+
+    with pytest.raises(UnsupportedTemplateError, match="GENDER_M_AGE_99"):
+        builder.prepare("t")
+
+
 def test_compose_uses_child_noun_and_multiword_race() -> None:
     text = _compose_random_character(
         "GENDER_F_AGE_08_RACE_SOUTH_ASIAN", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
