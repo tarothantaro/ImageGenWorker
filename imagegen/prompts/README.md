@@ -139,6 +139,15 @@ filtered by the existing age/gender restrictions. Authoring templates keep the
 placeholder verbatim. See `character.json` and the
 `character-config` skill for the placeholder/runtime contract.
 
+Prompts may also carry the **`{IMAGE_STYLE}`** placeholder for the visual
+register. Unlike character `{TOKEN}`s it is **not** in `character.json`; the
+worker fills it at render time from the `IMAGE_STYLE` env var (config default
+`"soft storybook illustration style"`), the same flat-replace path as
+`{INPUT_1_AGE}` / `USER_ID` / `STORY_ID` (`model.py`). This lets the style be
+chosen at runtime instead of being hard-coded per story; use the identical
+`{IMAGE_STYLE}` token in every panel of a story so the book stays one register.
+The `story-prompts-adventure` sub-skill mandates it for adventure stories.
+
 The read-aloud `texts` use one different placeholder — **`{NAME}`** — for the
 **protagonist's name**. The worker never touches `texts`; instead the API server
 (`../Application`) substitutes `{NAME}` with the photo subject's role `name` (e.g.

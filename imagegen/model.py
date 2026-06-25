@@ -64,6 +64,11 @@ _DEFAULT_PROMPTS_ROOT = _PACKAGE_ROOT / "prompts"
 
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180.0
+# Visual register substituted into every prompt's ``{IMAGE_STYLE}`` placeholder at
+# render time (the same flat-replace path as ``USER_ID`` / ``{INPUT_1_AGE}``), so
+# the style can be chosen at runtime instead of being baked into each story's
+# prompts. The default preserves the phrase the stories previously hard-coded.
+_DEFAULT_IMAGE_STYLE = "soft storybook illustration style"
 # The default render template for 6-panel stories. Its panels carry the per-scene
 # seeds + filename prefixes; the job's prompt set fills the text.
 _RENDER_TEMPLATE_ID = "2"
@@ -239,6 +244,7 @@ class ComfyUIModel:
         prompts_root: Path = _DEFAULT_PROMPTS_ROOT,
         model_version: str = _DEFAULT_MODEL_VERSION,
         request_timeout_seconds: float = _DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        image_style: str = _DEFAULT_IMAGE_STYLE,
         prompt_log_dir: Path | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -246,6 +252,7 @@ class ComfyUIModel:
         self._builder = WorkflowBuilder(workflow_root, template_root, prompts_root)
         self._model_version = model_version
         self._request_timeout = request_timeout_seconds
+        self._image_style = image_style
         self._prompt_logger = PromptLogger(prompt_log_dir)
         self._clock = clock
 
@@ -280,6 +287,7 @@ class ComfyUIModel:
         prepared = self._builder.prepare(template_id, story_ref)
 
         placeholders = {"USER_ID": user_id, "STORY_ID": story_id}
+        placeholders["{IMAGE_STYLE}"] = self._image_style
         placeholders.update(_age_placeholders(input_ages))
         try:
             self._upload_inputs(prepared, input_images, placeholders)
@@ -498,5 +506,6 @@ def load_model(cfg: Any) -> ComfyUIModel:  # pragma: no cover - wires real trans
         transport,
         model_version=cfg.model_version,
         request_timeout_seconds=timeout,
+        image_style=getattr(cfg, "image_style", _DEFAULT_IMAGE_STYLE),
         prompt_log_dir=Path(log_dir) if log_dir else None,
     )

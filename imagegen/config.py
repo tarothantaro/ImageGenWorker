@@ -12,6 +12,11 @@ class ConfigError(ValueError):
 
 _DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
+# Visual register the model substitutes into every prompt's {IMAGE_STYLE}
+# placeholder. Lets the style be chosen at deploy/runtime via the IMAGE_STYLE env
+# var without re-authoring any story; the default reproduces the phrase the
+# stories used to hard-code (see model._DEFAULT_IMAGE_STYLE).
+_DEFAULT_IMAGE_STYLE = "soft storybook illustration style"
 # How long the worker waits for ComfyUI to finish ONE panel (one /prompt run)
 # before treating it as a transient failure. Per-request, not per-job: a job
 # with N panels can take up to N × this. DESIGN.md §7.2.
@@ -50,6 +55,9 @@ class WorkerConfig:
     model_version: str = _DEFAULT_MODEL_VERSION
     comfyui_request_timeout_seconds: int = _DEFAULT_REQUEST_TIMEOUT_SECONDS
     max_delivery_attempts: int = _DEFAULT_MAX_DELIVERY_ATTEMPTS
+    # Style string substituted into every prompt's {IMAGE_STYLE} placeholder; has
+    # a sane default so existing deployments need no new env var.
+    image_style: str = _DEFAULT_IMAGE_STYLE
     # Directory the model writes a per-panel record of the *actual* prompt +
     # rendered workflow it submits to ComfyUI (debug + the image-eval skill).
     # Unset (the default) disables logging — production leaves it off; the dev
@@ -105,6 +113,7 @@ def load_config(env: dict[str, str] | None = None) -> WorkerConfig:
             src.get("MAX_DELIVERY_ATTEMPTS", str(_DEFAULT_MAX_DELIVERY_ATTEMPTS)),
             "MAX_DELIVERY_ATTEMPTS",
         ),
+        image_style=src.get("IMAGE_STYLE") or _DEFAULT_IMAGE_STYLE,
         prompt_log_dir=src.get("PROMPT_LOG_DIR") or None,
     )
 
@@ -135,4 +144,3 @@ def _parse_positive_int(value: str, name: str) -> int:
     if n <= 0:
         raise ConfigError(f"{name} must be > 0, got {n}")
     return n
-

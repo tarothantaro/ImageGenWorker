@@ -32,6 +32,8 @@ def test_load_config_with_defaults_yields_expected_dataclass() -> None:
     assert cfg.model_version == "comfyui-flux2"
     assert cfg.comfyui_request_timeout_seconds == 180
     assert cfg.max_delivery_attempts == 5
+    # Default style filled into every prompt's {IMAGE_STYLE} placeholder.
+    assert cfg.image_style == "soft storybook illustration style"
     # Prompt logging is off unless explicitly pointed at a dir (production default).
     assert cfg.prompt_log_dir is None
 
@@ -43,6 +45,15 @@ def test_load_config_picks_up_prompt_log_dir() -> None:
     # An empty value is treated as unset, not as the path "".
     cfg_blank = load_config(_VALID_ENV | {"PROMPT_LOG_DIR": ""})
     assert cfg_blank.prompt_log_dir is None
+
+
+def test_load_config_picks_up_image_style_override() -> None:
+    cfg = load_config(_VALID_ENV | {"IMAGE_STYLE": "bold watercolor comic style"})
+    assert cfg.image_style == "bold watercolor comic style"
+
+    # An empty value falls back to the default rather than blanking the style.
+    cfg_blank = load_config(_VALID_ENV | {"IMAGE_STYLE": ""})
+    assert cfg_blank.image_style == "soft storybook illustration style"
 
 
 def test_load_config_picks_up_emulator_hosts_and_flips_is_emulator() -> None:
@@ -160,7 +171,9 @@ def test_max_concurrency_rejects_zero_or_negative() -> None:
         load_config(env)
 
 
-def test_max_processing_seconds_allows_job_level_lease_above_single_ack_extension() -> None:
+def test_max_processing_seconds_allows_job_level_lease_above_single_ack_extension() -> (
+    None
+):
     env = _VALID_ENV | {"MAX_PROCESSING_SECONDS": "1800"}
 
     cfg = load_config(env)

@@ -106,10 +106,7 @@ def test_generate_sends_expected_workflow_parameters() -> None:
     # come from the template (no per-job overrides anymore). Node ids are
     # workflow 2's (Qwen-Image-Edit-2511) — see templates/2 + workflows/2.
     first = fake.submitted[0].prompt
-    assert (
-        "the person from the input image"
-        in first["170:151"]["inputs"]["prompt"]
-    )
+    assert "the person from the input image" in first["170:151"]["inputs"]["prompt"]
     assert first["41"]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     assert first["9"]["inputs"]["filename_prefix"] == "u1_s1_P0"
     assert first["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
@@ -138,10 +135,7 @@ def test_generate_drops_age_placeholder_when_no_age_given() -> None:
     _generate(model, input_ages=[None])
 
     first = fake.submitted[0].prompt
-    assert (
-        "the person from the input image"
-        in first["170:151"]["inputs"]["prompt"]
-    )
+    assert "the person from the input image" in first["170:151"]["inputs"]["prompt"]
     assert "{INPUT_1_AGE}" not in first["170:151"]["inputs"]["prompt"]
 
 
@@ -222,10 +216,7 @@ def test_generate_uses_template_seed_and_story_prompt() -> None:
 
     submitted = fake.submitted[0].prompt
     assert submitted["170:169"]["inputs"]["seed"] == _TEMPLATE_DEFAULT_SEED
-    assert (
-        "the person from the input image"
-        in submitted["170:151"]["inputs"]["prompt"]
-    )
+    assert "the person from the input image" in submitted["170:151"]["inputs"]["prompt"]
 
 
 def test_generate_consumes_realtime_ws_stream_until_done() -> None:
@@ -272,6 +263,33 @@ def test_generate_uses_twelve_panel_template_for_adventure_story() -> None:
     assert all(panel.total == 12 for panel in panels)
 
 
+def test_generate_substitutes_image_style_placeholder() -> None:
+    # The adventure story (2_1) carries a {IMAGE_STYLE} token in every prompt;
+    # the model fills it from its configured style, leaving no literal token.
+    fake = FakeComfyUI()
+    model = _model(fake)  # default style
+
+    _generate(model, prompt_type=2, prompt_id=1)
+
+    blob = json.dumps([s.prompt for s in fake.submitted])
+    assert "soft storybook illustration style" in blob
+    assert "{IMAGE_STYLE}" not in blob
+
+
+def test_generate_uses_configured_image_style() -> None:
+    # The style is chosen at runtime: a non-default value replaces the token in
+    # every panel, and the default phrase appears nowhere.
+    fake = FakeComfyUI()
+    model = _model(fake, image_style="bold watercolor comic style")
+
+    _generate(model, prompt_type=2, prompt_id=1)
+
+    blob = json.dumps([s.prompt for s in fake.submitted])
+    assert "bold watercolor comic style" in blob
+    assert "soft storybook illustration style" not in blob
+    assert "{IMAGE_STYLE}" not in blob
+
+
 # --- multi-panel (one image per panel) ---------------------------------------
 
 
@@ -302,7 +320,9 @@ def _write_multi_panel_template(
         for _text, seed in panels
     ]
     (tpl_root / _RENDER_TEMPLATE_ID / "config.json").write_text(
-        json.dumps({"id": _RENDER_TEMPLATE_ID, "workflow_id": "w", "panels": panel_rows})
+        json.dumps(
+            {"id": _RENDER_TEMPLATE_ID, "workflow_id": "w", "panels": panel_rows}
+        )
     )
     (wf_root / "w" / "config.json").write_text(
         json.dumps(
