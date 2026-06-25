@@ -218,13 +218,18 @@ For every prompt in the array, confirm:
 - [ ] Same style phrase as the rest of the story.
 - [ ] Ends with the preserve-identity sentence.
 
-## Writing a story (type 1 = life_lesson)
+## Writing a story
 
-1. **Start from the gists.** The `story-text` skill has already written the
+1. **Confirm the story selector and panel count.** The user must provide the
+   numeric `type` and the intended number of panels. If either is missing, ask
+   for it before authoring prompts. Use the README story-type registry to verify
+   the `type`; do not assume type `1` or any fixed story shape.
+2. **Start from the gists.** The `story-text` skill has already written the
    `title`, `lesson`, and the per-panel `gists` (and `texts`). Read them — each
    gist is the beat your prompt must land. (If they don't exist yet, write them
-   with `story-text` first.)
-2. **Decide the cast.** Protagonist = input person (implicit). Choose generated
+   with `story-text` first.) The number of prompts you write must equal the user
+   provided panel count and `len(gists)`.
+3. **Decide the cast.** Protagonist = input person (implicit). Choose generated
    characters for the roles the gists name; ensure each token exists in
    `character.json` — if not, add it with the `character-config` skill *before*
    referencing it. **Default to race-free tokens** (`GENDER_F_AGE_70`,
@@ -232,24 +237,26 @@ For every prompt in the array, confirm:
    (`GENDER_F_AGE_70_RACE_ASIAN`) when the gist or the user explicitly calls for
    a specific race. Two same-demographic characters in one story stay distinct
    via a role suffix (`GENDER_M_AGE_06_FRIEND1` / `..._FRIEND2`).
-3. **Plan the arc across 6 panels** (the render template `templates/1` has 6
-   panels, so a story has exactly 6 prompts). A clean life-lesson arc:
-   *establish → encounter/choice → action → consequence → turn → resolution that
-   lands the lesson.* Keep location/time continuity unless the story moves on.
-   List the story's distinct scenes up front and write **one canonical
+4. **Plan the arc across the requested panel count.** Let the supplied story type
+   and gists determine the structure: a life lesson may use a simple
+   choice/consequence/resolution arc, while an adventure may need a
+   quest/problem/rescue arc. Keep location/time continuity unless the story moves
+   on. List the story's distinct scenes up front and write **one canonical
    setting-anchor clause for each** (rule 10); every panel in a scene pastes that
    exact clause, so continuity is locked before you write the per-panel action.
-4. **Write each panel** with the rules above. Alternate solo and multi-person
+5. **Write each panel** with the rules above. Alternate solo and multi-person
    panels naturally; **every person in every panel is given a concrete action**
    (rule 4) — never left standing/sitting with only an expression. State a
    person's position only when the beat needs it (see "Composition & position").
-5. **Keep prompt ↔ gist aligned.** Re-read each gist and confirm your prompt
+6. **Keep prompt ↔ gist aligned.** Re-read each gist and confirm your prompt
    instructs its setting, cast, and key action/beat. If a gist itself reads wrong,
    fix it via `story-text` — don't silently diverge from it.
-6. **Fill `characters`** = every `{TOKEN}` used, plus the structural `type` / `id`
+7. **Fill `characters`** = every `{TOKEN}` used, plus the structural `type` / `id`
    / `version` if the file is new. The panel count is just `len(prompts)` — no
-   `panel_count` field. (`title`, `lesson`, `gists`, and `texts` belong to the
-   `story-text` skill.)
+   `panel_count` field. For a new file, start from
+   `.claude/skills/story-prompts/story_template.json` and expand each array to
+   the requested panel count. (`title`, `lesson`, `gists`, and `texts` belong to
+   the `story-text` skill.)
 
 ## Examples
 
@@ -299,7 +306,9 @@ no duplicate or extra child, no twin."*
 ## Validate before done
 
 - [ ] File is `imagegen/prompts/<type>_<id>.json`, valid JSON, schema per README.
-- [ ] `len(prompts) == 6` (matches the render template `templates/1`).
+- [ ] User supplied `type` and panel count; `type` matches the README registry.
+- [ ] `len(prompts)` matches the user-provided panel count and the render
+      template being used.
 - [ ] `len(gists) == len(prompts)` (the `gists` come from `story-text`); each
       prompt instructs the same beat as its gist (setting + cast/placement +
       action + point). Run `story-prompts-eval` to grade prompt↔gist alignment +
@@ -307,8 +316,6 @@ no duplicate or extra child, no twin."*
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
 - [ ] Re-run the per-panel checklist on each prompt.
-- [ ] `type` matches the README registry (its display name lives in code,
-      `sync_story_catalog._TYPE_NAMES`).
 
 ## Settings reference (informational)
 
