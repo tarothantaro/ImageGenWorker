@@ -60,6 +60,14 @@ _CAMERA_CUES = (
 )
 # Shared visual register that should appear in every panel (rule 8).
 _STYLE_PHRASE = "cinematic photography style"
+_STYLE_PLACEHOLDER = "{IMAGE_STYLE}"
+
+# Standard lesson stories are 6 panels. Adventure stories may be the original
+# 6-panel shape or the expanded 12-panel quest shape.
+_EXPECTED_PANEL_COUNTS_BY_TYPE = {
+    "2": {6, 12},
+}
+_DEFAULT_EXPECTED_PANEL_COUNTS = {6}
 
 # Cross-panel reference words the no-memory pipeline cannot honour (rule 9).
 # FAIL: unambiguous violations — they point at a panel the model never saw.
@@ -110,6 +118,27 @@ def _has_identity_tail(prompt: str) -> bool:
     """True when a prompt ends with the identity instruction or its token."""
     prompt = prompt.strip()
     return prompt.endswith(_IDENTITY_TAIL) or prompt.endswith(_IDENTITY_PLACEHOLDER)
+
+
+def _expected_panel_counts(stem: str) -> set[int]:
+    """Return valid prompt counts for a story stem such as ``1_4`` or ``2_1``."""
+    story_type = stem.split("_", 1)[0]
+    return _EXPECTED_PANEL_COUNTS_BY_TYPE.get(
+        story_type, _DEFAULT_EXPECTED_PANEL_COUNTS
+    )
+
+
+def _format_expected_counts(counts: set[int]) -> str:
+    """Human-readable panel count expectation for findings."""
+    ordered = sorted(counts)
+    if len(ordered) == 1:
+        return str(ordered[0])
+    return " or ".join(str(count) for count in ordered)
+
+
+def _has_style_placeholder(prompt: str) -> bool:
+    """True when runtime style substitution satisfies the style contract."""
+    return _STYLE_PLACEHOLDER in prompt
 
 
 def _token_resolvable(token: str, char_data: dict) -> bool:
@@ -193,8 +222,14 @@ def lint_story(stem: str, f: Findings) -> dict:
     if n == 0:
         f.add("FAIL", None, "structure", "no prompts")
         return spec
-    if n != 6:
-        f.add("FAIL", None, "structure", f"len(prompts) == {n}, expected 6")
+    expected_counts = _expected_panel_counts(stem)
+    if n not in expected_counts:
+        f.add(
+            "FAIL",
+            None,
+            "structure",
+            f"len(prompts) == {n}, expected {_format_expected_counts(expected_counts)}",
+        )
     if len(gists) != n:
         f.add("FAIL", None, "gists", f"len(gists) == {len(gists)} != {n} prompts")
     if texts and len(texts) != n:
@@ -219,9 +254,10 @@ def lint_story(stem: str, f: Findings) -> dict:
                 "no named camera/shot cue (medium shot, eye-level, …) — rule 3's "
                 "lever for framing",
             )
-        if "photorealistic" not in low:
+        has_style_placeholder = _has_style_placeholder(prompt)
+        if not has_style_placeholder and "photorealistic" not in low:
             f.add("WARN", p, "style", "no 'photorealistic' style word (rule 8)")
-        if _STYLE_PHRASE not in low:
+        if not has_style_placeholder and _STYLE_PHRASE not in low:
             f.add("WARN", p, "style", f"no '{_STYLE_PHRASE}' (rule 8 consistency)")
 
         tokens = [t for t in _PLACEHOLDER_RE.findall(prompt) if _CHAR_TOKEN_RE.match(t)]
@@ -252,7 +288,9 @@ def lint_story(stem: str, f: Findings) -> dict:
                 "interaction",
                 "ball handoff/play should specify one shared ball between the people",
             )
-        if _FURNITURE_APPROACH_RE.search(prompt) and not _TOKEN_TARGET_RE.search(prompt):
+        if _FURNITURE_APPROACH_RE.search(prompt) and not _TOKEN_TARGET_RE.search(
+            prompt
+        ):
             f.add(
                 "WARN",
                 p,
