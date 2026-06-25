@@ -17,7 +17,9 @@ _MODULE_PATH = _REPO_ROOT / ".claude" / "skills" / "image-eval" / "fetch_outputs
 
 
 def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("image_eval_fetch_outputs", _MODULE_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "image_eval_fetch_outputs", _MODULE_PATH
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -56,6 +58,7 @@ def test_omitted_story_args_build_manifests_for_every_generated_story(
     eval_dir = tmp_path / "eval"
 
     monkeypatch.setattr(mod, "_PROMPTS_DIR", prompts_dir)
+    monkeypatch.setattr(mod, "_DEFAULT_EVAL_DIR", eval_dir)
     monkeypatch.setattr(mod, "_variants_for_live_template", lambda: 1)
 
     result = mod.main(
@@ -135,12 +138,14 @@ def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
     assert latest_manifest["images"][0]["panel_dialog"] == "Dialog for one."
     assert latest_manifest["out_dir"] == str(latest_dir)
     assert latest_manifest["report_path"] == str(latest_dir / "report.md")
-    assert "> WARNING: This eval report is outdated." in (
-        out_dir / "report.md"
-    ).read_text()
-    assert "> WARNING: This eval report is outdated." in (
-        latest_dir / "report.md"
-    ).read_text()
+    assert (
+        "> WARNING: This eval report is outdated."
+        in (out_dir / "report.md").read_text()
+    )
+    assert (
+        "> WARNING: This eval report is outdated."
+        in (latest_dir / "report.md").read_text()
+    )
 
 
 def test_mark_reports_outdated_can_mark_all_reports(tmp_path: Path) -> None:

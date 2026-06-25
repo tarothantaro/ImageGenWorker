@@ -32,7 +32,9 @@ _EVAL_DIR = f"{_RUN_DIR}/eval"
 
 
 def _load_generator() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("local_generate_stories", _GENERATOR_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "local_generate_stories", _GENERATOR_PATH
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load generator script: {_GENERATOR_PATH}")
     module = importlib.util.module_from_spec(spec)
@@ -41,7 +43,9 @@ def _load_generator() -> ModuleType:
 
 
 def _load_fetch_outputs() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("image_eval_fetch_outputs", _FETCH_OUTPUTS_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "image_eval_fetch_outputs", _FETCH_OUTPUTS_PATH
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load fetch script: {_FETCH_OUTPUTS_PATH}")
     module = importlib.util.module_from_spec(spec)
@@ -79,13 +83,16 @@ def _generator_args(
 
 
 def _fetch_args(*, story_id: str | None, user_id: str | None) -> list[str]:
+    out = _EVAL_DIR
+    if story_id:
+        out = f"{_EVAL_DIR}/{story_id}__{story_id}"
     args = [
         "--local-root",
         _LOCAL_ROOT,
         "--log-dir",
         _LOG_DIR,
         "--out",
-        _EVAL_DIR,
+        out,
     ]
     if story_id:
         args.extend(

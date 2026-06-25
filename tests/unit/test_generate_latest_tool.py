@@ -84,7 +84,7 @@ def test_fetch_args_build_single_story_mode_with_default_user() -> None:
         "--log-dir",
         "eval_runs/latest/prompt_logs",
         "--out",
-        "eval_runs/latest/eval",
+        "eval_runs/latest/eval/1_14__1_14",
         "--story",
         "1_14",
         "--story-id",
@@ -108,7 +108,9 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
         return 0
 
     monkeypatch.setattr(mod, "_load_generator", lambda: SimpleNamespace(main=fake_main))
-    monkeypatch.setattr(mod, "_load_fetch_outputs", lambda: SimpleNamespace(main=fake_fetch))
+    monkeypatch.setattr(
+        mod, "_load_fetch_outputs", lambda: SimpleNamespace(main=fake_fetch)
+    )
 
     result = mod.main(["1_8", "--url", "http://comfy:8188", "--timeout", "120"])
 
@@ -138,7 +140,7 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
             "--log-dir",
             "eval_runs/latest/prompt_logs",
             "--out",
-            "eval_runs/latest/eval",
+            "eval_runs/latest/eval/1_8__1_8",
             "--story",
             "1_8",
             "--story-id",
