@@ -72,12 +72,17 @@ def test_bindings_resolve_real_prompts() -> None:
     assert bindings["1_1"]["story_number"] == 1
     # The full life-lesson catalog (1_1..1_21) is present and each carries a
     # non-empty title.
-    assert set(bindings) == {f"1_{n}" for n in range(1, 22)}
+    life_lesson_ids = {f"1_{n}" for n in range(1, 22)}
+    assert set(bindings) == life_lesson_ids | {"2_1"}
     assert all(bindings[s]["title"] for s in bindings)
-    # Every story also carries 6 per-panel storybook lines (story_text), one per
-    # prompt/panel — the `story-text` skill's output, surfaced to the catalog.
+    # Every life-lesson story also carries 6 per-panel storybook lines
+    # (story_text), one per prompt/panel — the `story-text` skill's output,
+    # surfaced to the catalog.
     assert len(bindings["1_1"]["story_text"]) == 6
-    assert all(len(bindings[s]["story_text"]) == 6 for s in bindings)
+    assert life_lesson_ids.issubset(bindings)
+    assert all(len(bindings[s]["story_text"]) == 6 for s in life_lesson_ids)
+    assert bindings["2_1"]["story_type_name"] == "adventure"
+    assert len(bindings["2_1"]["story_text"]) == 12
 
 
 def test_bindings_filter_by_template() -> None:

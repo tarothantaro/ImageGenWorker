@@ -1,0 +1,57 @@
+{
+  "type": 2,
+  "id": 1,
+  "title": "The Bell of Brightwater",
+  "lesson": "Bravery grows when we listen, learn, and help others together.",
+  "character_file": "adventure_character.json",
+  "characters": [
+    "ADVENTURE_ELDER_MARA",
+    "ADVENTURE_HEALER_ALDEN",
+    "ADVENTURE_BLACKSMITH_TOMAS",
+    "ADVENTURE_SICK_CHILD_ELIN",
+    "ADVENTURE_GATE_GUARD_ROWAN"
+  ],
+  "prompts": [
+    "In a medieval village square at dawn -- timber cottages, a stone well, muddy paths, pale golden light -- the {INPUT_1_AGE} person from the input image carries a small basket of bread past the stone well, looking curious and alert. Eye-level medium shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "In a medieval village square at dawn -- timber cottages, a stone well, muddy paths, pale golden light -- the {INPUT_1_AGE} person from the input image grips the bread basket with both hands and turns toward the worried villagers, with a startled expression. {ADVENTURE_ELDER_MARA} raises one trembling hand toward the chapel bell rope, looking afraid. {ADVENTURE_BLACKSMITH_TOMAS} leans over the well bucket, pressing a cloth to his forehead with a weary expression. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "Inside a medieval healer's cottage in the morning -- hanging herbs, wooden shelves of clay jars, a small hearth, warm amber light -- the {INPUT_1_AGE} person from the input image points at an open herb book on the table, with a determined expression. {ADVENTURE_HEALER_ALDEN} holds a clay cup and traces a drawing in the book with one finger, looking grave. Make the interaction read physically: both faces and hands aim toward the same open book. Eye-level medium shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "Inside a medieval healer's cottage in the morning -- hanging herbs, wooden shelves of clay jars, a small hearth, warm amber light -- the {INPUT_1_AGE} person from the input image kneels beside a straw bed, offering a damp cloth with a careful expression. {ADVENTURE_SICK_CHILD_ELIN} lies propped on pillows under a patched blanket, holding the cloth weakly and looking feverish. {ADVENTURE_HEALER_ALDEN} mixes herbs in a wooden bowl, watching with concern. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "At a medieval village gate at morning -- tall wooden palisade, open cart track, misty forest beyond, cool silver light -- the {INPUT_1_AGE} person from the input image fastens a small satchel across their chest and holds up the herb book, with a brave expression. {ADVENTURE_GATE_GUARD_ROWAN} lifts the heavy gate bar with both hands, looking cautious. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "In an ancient forest in late morning -- mossy stones, twisted oak roots, ferns, shafts of green light -- the {INPUT_1_AGE} person from the input image crouches beside a fallen log, brushing leaves away from a tiny silver leaf plant, with a focused expression. Eye-level medium shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "In an ancient forest in late morning -- mossy stones, twisted oak roots, ferns, shafts of green light -- the {INPUT_1_AGE} person from the input image reaches one hand toward the tiny silver leaf plant while using the other hand to steady the herb book, with an amazed expression. A small fox made of warm golden light stands on a mossy stone and points its nose toward the plant, looking watchful. Eye-level medium shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "At a medieval village gate at morning -- tall wooden palisade, open cart track, misty forest beyond, cool silver light -- the {INPUT_1_AGE} person from the input image runs through the open gate clutching a wrapped silver leaf plant, with an urgent hopeful expression. {ADVENTURE_GATE_GUARD_ROWAN} pulls the gate wider with both hands and turns toward the runner, looking relieved. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "Inside a medieval healer's cottage in the morning -- hanging herbs, wooden shelves of clay jars, a small hearth, warm amber light -- the {INPUT_1_AGE} person from the input image tips the silver leaf plant into a steaming mortar, with a careful concentrated expression. {ADVENTURE_HEALER_ALDEN} grinds the leaves with a wooden pestle, looking intent. {ADVENTURE_ELDER_MARA} steadies a row of clay cups on the table, looking hopeful. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "In a medieval village square at dawn -- timber cottages, a stone well, muddy paths, pale golden light -- the {INPUT_1_AGE} person from the input image carries a tray of small clay cups toward waiting villagers, with a gentle determined expression. {ADVENTURE_BLACKSMITH_TOMAS} kneels to receive one cup with both hands, looking grateful and exhausted. {ADVENTURE_ELDER_MARA} guides his elbow, looking hopeful. Make the handoff read as one shared cup between the child and blacksmith. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "Inside a medieval healer's cottage in the morning -- hanging herbs, wooden shelves of clay jars, a small hearth, warm amber light -- the {INPUT_1_AGE} person from the input image sits beside the straw bed and clasps the sick child's hand, with a relieved expression. {ADVENTURE_SICK_CHILD_ELIN} sits upright holding a clay cup and smiling weakly. {ADVENTURE_HEALER_ALDEN} checks the child's forehead with the back of his hand, looking relieved. Eye-level medium shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}",
+    "In a medieval village square at dawn -- timber cottages, a stone well, muddy paths, pale golden light -- the {INPUT_1_AGE} person from the input image rings the chapel bell rope with both hands, smiling proudly. {ADVENTURE_ELDER_MARA} lifts a small wreath toward the child, looking grateful. {ADVENTURE_BLACKSMITH_TOMAS} claps with broad hands, looking healthy and joyful. {ADVENTURE_HEALER_ALDEN} raises the herb book in celebration, looking proud. Eye-level medium-wide shot, soft storybook illustration style. {INPUT_IMAGE_IDENTITY}"
+  ],
+  "gists": [
+    "In a medieval village square at dawn, the child carries bread past the well, showing the peaceful village before trouble begins.",
+    "In the village square, the child turns in alarm as the elder reaches for the bell and the blacksmith leans sickly near the well.",
+    "Inside the healer's cottage, the child points to an herb book while the healer explains that a rare silver leaf may cure the sickness.",
+    "Inside the healer's cottage, the child comforts a sick village child while the healer prepares simple herbs that are not strong enough yet.",
+    "At the village gate, the child prepares to leave for the forest while the gate guard opens the way with caution.",
+    "In the ancient forest, the child searches near a fallen log and discovers a tiny silver leaf plant among the ferns.",
+    "In the ancient forest, the child reaches for the silver leaf as a magical golden fox quietly guides them to the right plant.",
+    "At the village gate, the child runs home carrying the wrapped silver leaf while the relieved guard opens the gate wider.",
+    "Inside the healer's cottage, the child, healer, and elder work together to grind the silver leaf and pour medicine into clay cups.",
+    "In the village square, the child gives medicine to the sick blacksmith while the elder helps, showing the village beginning to hope.",
+    "Inside the healer's cottage, the sick child sits up after drinking medicine while the child and healer react with relief.",
+    "In the village square, the child rings the chapel bell as the elder, blacksmith, and healer celebrate the village being saved."
+  ],
+  "texts": [
+    "At dawn, {NAME} carried warm bread through Brightwater village. The well splashed softly, and smoke curled from little roofs. \"Good morning, village,\" said {NAME}, smiling at the sleepy square.",
+    "Then the chapel bell clanged. Elder Mara cried, \"The fever has spread!\" Blacksmith Tomas groaned by the well. \"What can I do?\" asked {NAME}. \"Find Healer Alden,\" said Mara.",
+    "In the healer's cottage, Alden opened a dusty book. \"Only silver leaf can cool this fever,\" he said. {NAME} pointed to the picture. \"Then I will find it,\" said {NAME}.",
+    "Little Elin shivered on a straw bed. {NAME} pressed a cool cloth to her hand. \"Will I get better?\" whispered Elin. \"We will try,\" said {NAME}. Alden nodded, worried but ready.",
+    "At the gate, Rowan lifted the heavy bar. \"The forest is deep,\" warned Rowan. \"I will be careful,\" said {NAME}, holding the herb book tight. \"Then hurry,\" Rowan said.",
+    "Under twisted oaks, {NAME} searched beside mossy stones. Leaves rustled, and every fern looked mysterious. \"Silver leaf, silver leaf,\" whispered {NAME}. \"Please be hiding close by.\"",
+    "A golden fox stepped onto a stone, bright as candlelight. It tipped its nose toward a tiny plant. \"Is that it?\" asked {NAME}. The fox blinked. \"Thank you,\" said {NAME}.",
+    "{NAME} raced back through the gate with the plant wrapped safely. \"You found it!\" called Rowan, pulling the gate wide. \"The village still has time,\" panted {NAME}.",
+    "Alden crushed the silver leaf while Mara lined up cups. {NAME} poured carefully. \"Slowly,\" said Alden. \"No drops wasted,\" said Mara. \"For everyone,\" said {NAME}.",
+    "In the square, {NAME} carried the first cup to Tomas. \"Drink this,\" said {NAME}. \"For Brightwater?\" asked Tomas weakly. \"For all of us,\" said Mara, steadying his hand.",
+    "By evening, Elin sat up and sipped. \"My head feels cool,\" she whispered. {NAME} squeezed her hand. \"You are getting better,\" said Alden. {NAME} finally smiled.",
+    "When the bell rang again, it rang for joy. Mara placed a wreath in {NAME}'s hands. \"You listened, learned, and helped,\" she said. Brightwater cheered, and {NAME}'s bravery shone."
+  ],
+  "version": 1
+}

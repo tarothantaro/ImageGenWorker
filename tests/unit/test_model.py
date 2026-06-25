@@ -260,6 +260,18 @@ def test_generate_accepts_heic_input() -> None:
     assert fake.uploads[0][1] == heic
 
 
+def test_generate_uses_twelve_panel_template_for_adventure_story() -> None:
+    fake = FakeComfyUI(width=1024, height=736)
+    model = _model(fake)
+
+    panels = _generate(model, prompt_type=2, prompt_id=1)
+
+    assert len(panels) == 12
+    assert len(fake.submitted) == 12
+    assert [panel.panel_index for panel in panels] == list(range(12))
+    assert all(panel.total == 12 for panel in panels)
+
+
 # --- multi-panel (one image per panel) ---------------------------------------
 
 

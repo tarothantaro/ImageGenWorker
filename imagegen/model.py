@@ -4,7 +4,7 @@
 the returned object through the ``ImageGenModel`` protocol. The model:
 
 1. validates the input images (worker-side terminal failures),
-2. loads ``workflows/2`` + ``templates/2`` bound to the job's prompt set
+2. loads the render template bound to the job's prompt type and prompt set
    ``prompts/<type>_<id>.json`` (see :mod:`imagegen.workflow`),
 3. uploads the input photo(s) to ComfyUI under their per-story filenames,
 4. **yields one image per template panel** (DESIGN.md §7.2: *one panel == one
@@ -64,9 +64,10 @@ _DEFAULT_PROMPTS_ROOT = _PACKAGE_ROOT / "prompts"
 
 _DEFAULT_MODEL_VERSION = "comfyui-flux2"
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 180.0
-# The single render template every story uses (DESIGN.md §7.2). Its panels carry
-# the per-scene seeds + filename prefixes; the job's prompt set fills the text.
+# The default render template for 6-panel stories. Its panels carry the per-scene
+# seeds + filename prefixes; the job's prompt set fills the text.
 _RENDER_TEMPLATE_ID = "2"
+_RENDER_TEMPLATE_ID_BY_PROMPT_TYPE = {2: "3"}
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -219,6 +220,10 @@ def _age_placeholders(input_ages: list[str | None] | None) -> dict[str, str]:
     return placeholders
 
 
+def _render_template_id(prompt_type: int) -> str:
+    return _RENDER_TEMPLATE_ID_BY_PROMPT_TYPE.get(prompt_type, _RENDER_TEMPLATE_ID)
+
+
 # --- the model ---------------------------------------------------------------
 
 
@@ -260,7 +265,8 @@ class ComfyUIModel:
         failed input upload are raised here, before any panel runs — so the
         caller sees them immediately. Per-panel ComfyUI failures surface as the
         iterator is consumed. The job's ``type``/``id`` select the prompt set
-        ``prompts/<type>_<id>.json`` rendered through ``templates/1``.
+        ``prompts/<type>_<id>.json`` rendered through the matching render
+        template.
 
         ``input_ages`` carries the age string for each input (in the same
         position order as ``input_images``), filling the prompt set's
@@ -269,8 +275,9 @@ class ComfyUIModel:
         """
         _validate_input_images(input_images)
         story_ref = f"{prompt_type}_{prompt_id}"
+        template_id = _render_template_id(prompt_type)
         # UnsupportedTemplateError on a missing/malformed template or prompt set.
-        prepared = self._builder.prepare(_RENDER_TEMPLATE_ID, story_ref)
+        prepared = self._builder.prepare(template_id, story_ref)
 
         placeholders = {"USER_ID": user_id, "STORY_ID": story_id}
         placeholders.update(_age_placeholders(input_ages))
@@ -384,7 +391,7 @@ class ComfyUIModel:
                 story_id=story_id,
                 user_id=user_id,
                 story_ref=story_ref,
-                render_template_id=_RENDER_TEMPLATE_ID,
+                render_template_id=prepared.template_id,
                 model_version=self._model_version,
                 panel_index=panel_index,
                 client_id=client_id,

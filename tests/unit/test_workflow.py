@@ -269,6 +269,37 @@ def test_prepare_story_resolves_known_tokens_and_leaves_unknown(tmp_path: Path) 
     assert text == "a brave knight meets {UNKNOWN}"
 
 
+def test_prepare_story_resolves_extra_character_file(tmp_path: Path) -> None:
+    builder = _write_assets(
+        tmp_path,
+        template={"workflow_id": "w", "story": "s", "panels": [[{"text": "{PROMPT}"}]]},
+        workflow_config={"nodes": [{"id": 1, "type": "CLIPTextEncode"}]},
+        workflow={"1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}}},
+        story={
+            "character_file": "adventure_character.json",
+            "prompts": ["{ADVENTURE_HEALER_ALDEN} helps {HERO}"],
+        },
+        characters={"HERO": {"description": "a brave child"}},
+    )
+    extra_file = tmp_path / "prompts" / "adventure_character.json"
+    extra_file.write_text(
+        json.dumps(
+            {
+                "characters": {
+                    "ADVENTURE_HEALER_ALDEN": {
+                        "description": "a medieval healer in a green robe"
+                    }
+                }
+            }
+        )
+    )
+
+    prepared = builder.prepare("t")
+
+    text = next(f["text"] for f in prepared.panels[0] if "text" in f)
+    assert text == "a medieval healer in a green robe helps a brave child"
+
+
 # --- prepare: random look for un-enumerated character tokens -----------------
 
 # A character.json whose look tables each hold exactly one option, so a composed

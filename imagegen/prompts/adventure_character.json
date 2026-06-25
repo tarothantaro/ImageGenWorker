@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "_comment": "Adventure-specific generated supporting characters. These explicit characters are intentionally not shared with the generic character.json pool; story files opt in with character_file.",
+  "characters": {
+    "ADVENTURE_ELDER_MARA": {
+      "description": "an elderly village woman with silver hair braided under a linen coif, a small stooped frame, wearing a faded blue wool gown, a brown apron, and a simple wooden pendant"
+    },
+    "ADVENTURE_HEALER_ALDEN": {
+      "description": "a middle-aged village healer with shoulder-length dark hair streaked with grey, a lean build, wearing a moss-green wool robe, a leather satchel, and small brass herb shears on his belt"
+    },
+    "ADVENTURE_BLACKSMITH_TOMAS": {
+      "description": "a broad-shouldered village blacksmith with short black hair, a thick dark beard, wearing a soot-marked leather apron over a rust-red tunic and heavy work boots"
+    },
+    "ADVENTURE_SICK_CHILD_ELIN": {
+      "description": "a small village child with wavy brown hair, a slight frame, wearing a cream linen nightshirt, a patched grey blanket, and a tiny carved bird charm on a cord"
+    },
+    "ADVENTURE_GATE_GUARD_ROWAN": {
+      "description": "a tall village gate guard with cropped auburn hair, a square build, wearing a quilted brown gambeson, a dark green cloak, and an iron-ring belt"
+    }
+  }
+}

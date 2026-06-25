@@ -1,0 +1,79 @@
+{
+    "id": "3",
+    "name": "qwen-edit-twelve-panels",
+    "workflow_id": "2",
+    "panels": [
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410683},
+            {"filename_prefix": "USER_ID_STORY_ID_P0"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410684},
+            {"filename_prefix": "USER_ID_STORY_ID_P1"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410685},
+            {"filename_prefix": "USER_ID_STORY_ID_P2"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410686},
+            {"filename_prefix": "USER_ID_STORY_ID_P3"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410687},
+            {"filename_prefix": "USER_ID_STORY_ID_P4"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410688},
+            {"filename_prefix": "USER_ID_STORY_ID_P5"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410689},
+            {"filename_prefix": "USER_ID_STORY_ID_P6"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410690},
+            {"filename_prefix": "USER_ID_STORY_ID_P7"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410691},
+            {"filename_prefix": "USER_ID_STORY_ID_P8"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410692},
+            {"filename_prefix": "USER_ID_STORY_ID_P9"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410693},
+            {"filename_prefix": "USER_ID_STORY_ID_P10"}
+        ],
+        [
+            {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+            {"prompt": "{PROMPT}"},
+            {"seed": 771062815410694},
+            {"filename_prefix": "USER_ID_STORY_ID_P11"}
+        ]
+    ]
+}

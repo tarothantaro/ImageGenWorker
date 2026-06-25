@@ -49,7 +49,7 @@ _TEMPLATES_COLLECTION = "templates"
 
 # Display name per prompt ``type`` (the prompt JSON dropped ``story_type_name``;
 # the mapping lives in code now). Extend as new story types are added.
-_TYPE_NAMES = {1: "life_lesson"}
+_TYPE_NAMES = {1: "life_lesson", 2: "adventure"}
 
 
 def _load_json(path: Path) -> dict[str, Any]:

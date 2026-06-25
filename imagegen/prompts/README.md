@@ -23,6 +23,7 @@ images).
 ```
 imagegen/prompts/
 ├── character.json     # library of generated supporting characters ({TOKEN} placeholders)
+├── adventure_character.json # explicit adventure-only supporting characters
 ├── 1_1.json           # story: type 1 (life_lesson), id 1
 └── README.md          # this file
 ```
@@ -39,6 +40,7 @@ selector.
 | type | name | description |
 |---|---|---|
 | 1 | `life_lesson` | A short visual narrative whose arc teaches one clear lesson. |
+| 2 | `adventure` | A longer quest story with a concrete problem, journey, and rescue. |
 
 The `name` column is the canonical mapping — it lives in code (the worker's
 `sync_story_catalog._TYPE_NAMES`), not in the JSON. Reserve new numbers here as
@@ -52,6 +54,7 @@ new categories are added (and add them to `_TYPE_NAMES`).
   "id": 1,
   "title": "Kindness Comes Back Around",
   "lesson": "A small act of kindness returns to you when you least expect it.",
+  "character_file": "adventure_character.json",
   "characters": ["GENDER_F_AGE_70", "GENDER_M_AGE_25"],
   "prompts": [
     "…panel 1 prompt…",
@@ -98,6 +101,8 @@ new categories are added (and add them to `_TYPE_NAMES`).
   substitution").
 - `characters` — every `{TOKEN}` the prompts reference, for quick auditing. The
   input-photo protagonist is implicit and never listed.
+- `character_file` — optional extra character asset, relative to this directory,
+  whose explicit `characters` entries overlay `character.json` for this story.
 
 ## Composition & position
 

@@ -376,7 +376,7 @@ class WorkflowBuilder:
                 f"prompts but the template has {len(panels)} panels"
             )
 
-        characters = self._character_substitutions([str(p) for p in prompts])
+        characters = self._character_substitutions([str(p) for p in prompts], story)
         for panel_index, (panel, prompt) in enumerate(zip(panels, prompts)):
             resolved = _substitute(str(prompt), characters)
             injected = False
@@ -392,7 +392,9 @@ class WorkflowBuilder:
                     "receive a prompt"
                 )
 
-    def _character_substitutions(self, prompts: list[str]) -> dict[str, str]:
+    def _character_substitutions(
+        self, prompts: list[str], story: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         """Map every character ``{TOKEN}`` in ``prompts`` to a description.
 
         ``prompts/character.json`` is the shared library of generated supporting
@@ -416,6 +418,14 @@ class WorkflowBuilder:
         map, so the caller's substitution passes them through untouched.
         """
         data = self._load_json(self._prompts_root / "character.json")
+        if story is not None and story.get("character_file"):
+            extra_path = self._prompts_root / str(story["character_file"])
+            extra = self._load_json(extra_path)
+            merged_characters = {
+                **data.get("characters", {}),
+                **extra.get("characters", {}),
+            }
+            data = {**data, "characters": merged_characters}
         substitutions: dict[str, str] = {}
         for token, entry in data.get("characters", {}).items():
             description = entry.get("description") if isinstance(entry, dict) else None
