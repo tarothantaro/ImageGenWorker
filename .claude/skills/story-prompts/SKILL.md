@@ -240,8 +240,12 @@ For every prompt in the array, confirm:
 4. **Plan the arc across the requested panel count.** Let the supplied story type
    and gists determine the structure: a life lesson may use a simple
    choice/consequence/resolution arc, while an adventure may need a
-   quest/problem/rescue arc. Keep location/time continuity unless the story moves
-   on. List the story's distinct scenes up front and write **one canonical
+   quest/problem/rescue arc. **For adventure (type 2) stories, also apply the
+   `story-prompts-adventure` sub-skill (`adventure/SKILL.md`)** — it inherits
+   every rule here and adds the fixed first/second/last panel roles (origin →
+   personal call → outcome tied back to the person's life) and the runtime
+   `{IMAGE_STYLE}` placeholder. Keep location/time continuity unless the story
+   moves on. List the story's distinct scenes up front and write **one canonical
    setting-anchor clause for each** (rule 10); every panel in a scene pastes that
    exact clause, so continuity is locked before you write the per-panel action.
 5. **Write each panel** with the rules above. Alternate solo and multi-person
