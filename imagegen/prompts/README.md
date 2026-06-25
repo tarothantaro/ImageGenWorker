@@ -133,8 +133,10 @@ string replace, the same mechanism `workflow.py` uses for `USER_ID` /
 `STORY_ID`): an enumerated `characters[TOKEN].description` if one exists,
 otherwise a look composed from the modular tables. **Race is optional in the
 token** — omit `_RACE_<r>` (`GENDER_F_AGE_70`) and a race is drawn at random per
-job; add it (`GENDER_F_AGE_70_RACE_ASIAN`) to pin an exact one. Authoring
-templates keep the placeholder verbatim. See `character.json` and the
+job; add it (`GENDER_F_AGE_70_RACE_ASIAN`) to pin an exact one. Random fallback
+hair is first chosen from `hair_by_gender[<g>]` for the token's gender, then
+filtered by the existing age/gender restrictions. Authoring templates keep the
+placeholder verbatim. See `character.json` and the
 `character-config` skill for the placeholder/runtime contract.
 
 The read-aloud `texts` use one different placeholder — **`{NAME}`** — for the

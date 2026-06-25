@@ -24,10 +24,11 @@ The special `{INPUT_IMAGE_IDENTITY}` placeholder is not a character; it resolves
 to the shared identity-preservation instruction that belongs at the end of every
 story prompt.
 
-**Runtime contract (keep it this simple):** strip the `{}`, look up
-`characters[<TOKEN>].description`, string-replace it into the prompt — the same
-mechanism `workflow.py` uses for `USER_ID` / `STORY_ID`. `description` is the
-**only** field read at runtime. Everything else is authoring metadata.
+**Runtime contract:** strip the `{}`, look up `characters[<TOKEN>].description`,
+string-replace it into the prompt — the same mechanism `workflow.py` uses for
+`USER_ID` / `STORY_ID`. For random fallback tokens with no enumerated
+description, runtime also reads `dimensions`, `hair_by_gender`, `restrictions`,
+and the fragment tables needed to compose a look.
 
 ## Structure (modular by design)
 
@@ -38,20 +39,24 @@ _recipe           how a `description` is composed (render_order + template + rul
 dimensions        gender / age / race  — the tokens encoded in a placeholder NAME
                   (each gender/age value carries an `avoid` list, see below)
 hair build wardrobe features   reusable fragment libraries (the modular parts)
+hair_by_gender   gender-keyed hair candidate lists used by runtime fallback
 restrictions      fragment keys reserved to a demographic group (child_only /
                   adult_only / elderly_only / masc_only / fem_only)
 characters        TOKEN -> { refs: {...}, description: "<compiled string>" }
                   or a documented special prompt-snippet token with description only
 ```
 
-### `restrictions` + `avoid` (consumed at runtime by the random fallback)
+### `hair_by_gender` + `restrictions` + `avoid` (runtime random fallback)
 
 When a `GENDER_..._AGE_...` token (with or without the optional `_RACE_...`) has
 **no** `characters` entry, `workflow.py` composes a look on the fly: it picks the
 hair/build/wardrobe/features fragments **at random**, plus a **random race** when
-the token omits `_RACE_`. Two fields keep the look draw plausible (the only
-runtime-read fields besides `characters[*].description`):
+the token omits `_RACE_`. Three fields keep the look draw plausible:
 
+- `hair_by_gender.<g>` is the first filter for hair, keyed by the token's
+  `GENDER_<g>` value. Keep male options short/cropped because the model is
+  unreliable on long-haired men; keep female options longer/tied because it is
+  unreliable on short-haired women. Non-binary options should be neutral.
 - `restrictions.<group>.<table>` lists the fragment keys reserved to a
   demographic group — `child_only`, `adult_only`, `elderly_only`, `masc_only`,
   `fem_only`.
@@ -63,11 +68,12 @@ runtime-read fields besides `characters[*].description`):
   avoid just `child_only`, so they alone unlock `elderly_only` looks (grey/
   thinning hair, fine wrinkles) on top of `adult_only`.
 
-At compose time the draw drops every key reserved to any group the character
-avoids. So a child never rolls a business suit/stubble, a 25-year-old never a
-grey bun, a man never a dress/pigtails, a non-binary character neither. A key
-listed under **no** group suits everyone; a key may sit in **several** groups (a
-beard is `masc_only` *and* `adult_only`; thinning grey hair is `masc_only` *and*
+At compose time hair is first limited to the token gender's `hair_by_gender`
+list, then the draw drops every key reserved to any group the character avoids.
+So a child never rolls a business suit/stubble, a 25-year-old never a grey bun,
+a man never a dress/pigtails, a non-binary character neither. A key listed under
+**no** group suits everyone; a key may sit in **several** groups (a beard is
+`masc_only` *and* `adult_only`; thinning grey hair is `masc_only` *and*
 `elderly_only`). If a whole table is filtered away, the restriction is ignored
 for that table rather than yielding nothing. When you add a fragment whose look
 is clearly age- or gender-specific, list it under the matching group(s);

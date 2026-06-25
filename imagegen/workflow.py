@@ -163,9 +163,10 @@ def _compose_random_character(
         {age} {ethnicity} {gender_noun} with {hair}, {build},
             wearing {wardrobe}[, with {features}]
 
-    The draw is **age- and gender-aware**: each fragment table is filtered
-    before the random pick to the keys this character may use. Every dimension
-    value (the matched age and gender entry) lists under ``avoid`` the
+    The draw is **age- and gender-aware**: hair is first limited to the
+    ``hair_by_gender`` list for the token's gender, then each fragment table is
+    filtered before the random pick to the keys this character may use. Every
+    dimension value (the matched age and gender entry) lists under ``avoid`` the
     ``restrictions`` groups whose fragments it must skip. Age is a three-way
     band, not binary — a child avoids ``adult_only`` *and* ``elderly_only`` (a
     business suit, a grey bun …); a middle adult avoids ``child_only`` *and*
@@ -214,10 +215,15 @@ def _compose_random_character(
     restrictions = data.get("restrictions", {})
     avoid_groups = list(gender.get("avoid", [])) + list(age.get("avoid", []))
 
-    def pick(table_name: str) -> str | None:
+    def pick(table_name: str, allowed_keys: list[str] | None = None) -> str | None:
         table = data.get(table_name, {})
         if not table:
             return None
+        if allowed_keys is not None:
+            allowed = {key for key in allowed_keys if key in table}
+            table = {key: table[key] for key in allowed}
+            if not table:
+                return None
         excluded = {
             key
             for group in avoid_groups
@@ -228,7 +234,13 @@ def _compose_random_character(
             candidates = sorted(table)
         return str(table[rng.choice(candidates)])
 
-    hair = pick("hair")
+    hair_by_gender = data.get("hair_by_gender", {})
+    hair_keys = (
+        hair_by_gender.get(match["gender"])
+        if isinstance(hair_by_gender, dict)
+        else None
+    )
+    hair = pick("hair", hair_keys if isinstance(hair_keys, list) else None)
     build = pick("build")
     wardrobe = pick("wardrobe")
     features = pick("features")

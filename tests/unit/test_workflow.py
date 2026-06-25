@@ -377,9 +377,7 @@ def test_prepare_composes_random_look_for_unenumerated_token(tmp_path: Path) -> 
 
     prepared = builder.prepare("t")
 
-    texts = [
-        next(f["text"] for f in panel if "text" in f) for panel in prepared.panels
-    ]
+    texts = [next(f["text"] for f in panel if "text" in f) for panel in prepared.panels]
     assert all("{GENDER" not in text for text in texts)
     assert texts == [
         f"Panel A with {_COMPOSED_SINGLE_LOOK}.",
@@ -432,7 +430,9 @@ def test_prepare_raises_on_character_token_that_resolves_to_nothing(
 
 def test_compose_uses_child_noun_and_multiword_race() -> None:
     text = _compose_random_character(
-        "GENDER_F_AGE_08_RACE_SOUTH_ASIAN", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+        "GENDER_F_AGE_08_RACE_SOUTH_ASIAN",
+        _SINGLE_LOOK_CHARACTER_JSON,
+        random.Random(0),
     )
     assert text == (
         "an 8-year-old South Asian girl with short black hair, "
@@ -444,7 +444,9 @@ def test_compose_resolves_race_with_trailing_disambiguator() -> None:
     # ``..._RACE_ASIAN_PARENT`` resolves to the ASIAN race adjective; the
     # ``_PARENT`` suffix only keeps the token distinct from the plain config.
     text = _compose_random_character(
-        "GENDER_M_AGE_30_RACE_ASIAN_PARENT", _SINGLE_LOOK_CHARACTER_JSON, random.Random(0)
+        "GENDER_M_AGE_30_RACE_ASIAN_PARENT",
+        _SINGLE_LOOK_CHARACTER_JSON,
+        random.Random(0),
     )
     assert text == _COMPOSED_SINGLE_LOOK
 
@@ -516,9 +518,7 @@ def test_prepare_composes_one_random_race_held_across_panels(tmp_path: Path) -> 
 
     prepared = builder.prepare("t")
 
-    texts = [
-        next(f["text"] for f in panel if "text" in f) for panel in prepared.panels
-    ]
+    texts = [next(f["text"] for f in panel if "text" in f) for panel in prepared.panels]
     assert all("{GENDER" not in text for text in texts)
     # Identical description (same randomly-picked race) in every panel.
     descriptions = {text[2:] for text in texts}  # drop the "A "/"B "/"C " prefix
@@ -568,15 +568,21 @@ def test_resolve_race_key_longest_match_or_none() -> None:
 
 def test_compose_is_reproducible_under_a_fixed_seed() -> None:
     token = "GENDER_M_AGE_30_RACE_ASIAN"
-    first = _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7))
-    second = _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7))
+    first = _compose_random_character(
+        token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7)
+    )
+    second = _compose_random_character(
+        token, _MULTI_LOOK_CHARACTER_JSON, random.Random(7)
+    )
     assert first == second
 
 
 def test_compose_varies_across_seeds() -> None:
     token = "GENDER_M_AGE_30_RACE_ASIAN"
     looks = {
-        _compose_random_character(token, _MULTI_LOOK_CHARACTER_JSON, random.Random(seed))
+        _compose_random_character(
+            token, _MULTI_LOOK_CHARACTER_JSON, random.Random(seed)
+        )
         for seed in range(12)
     }
     assert len(looks) > 1
@@ -647,11 +653,99 @@ _TAGGED_CHARACTER_JSON: dict[str, Any] = {
 }
 
 
+_GENDERED_HAIR_CHARACTER_JSON: dict[str, Any] = {
+    "dimensions": {
+        "gender": {
+            "M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]},
+            "F": {"noun": "woman", "noun_child": "girl", "avoid": ["masc_only"]},
+            "NB": {
+                "noun": "person",
+                "noun_child": "child",
+                "avoid": ["masc_only", "fem_only"],
+            },
+        },
+        "age": {
+            "30": {"phrase": "a 30-year-old", "child": False, "avoid": []},
+            "70": {"phrase": "an elderly", "child": False, "avoid": []},
+        },
+        "race": {"ASIAN": {"adj": "East Asian"}},
+    },
+    "hair": {
+        "SHORT_NEUTRAL": "short neutral hair",
+        "LONG_FEM": "long wavy hair",
+        "MAN_BUN": "a long man bun",
+        "BUZZ": "a buzz cut",
+        "GREY_BUN": "a grey bun",
+        "SHORT_GREY": "short grey hair",
+    },
+    "hair_by_gender": {
+        "M": ["SHORT_NEUTRAL", "BUZZ", "SHORT_GREY"],
+        "F": ["LONG_FEM", "GREY_BUN"],
+        "NB": ["SHORT_NEUTRAL"],
+    },
+    "restrictions": {
+        "masc_only": {"hair": ["BUZZ", "SHORT_GREY"]},
+        "fem_only": {"hair": ["LONG_FEM", "GREY_BUN"]},
+        "elderly_only": {"hair": ["GREY_BUN", "SHORT_GREY"]},
+    },
+}
+
+
 def _looks(token: str, n: int = 40) -> list[str]:
     return [
         _compose_random_character(token, _TAGGED_CHARACTER_JSON, random.Random(seed))
         for seed in range(n)
     ]
+
+
+def _gendered_hair_looks(token: str, n: int = 40) -> list[str]:
+    return [
+        _compose_random_character(
+            token, _GENDERED_HAIR_CHARACTER_JSON, random.Random(seed)
+        )
+        for seed in range(n)
+    ]
+
+
+def test_compose_limits_male_hair_to_gender_classification() -> None:
+    looks = _gendered_hair_looks("GENDER_M_AGE_30_RACE_ASIAN")
+
+    assert all("long wavy hair" not in look for look in looks)
+    assert all("a grey bun" not in look for look in looks)
+    assert all("a long man bun" not in look for look in looks)
+    assert any("short neutral hair" in look for look in looks)
+    assert any("a buzz cut" in look for look in looks)
+
+
+def test_compose_limits_female_hair_to_gender_classification() -> None:
+    looks = _gendered_hair_looks("GENDER_F_AGE_30_RACE_ASIAN")
+
+    assert all("short neutral hair" not in look for look in looks)
+    assert all("a buzz cut" not in look for look in looks)
+    assert all("short grey hair" not in look for look in looks)
+    assert any("long wavy hair" in look for look in looks)
+    assert any("a grey bun" in look for look in looks)
+
+
+def test_compose_limits_nonbinary_hair_to_gender_classification() -> None:
+    looks = _gendered_hair_looks("GENDER_NB_AGE_30_RACE_ASIAN")
+
+    assert all("short neutral hair" in look for look in looks)
+    assert all("long wavy hair" not in look for look in looks)
+    assert all("a buzz cut" not in look for look in looks)
+
+
+def test_compose_omits_hair_when_gender_classification_is_stale() -> None:
+    data = {
+        **_GENDERED_HAIR_CHARACTER_JSON,
+        "hair_by_gender": {"M": ["MISSING_HAIR"]},
+    }
+
+    text = _compose_random_character(
+        "GENDER_M_AGE_30_RACE_ASIAN", data, random.Random(0)
+    )
+
+    assert text == "a 30-year-old East Asian man"
 
 
 def test_compose_child_token_never_draws_adult_only_fragments() -> None:
@@ -725,7 +819,9 @@ def test_compose_ignores_restriction_when_it_empties_a_table() -> None:
     restriction is dropped for that table rather than yielding nothing."""
     data = {
         "dimensions": {
-            "gender": {"M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]}},
+            "gender": {
+                "M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]}
+            },
             "age": {
                 "06": {"phrase": "a 6-year-old", "child": True, "avoid": ["adult_only"]}
             },
@@ -823,7 +919,9 @@ def test_render_does_not_mutate_the_base_workflow(
     placeholders = {"USER_ID": "u", "STORY_ID": "s"}
 
     first = real_builder.render(prepared, prepared.panels[0], placeholders=placeholders)
-    second = real_builder.render(prepared, prepared.panels[1], placeholders=placeholders)
+    second = real_builder.render(
+        prepared, prepared.panels[1], placeholders=placeholders
+    )
 
     # Each rendered panel carries its own template seed …
     assert first[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410683
