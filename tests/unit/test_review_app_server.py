@@ -64,3 +64,39 @@ def test_render_story_places_warning_block_before_summary() -> None:
     assert warning_pos < summary_pos
     assert "Outdated Eval" in html
     assert "WARNING: This eval report is outdated." in html
+
+
+def test_render_story_shows_panel_gist_without_eval_notes() -> None:
+    mod = _load()
+    story = {
+        "dir": "1_14__1_14",
+        "manifest": {
+            "title": "Come Play With Us",
+            "source": "eval_runs/latest/outputs",
+            "prompt_source": "worker_log",
+            "images": [
+                {
+                    "panel_number": 1,
+                    "variant": 0,
+                    "file": "eval_runs/latest/eval/1_14__1_14/00_panel1.png",
+                    "resolved_prompt": "A child waves from a playground.",
+                    "gist": "The child notices someone playing alone.",
+                }
+            ],
+        },
+        "report": {
+            "verdict": "",
+            "warnings": [],
+            "summary": "",
+            "panels": {},
+            "rest": "",
+        },
+        "status": {},
+    }
+    run = {"stories": [story]}
+
+    html = mod._render_story(run, story, "latest").decode("utf-8")
+
+    assert '<div class="gist"><strong>Gist</strong>' in html
+    assert "The child notices someone playing alone." in html
+    assert "No eval notes for this panel." in html

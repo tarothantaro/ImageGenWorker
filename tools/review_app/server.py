@@ -297,6 +297,9 @@ main { flex: 1 1 auto; min-width: 0; }
     border: 1px solid #e5e7eb; cursor: zoom-in; display: block; }
 .panel figcaption { font-size: 12px; color: #6b7280; margin-top: 4px; }
 .panel h4 { margin: 0 0 6px; }
+.gist { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 13.5px; color: #111827; }
+.gist strong { display: block; font-size: 11.5px; color: #166534; margin-bottom: 4px; }
 .prompt { background: #f9fafb; border: 1px solid #eef0f2; border-radius: 8px;
     padding: 10px 12px; font-size: 13.5px; color: #111827; white-space: pre-wrap; }
 .dialog { background: #fffaf0; border: 1px solid #f3e2b8; border-radius: 8px;
@@ -490,6 +493,13 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         # left: prompt + eval
         main.append("<div>")
         main.append(f"<h4>Panel {panel_no}</h4>")
+        gist = next((i.get("gist") for i in imgs if i.get("gist")), "")
+        if gist:
+            main.append(
+                '<div class="gist"><strong>Gist</strong>'
+                + html.escape(str(gist))
+                + "</div>"
+            )
         main.append('<div class="prompt">' + html.escape(prompt or "(no prompt)"))
         main.append("</div>")
         if dialog:
