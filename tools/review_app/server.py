@@ -486,6 +486,14 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
         prompt = next(
             (i.get("resolved_prompt") for i in imgs if i.get("resolved_prompt")), ""
         )
+        negative_prompt = next(
+            (
+                i.get("resolved_negative_prompt")
+                for i in imgs
+                if i.get("resolved_negative_prompt")
+            ),
+            "",
+        )
         dialog = next(
             (i.get("panel_dialog") for i in imgs if i.get("panel_dialog")), ""
         )
@@ -501,6 +509,12 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
                 + "</div>"
             )
         main.append('<div class="prompt">' + html.escape(prompt or "(no prompt)"))
+        if negative_prompt:
+            main.append(
+                '<span class="src">Negative: '
+                + html.escape(str(negative_prompt))
+                + "</span>"
+            )
         main.append("</div>")
         if dialog:
             main.append(

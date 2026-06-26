@@ -105,6 +105,42 @@ def test_render_story_shows_panel_gist_without_eval_notes() -> None:
     assert "No eval notes for this panel." in html
 
 
+def test_render_story_shows_negative_prompt_when_present() -> None:
+    mod = _load()
+    story = {
+        "dir": "1_8__1_8",
+        "manifest": {
+            "title": "No Training Wheels",
+            "source": "eval_runs/latest/outputs",
+            "prompt_source": "worker_log",
+            "images": [
+                {
+                    "panel_number": 1,
+                    "index": 0,
+                    "variant": 0,
+                    "file": "eval_runs/latest/outputs/liam/1_8/outputs/0.png",
+                    "resolved_prompt": "A child rides a bike.",
+                    "resolved_negative_prompt": "training side wheels",
+                }
+            ],
+        },
+        "report": {
+            "verdict": "",
+            "warnings": [],
+            "summary": "",
+            "panels": {},
+            "rest": "",
+        },
+        "status": {},
+    }
+    run = {"stories": [story]}
+
+    html = mod._render_story(run, story, "latest").decode("utf-8")
+
+    assert "A child rides a bike." in html
+    assert "Negative: training side wheels" in html
+
+
 def test_manifest_image_path_resolves_output_file_inside_run_dir(
     tmp_path: Path,
 ) -> None:

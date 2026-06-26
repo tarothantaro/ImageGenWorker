@@ -35,7 +35,9 @@ def _load() -> ModuleType:
     return module
 
 
-def _write_story(prompts_dir: Path, stem: str, text: str) -> None:
+def _write_story(
+    prompts_dir: Path, stem: str, text: str, negative_prompts: list[str] | None = None
+) -> None:
     (prompts_dir / f"{stem}.json").write_text(
         json.dumps(
             {
@@ -43,6 +45,7 @@ def _write_story(prompts_dir: Path, stem: str, text: str) -> None:
                 "lesson": "Share clearly.",
                 "characters": [],
                 "prompts": [f"Prompt for {stem}"],
+                "negative_prompts": negative_prompts or [],
                 "texts": [text],
                 "gists": [f"Gist for {stem}"],
             }
@@ -152,6 +155,8 @@ def test_local_download_references_outputs_and_marks_reports_outdated(
     assert latest_manifest["uses_local_output_refs"] is True
     assert latest_manifest["images"][0]["file"] == str(source_png)
     assert latest_manifest["images"][0]["raw_prompt"] == "Prompt for 1_1"
+    assert latest_manifest["images"][0]["raw_negative_prompt"] is None
+    assert latest_manifest["images"][0]["resolved_negative_prompt"] is None
     assert latest_manifest["images"][0]["gist"] == "Gist for 1_1"
     assert latest_manifest["images"][0]["panel_dialog"] == "Dialog for one."
     assert latest_manifest["out_dir"] == str(latest_dir)
@@ -213,6 +218,70 @@ def test_gcs_download_still_copies_images_into_eval_dirs(
     assert custom_manifest["images"][0]["file"] == str(out_dir / "00_panel1.png")
     assert latest_manifest["uses_local_output_refs"] is False
     assert latest_manifest["images"][0]["file"] == str(latest_dir / "00_panel1.png")
+
+
+def test_manifest_includes_negative_prompt_from_worker_log(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mod = _load()
+    prompts_dir = tmp_path / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "character.json").write_text(json.dumps({"characters": {}}))
+    _write_story(
+        prompts_dir,
+        "1_1",
+        "Dialog for one.",
+        negative_prompts=["training side wheels"],
+    )
+    outputs = tmp_path / "outputs" / "liam" / "app-story" / "outputs"
+    outputs.mkdir(parents=True)
+    (outputs / "0.png").write_bytes(b"png bytes")
+    log_dir = tmp_path / "prompt_logs"
+    story_log_dir = log_dir / "app-story"
+    story_log_dir.mkdir(parents=True)
+    (story_log_dir / "panel_00.json").write_text(
+        json.dumps(
+            {
+                "panel_index": 0,
+                "prompt_text": "Prompt for 1_1\ntraining side wheels",
+                "panel_fields": [
+                    {"prompt": "Prompt for 1_1 with runtime substitutions"},
+                    {"prompt": "training side wheels"},
+                ],
+            }
+        )
+    )
+    out_dir = tmp_path / "eval"
+
+    monkeypatch.setattr(mod, "_PROMPTS_DIR", prompts_dir)
+    monkeypatch.setattr(mod, "_DEFAULT_EVAL_DIR", tmp_path / "latest")
+    monkeypatch.setattr(mod, "_variants_for_live_template", lambda: 1)
+
+    result = mod.main(
+        [
+            "--local-root",
+            str(tmp_path / "outputs"),
+            "--log-dir",
+            str(log_dir),
+            "--out",
+            str(out_dir),
+            "--story",
+            "1_1",
+            "--story-id",
+            "app-story",
+            "--user-id",
+            "liam",
+        ]
+    )
+
+    assert result == 0
+    manifest = json.loads((out_dir / "manifest.json").read_text())
+    image = manifest["images"][0]
+    assert image["resolved_prompt"] == "Prompt for 1_1 with runtime substitutions"
+    assert image["raw_negative_prompt"] == "training side wheels"
+    assert image["resolved_negative_prompt"] == "training side wheels"
+    assert image["logged_negative_prompt"] == "training side wheels"
+    assert image["reconstructed_negative_prompt"] == "training side wheels"
 
 
 def test_mark_reports_outdated_can_mark_all_reports(tmp_path: Path) -> None:

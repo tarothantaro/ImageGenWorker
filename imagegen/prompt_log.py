@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # ``prompt``); we surface their values as ``prompt_text`` for the eval/debug
 # reader without it having to walk the workflow graph.
 _PROMPT_FIELD_KEYS = ("prompt", "text", "positive")
+_NEGATIVE_PROMPT_FIELD_KEYS = ("negative", "negative_prompt")
 
 
 class PromptLogger:
@@ -98,6 +99,7 @@ class PromptLogger:
                 "processing_seconds": processing_seconds,
                 "placeholders": dict(placeholders),
                 "prompt_text": _prompt_text(fields),
+                "negative_prompt_text": _negative_prompt_text(fields),
                 "panel_fields": fields,
                 # The exact API-format graph submitted to ComfyUI's /prompt.
                 "workflow": workflow,
@@ -136,11 +138,29 @@ def _substitute_panel(
 
 
 def _prompt_text(fields: list[dict[str, Any]]) -> str | None:
-    """The resolved prompt sentence(s) from the substituted panel fields."""
-    texts = [
+    """The resolved positive prompt sentence from the substituted panel fields."""
+    prompt_values = _prompt_values(fields)
+    return prompt_values[0] if prompt_values else None
+
+
+def _negative_prompt_text(fields: list[dict[str, Any]]) -> str | None:
+    """The resolved negative prompt sentence, if the panel carries one."""
+    negatives = [
+        str(value)
+        for entry in fields
+        for key, value in entry.items()
+        if key in _NEGATIVE_PROMPT_FIELD_KEYS and isinstance(value, str) and value
+    ]
+    prompt_values = _prompt_values(fields)
+    negatives.extend(prompt_values[1:])
+    return "\n".join(negatives) if negatives else None
+
+
+def _prompt_values(fields: list[dict[str, Any]]) -> list[str]:
+    """Prompt-like field values in panel order, excluding empty strings."""
+    return [
         str(value)
         for entry in fields
         for key, value in entry.items()
         if key in _PROMPT_FIELD_KEYS and isinstance(value, str) and value
     ]
-    return "\n".join(texts) if texts else None

@@ -252,6 +252,51 @@ def _resolve_prompt(raw: str, characters: dict[str, str]) -> str:
     return resolved.strip()
 
 
+def _logged_prompt_texts(logged: dict | None) -> tuple[str | None, str | None]:
+    """Return positive/negative prompt text from a worker prompt log.
+
+    New logs carry explicit ``prompt_text`` and ``negative_prompt_text`` fields.
+    Older logs joined both prompt fields into ``prompt_text``; their
+    ``panel_fields`` still preserve panel order, so split the first non-empty
+    prompt-like field as positive and any later prompt-like fields as negative.
+    """
+    if not logged:
+        return None, None
+
+    panel_fields = logged.get("panel_fields")
+    if isinstance(panel_fields, list):
+        prompt_values = [
+            str(value)
+            for entry in panel_fields
+            if isinstance(entry, dict)
+            for key, value in entry.items()
+            if key in {"prompt", "text", "positive"}
+            and isinstance(value, str)
+            and value
+        ]
+        negative_values = [
+            str(value)
+            for entry in panel_fields
+            if isinstance(entry, dict)
+            for key, value in entry.items()
+            if key in {"negative", "negative_prompt"}
+            and isinstance(value, str)
+            and value
+        ]
+        if prompt_values:
+            return (
+                prompt_values[0],
+                "\n".join([*negative_values, *prompt_values[1:]]) or None,
+            )
+
+    prompt = logged.get("prompt_text")
+    negative = logged.get("negative_prompt_text")
+    return (
+        prompt if isinstance(prompt, str) and prompt else None,
+        negative if isinstance(negative, str) and negative else None,
+    )
+
+
 def _variants_for_live_template() -> int:
     """How many output images the live render template emits per panel.
 
@@ -410,6 +455,7 @@ def _download(args: argparse.Namespace) -> int:
         return 2
     spec = json.loads(story_json.read_text())
     prompts: list[str] = spec.get("prompts", [])
+    negative_prompts: list[str] = spec.get("negative_prompts") or []
     # Per-panel storybook text/dialog shown to the reader (parallel to prompts).
     texts: list[str] = spec.get("texts", [])
     # Per-panel gist: the authored, eval-ready intent of the panel (parallel to
@@ -469,12 +515,21 @@ def _download(args: argparse.Namespace) -> int:
             local = eval_file
             blob.download_to_filename(str(local))
         raw = prompts[panel_index] if panel_index < len(prompts) else None
+        raw_negative = (
+            negative_prompts[panel_index]
+            if panel_index < len(negative_prompts)
+            else None
+        )
         reconstructed = _resolve_prompt(raw, characters) if raw else None
+        reconstructed_negative = (
+            _resolve_prompt(raw_negative, characters) if raw_negative else None
+        )
         # Prefer the prompt the worker actually logged for this panel; only fall
         # back to reconstruction (token-expanded prompt file) when no log exists.
         logged = prompt_log.get(panel_index)
-        logged_prompt = (logged or {}).get("prompt_text")
+        logged_prompt, logged_negative = _logged_prompt_texts(logged)
         resolved = logged_prompt or reconstructed
+        resolved_negative = logged_negative or reconstructed_negative
         entries.append(
             {
                 "index": index,
@@ -488,6 +543,8 @@ def _download(args: argparse.Namespace) -> int:
                 "gcs": _blob_uri(args, blob.name),
                 "raw_prompt": raw,
                 "resolved_prompt": resolved,
+                "raw_negative_prompt": raw_negative,
+                "resolved_negative_prompt": resolved_negative,
                 "panel_dialog": (
                     texts[panel_index] if panel_index < len(texts) else None
                 ),
@@ -496,6 +553,8 @@ def _download(args: argparse.Namespace) -> int:
                 "prompt_source": "worker_log" if logged_prompt else "reconstructed",
                 "reconstructed_prompt": reconstructed,
                 "logged_prompt": logged_prompt,
+                "reconstructed_negative_prompt": reconstructed_negative,
+                "logged_negative_prompt": logged_negative,
                 "comfyui_prompt_id": (logged or {}).get("comfyui_prompt_id"),
                 "prompt_log": (logged or {}).get("_log_path"),
             }
