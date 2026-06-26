@@ -46,9 +46,13 @@ prints, per panel, the prompt, its gist, and any findings:
 - **FAIL** (load-bearing, unambiguous) — wrong prompt/gist counts; a panel missing
   the preserve-identity ending (`{INPUT_IMAGE_IDENTITY}` or the expanded
   sentence); no `"person from the input image"` reference; a
-  `{TOKEN}` that doesn't resolve in `character.json`; an empty gist or a gist that
-  still carries a `{TOKEN}`; a banned cross-panel reference (`the same`, `back at`,
-  `as before`, `transform the scene`, `place the person into`).
+  `{TOKEN}` that doesn't resolve in `character.json`; **the same character
+  `{TOKEN}` used more than once in one prompt** (it expands to the full appearance
+  description, so a repeat injects the whole description twice and risks a
+  duplicate person — name it once, refer back by a role noun/pronoun, rule 5); an
+  empty gist or a gist that still carries a `{TOKEN}`; a banned cross-panel
+  reference (`the same`, `back at`, `as before`, `transform the scene`, `place the
+  person into`).
 - **WARN** (review) — no named camera/shot cue (medium shot, eye-level, … — the
   lever for framing, rule 3); a missing/inconsistent style phrase (rule 9); a `{TOKEN}`
   used but not listed in `characters` (or listed but unused); a `\bagain\b` /

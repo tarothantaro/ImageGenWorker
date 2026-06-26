@@ -29,6 +29,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 _SKILL_DIR = Path(__file__).resolve().parent
@@ -262,7 +263,19 @@ def lint_story(stem: str, f: Findings) -> dict:
 
         tokens = [t for t in _PLACEHOLDER_RE.findall(prompt) if _CHAR_TOKEN_RE.match(t)]
         used_tokens.update(tokens)
-        for tok in tokens:
+        for tok, count in Counter(tokens).items():
+            if count > 1:
+                f.add(
+                    "FAIL",
+                    p,
+                    "tokens",
+                    f"{{{tok}}} appears {count}× in one prompt — a character "
+                    "{TOKEN} must be used at most once per prompt (it expands to "
+                    "the full appearance description, so a repeat injects the whole "
+                    "description twice). Name it once and refer to the character "
+                    "elsewhere by a role noun/pronoun (rule 5)",
+                )
+        for tok in dict.fromkeys(tokens):  # unique, first-seen order
             if tok not in declared:
                 f.add("WARN", p, "tokens", f"{{{tok}}} used but not in `characters`")
             if not _token_resolvable(tok, char_data):

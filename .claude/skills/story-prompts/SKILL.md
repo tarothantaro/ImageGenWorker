@@ -120,7 +120,16 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    override the interaction.
 5. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
-   from `character.json`.
+   from `character.json`, and use each character's `{TOKEN}` **at most once per
+   prompt**. The token expands to that character's **entire appearance
+   description**, so a second `{TOKEN}` for the same character in one prompt
+   injects the whole description **twice** — bloating the prompt and pushing the
+   model toward a duplicate person. When a character is mentioned more than once in
+   a panel (e.g. the protagonist's action targets them and then they get their own
+   action block), introduce the `{TOKEN}` **once** — normally in that character's
+   own contiguous block — and refer to them elsewhere with a short role noun or
+   pronoun (`a girl`, `the boy`, `a waiting parent`, `him`, `her`), never a second
+   `{TOKEN}`. See Example 1.
 6. **Pin identity at the end of every prompt with `{INPUT_IMAGE_IDENTITY}`.**
    This placeholder resolves through `character.json` to the shared instruction
    "Preserve the facial features, skin tone and hairstyle of the person from the
@@ -208,6 +217,10 @@ For every prompt in the array, confirm:
       expression only, no appearance, no re-described clothing. Add the
       expression in the prompt for the current scene; never expect the
       `{TOKEN}`'s `features` to include a smile, frown, or mood.
+- [ ] **Each character's `{TOKEN}` appears at most once in the prompt.** A
+      character mentioned twice in one panel is introduced by `{TOKEN}` once and
+      referred to elsewhere by a role noun/pronoun — never a second `{TOKEN}` (a
+      repeat injects the whole appearance description twice).
 - [ ] Same `{TOKEN}` reused for a character that recurs across panels.
 - [ ] Panels sharing a location repeat the **one canonical setting-anchor clause
       verbatim** (same adjectives + location + key furniture/landmarks + time of
@@ -276,19 +289,24 @@ These three examples cover the recurring prompt patterns: person blocks and
 connected interactions; setting anchors with changed scene state; and duplication
 guards for solo or crowded frames.
 
-**Example 1: interaction with each person described once.**
+**Example 1: interaction with each person described once, and each `{TOKEN}` used once.**
 Use a scene-first prompt where the protagonist's action, target, expression, and
-gesture stay in one block, then the supporting character gets one separate block:
+gesture stay in one block, then the supporting character gets one separate block.
+The supporting character's `{TOKEN}` appears **exactly once** (in their own
+block); the protagonist's block refers to them by a short role noun (`a boy`):
 *"In a sunny outdoor playground — a slide and swings, a wooden bench, soft grass,
 warm sunlight — the {INPUT_1_AGE} person from the input image walks directly from
-the open grass toward {GENDER_M_AGE_06} by the wooden bench, body angled toward
+the open grass toward a boy seated by the wooden bench, body angled toward
 him, with a friendly, encouraging smile and one hand raised in a clear
 open-palm wave at shoulder height, elbow bent, the other hand relaxed at their
 side. {GENDER_M_AGE_06} sits on the wooden bench facing the approaching child,
 looking up hopefully, with both hands resting in his lap."*
-Do not put the supporting character's full placement in both blocks. For shared
-props, name one visible prop between the people and point both people's gaze,
-hands, and body angle toward that same prop.
+Do **not** write `{GENDER_M_AGE_06}` in both the protagonist's block and the
+supporting character's block — the token expands to the full appearance string, so
+a second copy injects the whole description twice and risks a duplicate child.
+Do not put the supporting character's full placement in both blocks either. For
+shared props, name one visible prop between the people and point both people's
+gaze, hands, and body angle toward that same prop.
 
 **Example 2: repeated anchor plus changed state.**
 Choose one anchor per scene and paste it verbatim wherever that scene appears:
