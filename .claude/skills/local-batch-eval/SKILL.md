@@ -49,6 +49,20 @@ ComfyUI), `--user-id` (defaults to the input filename stem, e.g. `leo`),
 `--timeout`, `--age` (the phrase substituted for `{INPUT_1_AGE}` — keep it
 natural before the word "person", e.g. `"4-year-old"` or `"23-month-old"`).
 
+> **Named run dirs must be mirrored into `eval_runs/latest/`.** When you generate
+> a story into a named subfolder (e.g. `--run-dir eval_runs/1_18_identity_fix`),
+> **also copy that story's results into `eval_runs/latest/`** so the review server
+> pinned at `eval_runs/latest/` always shows the newest result. The named dir is
+> the keepsake of that iteration; `eval_runs/latest/` is what the running UI
+> reads. Copy the story's `outputs/<user>/<story>/`, its `prompt_logs/<story>/`,
+> and its `eval/<story>__<story>/` (manifest + report) on top of `eval_runs/latest/`:
+>
+> ```bash
+> cp -r eval_runs/1_18_identity_fix/outputs/*      eval_runs/latest/outputs/
+> cp -r eval_runs/1_18_identity_fix/prompt_logs/*  eval_runs/latest/prompt_logs/
+> cp -r eval_runs/1_18_identity_fix/eval/*         eval_runs/latest/eval/
+> ```
+
 This writes (run dir layout):
 
 ```
