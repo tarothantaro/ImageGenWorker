@@ -30,6 +30,7 @@ _TEMPLATE_ROOT = _PKG / "templates"
 # same order as workflows/2/config.json's node list).
 _NODE_EDIT_TARGET = "41"
 _NODE_PROMPT = "170:151"
+_NODE_NEGATIVE_PROMPT = "170:149"
 _NODE_KSAMPLER = "170:169"
 _NODE_SAVE = "9"
 # The flattened subgraph's VAEDecode — the image the SaveImage node persists.
@@ -67,6 +68,32 @@ def test_prepare_injects_story_prompt_into_prompt_named_field(
     assert "the {INPUT_1_AGE} person from the input image" in prompt_text
 
 
+def test_prepare_defaults_missing_negative_prompts_to_empty(
+    builder: WorkflowBuilder,
+) -> None:
+    prepared = builder.prepare("2", "1_1")
+
+    workflow = builder.render(
+        prepared,
+        prepared.panels[0],
+        placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
+    )
+
+    assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == ""
+
+
+def test_prepare_injects_story_negative_prompt(builder: WorkflowBuilder) -> None:
+    prepared = builder.prepare("2", "1_8")
+
+    workflow = builder.render(
+        prepared,
+        prepared.panels[0],
+        placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
+    )
+
+    assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == "training side wheels"
+
+
 def test_render_substitutes_panel_values_and_placeholders(
     builder: WorkflowBuilder,
 ) -> None:
@@ -82,6 +109,7 @@ def test_render_substitutes_panel_values_and_placeholders(
     assert workflow[_NODE_EDIT_TARGET]["inputs"]["image"] == "u1_s1_INPUT_1.png"
     # No story bound → the prompt field still holds the sentinel.
     assert workflow[_NODE_PROMPT]["inputs"]["prompt"] == "{PROMPT}"
+    assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == "{NEGATIVE_PROMPT}"
     assert workflow[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
     assert workflow[_NODE_SAVE]["inputs"]["filename_prefix"] == "u1_s1_P0"
 
@@ -91,18 +119,21 @@ def test_single_output_persists_the_qwen_edit(builder: WorkflowBuilder) -> None:
     ReActor face-swap stage stands between them anymore."""
     prepared = builder.prepare("2")
     workflow = builder.render(
-        prepared, prepared.panels[0],
+        prepared,
+        prepared.panels[0],
         placeholders={"USER_ID": "u", "STORY_ID": "s"},
     )
 
     assert workflow[_NODE_SAVE]["inputs"]["images"] == [_NODE_QWEN_OUTPUT, 0]
     # No ReActor nodes survive the edit.
     assert not [
-        n for n in workflow.values() if str(n.get("class_type", "")).startswith("ReActor")
+        n
+        for n in workflow.values()
+        if str(n.get("class_type", "")).startswith("ReActor")
     ]
 
 
-def test_render_uses_each_panels_own_seed(builder: WorkflowBuilder) -> None:
+def test_render_uses_shared_default_seed(builder: WorkflowBuilder) -> None:
     prepared = builder.prepare("2")
     placeholders = {"USER_ID": "u", "STORY_ID": "s"}
 
@@ -110,7 +141,7 @@ def test_render_uses_each_panels_own_seed(builder: WorkflowBuilder) -> None:
     second = builder.render(prepared, prepared.panels[1], placeholders=placeholders)
 
     assert first[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
-    assert second[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410684
+    assert second[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
     assert first[_NODE_SAVE]["inputs"]["filename_prefix"] == "u_s_P0"
     assert second[_NODE_SAVE]["inputs"]["filename_prefix"] == "u_s_P1"
 
@@ -120,7 +151,8 @@ def test_rendered_workflow_has_no_dangling_node_links(builder: WorkflowBuilder) 
     — the invariant the subgraph flatten (``170:<inner>`` naming) must preserve."""
     prepared = builder.prepare("2")
     workflow = builder.render(
-        prepared, prepared.panels[0],
+        prepared,
+        prepared.panels[0],
         placeholders={"USER_ID": "u", "STORY_ID": "s"},
     )
 

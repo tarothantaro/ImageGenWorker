@@ -74,6 +74,7 @@ FINAL_OUTPUT_SUFFIX = "_V2"
 # ``TextEncodeQwenImageEditPlus``, …); the field name lives in the template, not
 # in this module.
 PROMPT_PLACEHOLDER = "{PROMPT}"
+NEGATIVE_PROMPT_PLACEHOLDER = "{NEGATIVE_PROMPT}"
 
 # A supporting-character placeholder encodes its *fixed* traits in the token
 # itself — ``GENDER_<g>_AGE_<a>`` with an **optional** ``_RACE_<r>`` segment —
@@ -382,14 +383,25 @@ class WorkflowBuilder:
         """
         story = self._load_json(self._prompts_root / f"{story_ref}.json")
         prompts = story.get("prompts", [])
+        negative_prompts = story.get("negative_prompts") or []
         if len(prompts) != len(panels):
             raise UnsupportedTemplateError(
                 f"template {template_id!r} story {story_ref!r} has {len(prompts)} "
                 f"prompts but the template has {len(panels)} panels"
             )
+        if len(negative_prompts) not in (0, len(panels)):
+            raise UnsupportedTemplateError(
+                f"template {template_id!r} story {story_ref!r} has "
+                f"{len(negative_prompts)} negative_prompts but the template has "
+                f"{len(panels)} panels"
+            )
+        if not negative_prompts:
+            negative_prompts = ["" for _ in panels]
 
         characters = self._character_substitutions([str(p) for p in prompts], story)
-        for panel_index, (panel, prompt) in enumerate(zip(panels, prompts)):
+        for panel_index, (panel, prompt, negative_prompt) in enumerate(
+            zip(panels, prompts, negative_prompts)
+        ):
             resolved = _substitute(str(prompt), characters)
             injected = False
             for fields in panel:
@@ -397,6 +409,13 @@ class WorkflowBuilder:
                     if isinstance(value, str) and PROMPT_PLACEHOLDER in value:
                         fields[key] = value.replace(PROMPT_PLACEHOLDER, resolved)
                         injected = True
+                    if (
+                        isinstance(fields[key], str)
+                        and NEGATIVE_PROMPT_PLACEHOLDER in fields[key]
+                    ):
+                        fields[key] = fields[key].replace(
+                            NEGATIVE_PROMPT_PLACEHOLDER, str(negative_prompt)
+                        )
             if not injected:
                 raise UnsupportedTemplateError(
                     f"template {template_id!r} story {story_ref!r}: panel "

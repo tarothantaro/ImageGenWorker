@@ -248,7 +248,12 @@ For every prompt in the array, confirm:
 6. **Keep prompt ↔ gist aligned.** Re-read each gist and confirm your prompt
    instructs its setting, cast, and key action/beat. If a gist itself reads wrong,
    fix it via `story-text` — don't silently diverge from it.
-7. **Fill `characters`** = every `{TOKEN}` used, plus the structural `type` / `id`
+7. **Leave `negative_prompts` empty by default.** The field is optional; omit it
+   or set `"negative_prompts": []` unless evaluation keeps failing or the user
+   explicitly asks for a targeted negative guard. If you do fill it, make it a
+   per-panel array with the same length/order as `prompts`, and use it only for
+   artifacts (for example unwanted extra wheels), not to rewrite the story beat.
+8. **Fill `characters`** = every `{TOKEN}` used, plus the structural `type` / `id`
    / `version` if the file is new. The panel count is just `len(prompts)` — no
    `panel_count` field. For a new file, start from
    `.claude/skills/story-prompts/story_template.json` and expand each array to
@@ -306,6 +311,9 @@ no duplicate or extra child, no twin."*
 - [ ] User supplied `type` and panel count; `type` matches the README registry.
 - [ ] `len(prompts)` matches the user-provided panel count and the render
       template being used.
+- [ ] `negative_prompts` is omitted/`[]` unless explicitly needed; if non-empty,
+      `len(negative_prompts) == len(prompts)` and each entry targets only a
+      persistent artifact.
 - [ ] `len(gists) == len(prompts)` (the `gists` come from `story-text`); each
       prompt instructs the same beat as its gist (setting + cast/placement +
       action + point). Run `story-prompts-eval` to grade prompt↔gist alignment +

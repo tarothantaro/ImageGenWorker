@@ -235,6 +235,38 @@ def test_prepare_story_prompt_count_mismatch_raises(tmp_path: Path) -> None:
         builder.prepare("t")
 
 
+def test_prepare_story_negative_prompt_count_mismatch_raises(tmp_path: Path) -> None:
+    builder = _write_assets(
+        tmp_path,
+        template={
+            "workflow_id": "w",
+            "story": "s",
+            "panels": [
+                [{"text": "{PROMPT}"}, {"text": "{NEGATIVE_PROMPT}"}],
+                [{"text": "{PROMPT}"}, {"text": "{NEGATIVE_PROMPT}"}],
+            ],
+        },
+        workflow_config={
+            "nodes": [
+                {"id": 1, "type": "CLIPTextEncode"},
+                {"id": 2, "type": "CLIPTextEncode"},
+            ]
+        },
+        workflow={
+            "1": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}},
+            "2": {"class_type": "CLIPTextEncode", "inputs": {"text": "x"}},
+        },
+        story={"prompts": ["one", "two"], "negative_prompts": ["one negative"]},
+        characters={},
+    )
+
+    with pytest.raises(
+        UnsupportedTemplateError,
+        match="has 1 negative_prompts but the template has 2 panels",
+    ):
+        builder.prepare("t")
+
+
 def test_prepare_story_panel_without_prompt_placeholder_raises(tmp_path: Path) -> None:
     builder = _write_assets(
         tmp_path,
@@ -923,9 +955,9 @@ def test_render_does_not_mutate_the_base_workflow(
         prepared, prepared.panels[1], placeholders=placeholders
     )
 
-    # Each rendered panel carries its own template seed …
+    # Each rendered panel carries the shared default template seed …
     assert first[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410683
-    assert second[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410684
+    assert second[_NODE_SEED]["inputs"]["noise_seed"] == 771062815410683
     # … and the shared base workflow is never mutated (deep-copied per render).
     assert (
         prepared.base_workflow[_NODE_SEED]["inputs"]["noise_seed"]

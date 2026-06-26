@@ -11,6 +11,10 @@
             "type": "TextEncodeQwenImageEditPlus"
         },
         {
+            "id": "170:149",
+            "type": "TextEncodeQwenImageEditPlus"
+        },
+        {
             "id": "170:169",
             "type": "KSampler"
         },

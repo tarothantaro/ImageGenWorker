@@ -60,6 +60,7 @@ new categories are added (and add them to `_TYPE_NAMES`).
     "…panel 1 prompt…",
     "…panel 2 prompt…"
   ],
+  "negative_prompts": [],
   "gists": [
     "…panel 1 gist…",
     "…panel 2 gist…"
@@ -75,9 +76,14 @@ new categories are added (and add them to `_TYPE_NAMES`).
 - `type` / `id` — the story selector (replaces the old `story_type` /
   `story_number`); the file is named `<type>_<id>.json`.
 - `prompts` — the array of per-panel prompt strings, **in panel order**. This is
-  the payload; `prompts[i]` becomes panel *i*'s `text`. The **panel count is
+  the payload; `prompts[i]` becomes panel *i*'s prompt input. The **panel count is
   `len(prompts)`** (there is no separate `panel_count` field), and it must match
-  the render template `templates/1`'s panel count (6).
+  the active render template's panel count (6).
+- `negative_prompts` — optional array of per-panel negative prompt strings, in
+  panel order. Omit it or set it to `[]` by default; the worker treats that as
+  an empty negative prompt for every panel. Only fill it when evaluation keeps
+  failing or an explicit instruction calls for a targeted artifact guard. When
+  non-empty, it must be the same length and order as `prompts`.
 - `gists` — the per-panel **eval gist**: a one-sentence statement of what *this
   panel must show* — its setting, who is present, the key action/interaction, and
   the narrative beat — with all style/camera/identity boilerplate stripped out.

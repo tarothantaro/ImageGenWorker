@@ -14,6 +14,14 @@
     "On a sunny park path — green grass, leafy trees, warm sunlight — the {INPUT_1_AGE} person from the input image is riding the red BMX-style pedal bicycle a short way, with a diamond frame and exactly two wheels total, one front tire and one rear tire, the rear axle bare with no small side attachments, both round pedals and the crank clearly visible on the near side, wearing a snug bright blue safety helmet, beaming with delight, feet lifted from the ground. {GENDER_M_AGE_35_PARENT} stands in the background, cheering with both arms raised, with an excited, proud expression. Make the interaction read physically: each person faces the other person or the shared object, with hands and gaze directed to one connected action. Eye-level three-quarter shot, photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}",
     "On a sunny park path — green grass, leafy trees, warm sunlight — the {INPUT_1_AGE} person from the input image is standing proudly while holding the handlebar of the red BMX-style pedal bicycle, only the bicycle's handlebar, front fork, one front tire, pedals, and crank visible in the tighter frame, wearing a snug bright blue safety helmet, with a big happy smile. {GENDER_M_AGE_35_PARENT} kneels nearby, cheering and giving a thumbs-up with a proud, delighted expression. Make the interaction read physically: each person faces the other person or the shared object, with hands and gaze directed to one connected action. Eye-level medium shot, photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}"
   ],
+  "negative_prompts": [
+    "training side wheels",
+    "training side wheels",
+    "training side wheels",
+    "training side wheels",
+    "training side wheels",
+    "training side wheels"
+  ],
   "gists": [
     "On a sunny park path, the child sits on a little red two-wheel pedal bike wearing a bright blue helmet, excited, while the father rests a hand on the bike encouragingly and gets them ready to ride.",
     "On the park path, the child wobbles on the red two-wheel pedal bike while wearing the bright blue helmet, leaning to one side with a surprised look, while the father reaches out, ready to help.",

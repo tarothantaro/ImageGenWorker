@@ -78,6 +78,23 @@ def test_writes_one_record_per_panel_with_resolved_prompt(tmp_path: Path) -> Non
     assert fields["seed"] == 42
 
 
+def test_empty_negative_prompt_is_not_added_to_prompt_text(tmp_path: Path) -> None:
+    logger = PromptLogger(tmp_path)
+    panel = [
+        {"image": "USER_ID_STORY_ID_INPUT_1.png"},
+        {"prompt": "Place the {INPUT_1_AGE} person, by USER_ID"},
+        {"prompt": ""},
+        {"seed": 42},
+        {"filename_prefix": "USER_ID_STORY_ID_P0_V2"},
+    ]
+
+    _log(logger, panel=panel)
+
+    record = json.loads((tmp_path / "s1" / "panel_00.json").read_text())
+    assert record["prompt_text"] == "Place the 4-year-old person, by u1"
+    assert {"prompt": ""} in record["panel_fields"]
+
+
 def test_panel_index_namespaces_the_filename(tmp_path: Path) -> None:
     logger = PromptLogger(tmp_path)
     _log(logger, panel_index=0)

@@ -109,7 +109,11 @@ class PromptLogger:
         except Exception as exc:  # noqa: BLE001 - never break generation on a log
             logger.warning(
                 "prompt_log_write_failed",
-                extra={"story_id": story_id, "panel_index": panel_index, "error": str(exc)},
+                extra={
+                    "story_id": story_id,
+                    "panel_index": panel_index,
+                    "error": str(exc),
+                },
             )
 
 
@@ -125,7 +129,9 @@ def _substitute_panel(
     """
     out: list[dict[str, Any]] = []
     for entry in panel:
-        out.append({key: _substitute(value, placeholders) for key, value in entry.items()})
+        out.append(
+            {key: _substitute(value, placeholders) for key, value in entry.items()}
+        )
     return out
 
 
@@ -135,6 +141,6 @@ def _prompt_text(fields: list[dict[str, Any]]) -> str | None:
         str(value)
         for entry in fields
         for key, value in entry.items()
-        if key in _PROMPT_FIELD_KEYS and isinstance(value, str)
+        if key in _PROMPT_FIELD_KEYS and isinstance(value, str) and value
     ]
     return "\n".join(texts) if texts else None
