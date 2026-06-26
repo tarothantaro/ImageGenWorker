@@ -151,6 +151,60 @@ def test_main_delegates_to_generator_then_refreshes_eval(monkeypatch) -> None:
     ]
 
 
+def test_main_refreshes_each_story_in_comma_separated_subset(monkeypatch) -> None:
+    mod = _load()
+    generator_calls: list[list[str]] = []
+    fetch_calls: list[list[str]] = []
+
+    def fake_main(args: list[str]) -> int:
+        generator_calls.append(args)
+        return 0
+
+    def fake_fetch(args: list[str]) -> int:
+        fetch_calls.append(args)
+        return 0
+
+    monkeypatch.setattr(mod, "_load_generator", lambda: SimpleNamespace(main=fake_main))
+    monkeypatch.setattr(
+        mod, "_load_fetch_outputs", lambda: SimpleNamespace(main=fake_fetch)
+    )
+
+    result = mod.main(["1_14,1_15"])
+
+    assert result == 0
+    assert generator_calls[0][-2:] == ["--stories", "1_14,1_15"]
+    assert fetch_calls == [
+        [
+            "--local-root",
+            "eval_runs/latest/outputs",
+            "--log-dir",
+            "eval_runs/latest/prompt_logs",
+            "--out",
+            "eval_runs/latest/eval/1_14__1_14",
+            "--story",
+            "1_14",
+            "--story-id",
+            "1_14",
+            "--user-id",
+            "liam",
+        ],
+        [
+            "--local-root",
+            "eval_runs/latest/outputs",
+            "--log-dir",
+            "eval_runs/latest/prompt_logs",
+            "--out",
+            "eval_runs/latest/eval/1_15__1_15",
+            "--story",
+            "1_15",
+            "--story-id",
+            "1_15",
+            "--user-id",
+            "liam",
+        ],
+    ]
+
+
 def test_main_returns_generation_failure_after_refreshing_eval(monkeypatch) -> None:
     mod = _load()
 

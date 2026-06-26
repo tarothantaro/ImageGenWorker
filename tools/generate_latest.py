@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -30,6 +31,7 @@ _RUN_DIR = "eval_runs/latest"
 _LOCAL_ROOT = f"{_RUN_DIR}/outputs"
 _LOG_DIR = f"{_RUN_DIR}/prompt_logs"
 _EVAL_DIR = f"{_RUN_DIR}/eval"
+_STORY_ID_RE = re.compile(r"\d+_\d+\Z")
 
 
 def _load_generator() -> ModuleType:
@@ -109,6 +111,12 @@ def _fetch_args(*, story_id: str | None, user_id: str | None) -> list[str]:
     return args
 
 
+def _story_ids(story_id: str | None) -> list[str]:
+    if not story_id:
+        return []
+    return [s for s in story_id.replace(",", " ").split() if s]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -130,8 +138,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if args.story_id and "_" not in args.story_id:
-        parser.error("story_id must look like <type>_<id>, for example 1_8")
+    story_ids = _story_ids(args.story_id)
+    invalid_story_ids = [s for s in story_ids if not _STORY_ID_RE.fullmatch(s)]
+    if invalid_story_ids:
+        parser.error(
+            "story_id must look like <type>_<id>, for example 1_8: "
+            + ", ".join(invalid_story_ids)
+        )
 
     generator = _load_generator()
     generation_result = generator.main(
@@ -144,10 +157,13 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     fetch_outputs = _load_fetch_outputs()
-    fetch_result = fetch_outputs.main(
-        _fetch_args(story_id=args.story_id, user_id=args.user_id)
-    )
-    return generation_result or fetch_result
+    fetch_results = []
+    refresh_story_ids = story_ids or [None]
+    for story_id in refresh_story_ids:
+        fetch_results.append(
+            fetch_outputs.main(_fetch_args(story_id=story_id, user_id=args.user_id))
+        )
+    return generation_result or next((result for result in fetch_results if result), 0)
 
 
 if __name__ == "__main__":
