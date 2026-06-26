@@ -15,12 +15,12 @@
     "On a sunny park path — green grass, leafy trees, warm sunlight — the {INPUT_1_AGE} person from the input image is standing proudly while holding the handlebar of the red BMX-style pedal bicycle, only the bicycle's handlebar, front fork, one front tire, pedals, and crank visible in the tighter frame, wearing a snug bright blue safety helmet, with a big happy smile. {GENDER_M_AGE_35_PARENT} kneels nearby, cheering and giving a thumbs-up with a proud, delighted expression. Make the interaction read physically: the father turns toward the child with a thumbs-up while the child looks back toward him, both sharing the proud moment by the bicycle. Photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}"
   ],
   "negative_prompts": [
-    "training side wheels",
-    "training side wheels",
-    "training side wheels",
-    "training side wheels",
-    "training side wheels",
-    "training side wheels"
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel",
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel",
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel",
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel",
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel",
+    "training wheels, side wheels, stabilizer wheels, side-mounted support wheels, extra small wheels beside the rear wheel, third wheel, fourth wheel"
   ],
   "gists": [
     "On a sunny park path, the child sits on a little red two-wheel pedal bike wearing a bright blue helmet, excited, while the father rests a hand on the bike encouragingly and gets them ready to ride.",

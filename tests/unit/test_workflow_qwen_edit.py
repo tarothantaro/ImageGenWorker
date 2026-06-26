@@ -93,7 +93,11 @@ def test_prepare_injects_story_negative_prompt(builder: WorkflowBuilder) -> None
         placeholders={"USER_ID": "u1", "STORY_ID": "s1"},
     )
 
-    assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == "training side wheels"
+    assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == (
+        "training wheels, side wheels, stabilizer wheels, "
+        "side-mounted support wheels, extra small wheels beside the rear wheel, "
+        "third wheel, fourth wheel"
+    )
 
 
 def test_render_substitutes_panel_values_and_placeholders(
