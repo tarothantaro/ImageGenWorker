@@ -93,6 +93,14 @@ _CHARACTER_TOKEN_RE = re.compile(
 # story references so the un-enumerated ones can be composed.
 _PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
+# Facial-hair feature keys. Adult men are forced to a *definite* beard state
+# (see :func:`_compose_random_character`), so these never enter their random
+# feature draw; the other demographics already exclude them via ``restrictions``.
+_FACIAL_HAIR_KEYS = ("STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "NO_BEARD")
+# The two states an adult man is forced into, 50/50, so his facial hair stays
+# identical across a story's panels instead of being improvised per panel.
+_BEARD_STATE_KEYS = ("FULL_BEARD", "NO_BEARD")
+
 
 @dataclass(frozen=True)
 class PreparedTemplate:
@@ -178,6 +186,13 @@ def _compose_random_character(
     if a table is emptied entirely, its filter is dropped rather than yielding
     nothing.
 
+    Adult men get one extra rule on top of the random draw: their **beard state
+    is forced** to a definite value -- ``FULL_BEARD`` or ``NO_BEARD`` (clean-
+    shaven), 50/50 -- because the model otherwise improvises facial hair
+    differently in each panel. Stubble/mustache are excluded from their regular
+    feature draw so the forced beard line never contradicts them; any non-facial
+    feature still drawn is kept and the beard appended to it.
+
     The ``_RACE_<r>`` segment is **optional**: a token that omits it (e.g.
     ``GENDER_F_AGE_70``) draws a race at random from the ``dimensions.race``
     table for this job — picked once here, so it stays identical across the
@@ -244,7 +259,25 @@ def _compose_random_character(
     hair = pick("hair", hair_keys if isinstance(hair_keys, list) else None)
     build = pick("build")
     wardrobe = pick("wardrobe")
-    features = pick("features")
+    if match["gender"] == "M" and not age.get("child"):
+        # Adult men render inconsistent facial hair across a story's panels
+        # unless the beard state is stated outright, so force every adult man to
+        # one definite state -- a full beard or clean-shaven (50/50) -- instead
+        # of leaving it to the random draw (which might never mention facial hair
+        # at all). Stubble/mustache are dropped from the regular feature draw for
+        # them so the forced line can't contradict it; any non-facial feature
+        # drawn (glasses, freckles, ...) is kept and the beard appended to it.
+        feature_table = data.get("features", {})
+        non_beard = pick(
+            "features", [k for k in feature_table if k not in _FACIAL_HAIR_KEYS]
+        )
+        states = [k for k in _BEARD_STATE_KEYS if k in feature_table]
+        beard = str(feature_table[rng.choice(states)]) if states else None
+        features = (
+            f"{non_beard} and {beard}" if non_beard and beard else (beard or non_beard)
+        )
+    else:
+        features = pick("features")
 
     noun = gender.get("noun_child") if age.get("child") else gender.get("noun")
     text = f"{age['phrase']} {race['adj']} {noun}"

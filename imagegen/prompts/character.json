@@ -5,7 +5,7 @@
   "runtime": {
     "placeholder_format": "{<TOKEN>}",
     "resolution": "Strip the curly braces from a placeholder found in a prompt string, look up characters[<TOKEN>].description, and substitute it in. This is the same flat string-replace mechanism workflow.py already uses for USER_ID / STORY_ID. characters[*].description is the ONLY field read at runtime; everything else in this file is authoring metadata.",
-    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a> prefix (see _recipe). The _RACE_<r> segment is OPTIONAL: include it (GENDER_F_AGE_70_RACE_ASIAN) to pin an exact race, or omit it (GENDER_F_AGE_70) to have a race drawn at RANDOM from `dimensions.race` for that job. Hair is first chosen from `hair_by_gender[<g>]`, then the hair/build/wardrobe/features fragments are picked at RANDOM (a fresh look per job, identical across that job's panels), filtered by `restrictions`: each dimension value lists under `avoid` the restriction groups it must skip, so a child never draws an adult-only fragment, a man never a feminine one, a non-binary character neither, etc. A trailing _<suffix> (GENDER_F_AGE_06_FRIEND2) is ignored at compose time -- it only keeps two otherwise-identical raceless tokens distinct. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
+    "fallback": "If a token has no entry under `characters`, compose a description on the fly from `dimensions` by parsing the GENDER_<g>_AGE_<a> prefix (see _recipe). The _RACE_<r> segment is OPTIONAL: include it (GENDER_F_AGE_70_RACE_ASIAN) to pin an exact race, or omit it (GENDER_F_AGE_70) to have a race drawn at RANDOM from `dimensions.race` for that job. Hair is first chosen from `hair_by_gender[<g>]`, then the hair/build/wardrobe/features fragments are picked at RANDOM (a fresh look per job, identical across that job's panels), filtered by `restrictions`: each dimension value lists under `avoid` the restriction groups it must skip, so a child never draws an adult-only fragment, a man never a feminine one, a non-binary character neither, etc. Adult male tokens get one extra rule: their beard state is FORCED to either FULL_BEARD or NO_BEARD (clean-shaven), 50/50, so facial hair stays consistent across a story's panels -- stubble/mustache are never drawn for them, and any non-facial feature drawn (glasses, freckles) keeps with the beard appended. A trailing _<suffix> (GENDER_F_AGE_06_FRIEND2) is ignored at compose time -- it only keeps two otherwise-identical raceless tokens distinct. Enumerate the character explicitly under `characters` whenever you need a fixed look that stays byte-for-byte identical across every panel and every job.",
     "example": "{GENDER_F_AGE_70}  ->  random race + random look (per job);  {GENDER_M_AGE_30_RACE_ASIAN}  ->  East Asian + random look (race pinned, rest composed)"
   },
 
@@ -156,6 +156,7 @@
     "STUBBLE":         "light stubble",
     "FULL_BEARD":      "a full dark beard",
     "NEAT_MUSTACHE":   "a neat mustache",
+    "NO_BEARD":        "a clean-shaven face",
     "FINE_WRINKLES":   "fine facial wrinkles"
   },
 
@@ -170,7 +171,7 @@
       "hair":     ["MAN_BUN_DARK"],
       "build":    ["AVERAGE_MEDIUM", "SLIM_TALL", "PETITE", "STOCKY", "ATHLETIC_TONED", "HEAVYSET", "LANKY_LEAN"],
       "wardrobe": ["BUSINESS_GREY_SUIT", "CASUAL_HOME_LILAC", "CASUAL_HOME_BLUE", "SWEATER_BURGUNDY", "CARDIGAN_FLORAL", "BLOUSE_SKIRT_WHITE", "WRAP_DRESS_GREEN", "SARI_BLUE", "FLANNEL_PLAID", "POLO_KHAKI"],
-      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE"]
+      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "NO_BEARD"]
     },
     "elderly_only": {
       "hair":     ["GREY_BUN", "BALDING_GREY", "SHORT_GREY"],
@@ -179,7 +180,7 @@
     "masc_only": {
       "hair":     ["BALDING_GREY", "BUZZ_CUT", "LOW_FADE_BLACK", "MAN_BUN_DARK"],
       "wardrobe": ["FLANNEL_PLAID", "POLO_KHAKI"],
-      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE"]
+      "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "NO_BEARD"]
     },
     "fem_only": {
       "hair":     ["BOB_BLACK", "LONG_WAVY_BROWN", "BRAIDS_LONG", "GREY_BUN", "PUFFS_BLACK", "PIGTAILS_BLACK", "TWO_BRAIDS_BROWN"],

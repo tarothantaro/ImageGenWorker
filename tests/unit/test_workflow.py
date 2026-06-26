@@ -872,6 +872,120 @@ def test_compose_ignores_restriction_when_it_empties_a_table() -> None:
     assert "build a" in text or "build b" in text
 
 
+# A character.json carrying the real facial-hair feature keys, to exercise the
+# adult-male forced beard state. ``GLASSES_ROUND`` is reserved to no group, so it
+# survives every draw and lets the "feature + appended beard" path be observed.
+_BEARD_CHARACTER_JSON: dict[str, Any] = {
+    "dimensions": {
+        "gender": {
+            "M": {"noun": "man", "noun_child": "boy", "avoid": ["fem_only"]},
+            "F": {"noun": "woman", "noun_child": "girl", "avoid": ["masc_only"]},
+        },
+        "age": {
+            "30": {
+                "phrase": "a 30-year-old",
+                "child": False,
+                "avoid": ["child_only", "elderly_only"],
+            },
+            "06": {
+                "phrase": "a 6-year-old",
+                "child": True,
+                "avoid": ["adult_only", "elderly_only"],
+            },
+        },
+        "race": {"ASIAN": {"adj": "East Asian"}},
+    },
+    "hair": {"PLAIN": "plain hair"},
+    "build": {"AVG": "an average build"},
+    "wardrobe": {"TEE": "a plain tee"},
+    "features": {
+        "GLASSES_ROUND": "round glasses",
+        "STUBBLE": "light stubble",
+        "FULL_BEARD": "a full dark beard",
+        "NEAT_MUSTACHE": "a neat mustache",
+        "NO_BEARD": "a clean-shaven face",
+    },
+    "restrictions": {
+        "adult_only": {
+            "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "NO_BEARD"]
+        },
+        "masc_only": {
+            "features": ["STUBBLE", "FULL_BEARD", "NEAT_MUSTACHE", "NO_BEARD"]
+        },
+    },
+}
+
+
+def _beard_looks(token: str, n: int = 40) -> list[str]:
+    return [
+        _compose_random_character(token, _BEARD_CHARACTER_JSON, random.Random(seed))
+        for seed in range(n)
+    ]
+
+
+def test_compose_adult_male_forced_to_a_definite_beard_state() -> None:
+    looks = _beard_looks("GENDER_M_AGE_30_RACE_ASIAN")
+    # Every adult-male look states one of the two beard states explicitly ...
+    assert all(
+        "a full dark beard" in look or "a clean-shaven face" in look for look in looks
+    )
+    # ... both states occur across seeds (the 50/50 draw) ...
+    assert any("a full dark beard" in look for look in looks)
+    assert any("a clean-shaven face" in look for look in looks)
+    # ... and the ambiguous in-between fragments are never drawn for them.
+    assert all("light stubble" not in look for look in looks)
+    assert all("a neat mustache" not in look for look in looks)
+
+
+def test_compose_adult_male_keeps_non_facial_feature_with_beard_appended() -> None:
+    # A non-facial feature (glasses) survives the draw and the forced beard is
+    # appended to it rather than replacing it.
+    looks = _beard_looks("GENDER_M_AGE_30_RACE_ASIAN")
+    assert all("round glasses and " in look for look in looks)
+    assert any("round glasses and a full dark beard" in look for look in looks)
+    assert any("round glasses and a clean-shaven face" in look for look in looks)
+
+
+def test_compose_adult_male_beard_is_sole_feature_when_no_other_drawn() -> None:
+    # With only beard fragments available, the forced beard is the whole feature
+    # clause -- no dangling "and ...".
+    data = {
+        **_BEARD_CHARACTER_JSON,
+        "features": {
+            "FULL_BEARD": "a full dark beard",
+            "NO_BEARD": "a clean-shaven face",
+        },
+    }
+    looks = [
+        _compose_random_character("GENDER_M_AGE_30_RACE_ASIAN", data, random.Random(s))
+        for s in range(20)
+    ]
+    assert all(
+        look is not None
+        and (look.endswith("a full dark beard") or look.endswith("a clean-shaven face"))
+        for look in looks
+    )
+    assert all(look is not None and " and " not in look for look in looks)
+
+
+def test_compose_adult_woman_not_forced_to_a_beard_state() -> None:
+    # The forcing is adult-male-only; a woman never gets a beard/clean-shaven
+    # line (the beard fragments are masc_only, so excluded from her draw).
+    looks = _beard_looks("GENDER_F_AGE_30_RACE_ASIAN")
+    assert all("a full dark beard" not in look for look in looks)
+    assert all("a clean-shaven face" not in look for look in looks)
+    assert all("round glasses" in look for look in looks)
+
+
+def test_compose_boy_not_forced_to_a_beard_state() -> None:
+    # A male child is not an adult, so no beard is forced (and the beard
+    # fragments are adult_only anyway).
+    looks = _beard_looks("GENDER_M_AGE_06_RACE_ASIAN")
+    assert all("a full dark beard" not in look for look in looks)
+    assert all("a clean-shaven face" not in look for look in looks)
+    assert all("round glasses" in look for look in looks)
+
+
 # --- render: happy -----------------------------------------------------------
 
 
