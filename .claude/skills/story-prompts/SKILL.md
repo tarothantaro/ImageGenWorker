@@ -81,11 +81,7 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    Reach for them only when the beat needs a specific arrangement (see
    "Composition & position"); otherwise let the model compose. The model
    positions by these words, not by image indices.
-3. **Name a camera/shot to control framing** — `medium shot`,
-   `medium-wide shot`, `eye-level`, `three-quarter view`. Sets how much of the
-   scene and the people the frame includes, and the viewing angle. The model
-   obeys camera/angle cues reliably.
-4. **Give every person an explicit action.** Each person in the panel — the
+3. **Give every person an explicit action.** Each person in the panel — the
    protagonist **and** every supporting character — must be **doing something
    concrete**: a physical verb or a specific gesture/pose anchored to a prop, the
    other character, or their own body. **Never leave a person merely
@@ -102,7 +98,7 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    supporting `{TOKEN}`, should include the expression that fits this specific
    beat (`with an anxious expression`, `smiling proudly`, `looking relieved`,
    etc.); do not rely on a character feature like "smile" to supply it.
-5. **Make interactions physically connected.** When the gist is about people
+4. **Make interactions physically connected.** When the gist is about people
    playing, helping, offering, receiving, teaching, comforting, or approaching,
    don't leave the people as parallel isolated figures. Give the interaction a
    visible physical link: each person's gaze, hands, and body angle should point
@@ -115,24 +111,24 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    classmate(s)' gazes and waves point back toward the protagonist. If you need a
    count guard for a group, keep it, but do not let the count/row wording
    override the interaction.
-6. **Reference the protagonist as "the person from the input image"** (consistent,
+5. **Reference the protagonist as "the person from the input image"** (consistent,
    unambiguous). Reference supporting cast **only** by their `{TOKEN}` placeholder
    from `character.json`.
-7. **Pin identity at the end of every prompt with `{INPUT_IMAGE_IDENTITY}`.**
+6. **Pin identity at the end of every prompt with `{INPUT_IMAGE_IDENTITY}`.**
    This placeholder resolves through `character.json` to the shared instruction
    "Preserve the facial features, skin tone and hairstyle of the person from the
    input image." The edit + swap will otherwise drift the protagonist's look.
    Keep the prompt-ending text centralized in that placeholder; do not paste the
    literal sentence into story prompts.
-8. **Never describe a generated character's fixed appearance.** Their age,
+7. **Never describe a generated character's fixed appearance.** Their age,
    ethnicity, build, hair and clothing live in `character.json` and arrive via
    the placeholder. In the prompt, give them only **position, action, and
    expression**. Re-describing
    appearance fights the resolved description and breaks consistency. (Exception:
    a deliberate, story-driven change added *after* the placeholder.)
-9. **Keep style consistent across the story.** Pick one visual register in panel 1
+8. **Keep style consistent across the story.** Pick one visual register in panel 1
    and repeat the same phrase in every panel so the set reads as one book.
-10. **Keep each prompt self-contained — repeat one verbatim setting anchor per
+9. **Keep each prompt self-contained — repeat one verbatim setting anchor per
    scene.** Each panel is an independent edit with **no memory of any other
    panel**, so re-establish the setting, style, protagonist, and supporting cast
    every time. For each distinct scene, write one canonical setting-anchor clause
@@ -158,9 +154,9 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    openers. Lead with the anchor and describe the scene from scratch. If a person
    is named inside or before the anchor and then named again later, the model may
    render a duplicate; keep each person in one contiguous block. See Example 1.
-11. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
+10. **Negatives sparingly.** This pipeline's prompt is positive-only; if a negative
    is supported, use it for artifacts, not concept changes.
-12. **Guard tight close-ups and dense groups against child duplication.** A
+11. **Guard tight close-ups and dense groups against child duplication.** A
    *separate* failure from the split reference (rule 10): even a single-block,
    scene-first prompt can make the **base model** invent an extra child — a
    prompt problem to fix here, not a render/setting artifact. Two
@@ -189,9 +185,6 @@ For every prompt in the array, confirm:
 - [ ] **Position is stated only when the beat needs it** (an exchange, front/back
       depth, or an explicit left-to-right row to stop child duplication); otherwise
       each person is given an action and the model composes the placement.
-- [ ] A **camera/shot cue** is present (`medium shot`, `eye-level`, `three-quarter
-      view`, …) to set framing — the protagonist engages naturally and is **not**
-      forced to face the camera.
 - [ ] **Every person** (protagonist + each supporting character) is given a
       **concrete action/gesture**, not just a placement and an expression.
 - [ ] Every person block includes a scene-specific expression or mood cue; any
