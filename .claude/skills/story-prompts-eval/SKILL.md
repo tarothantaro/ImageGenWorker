@@ -52,7 +52,11 @@ prints, per panel, the prompt, its gist, and any findings:
   duplicate person — name it once, refer back by a role noun/pronoun, rule 5); an
   empty gist or a gist that still carries a `{TOKEN}`; a banned cross-panel
   reference (`the same`, `back at`, `as before`, `transform the scene`, `place the
-  person into`).
+  person into`); a **generic interaction template** that references the cast as
+  `each person` / `the other person` / `both people` / `each character` / `the
+  others` / `the shared object` instead of the named people + the specific prop —
+  it tells the model there are unspecified extra people and it invents duplicates
+  (rule 4).
 - **WARN** (review) — no named camera/shot cue (medium shot, eye-level, … — the
   lever for framing, rule 3); a missing/inconsistent style phrase (rule 9); a `{TOKEN}`
   used but not listed in `characters` (or listed but unused); a `\bagain\b` /
@@ -85,18 +89,23 @@ panel** on the things only a reader can:
   each `{TOKEN}`) has a physical verb/gesture, never just placement + expression.
   A bare `stands`/`sits` + an expression (no action) is a defect; the
   model invents a pose for the idle body.
-- **Physically connected interactions** (rule 5) — any play/help/handoff/
+- **Physically connected interactions** (rule 4) — any play/help/handoff/
   invitation/teaching beat should read as one shared action, not isolated poses
   in the same scene. Shared props must be a single object linking hands or gaze
   across the people. Movement toward another character must name that character
   as the target, not only a bench, doorway, toy, or general area. Flag prompts
   like "child tosses a ball; friend catches the ball" unless they specify one
   ball between them, and prompts like "walks toward the bench" unless they direct
-  the child toward the seated friend. For greetings or "saying hello" beats,
-  flag front-facing rows of people waving, or vague wording like "all look toward
-  one another" without a directed pose; those often render as everyone waving at
-  the camera. The prompt should make the group inward-facing and name reciprocal
-  gaze/body/hand direction between the protagonist and the classmate(s).
+  the child toward the seated friend. The connection line must **name the exact
+  people (role nouns) and the exact shared object/action** of the panel — the
+  linter FAILs the generic templates (`each person`, `the other person`, `both
+  people`, `the shared object`, …); confirm any rephrase still names who and
+  what rather than swapping one generic phrase for another. For greetings or
+  "saying hello" beats, flag front-facing rows of people waving, or vague wording
+  like "all look toward one another" without a directed pose; those often render
+  as everyone waving at the camera. The prompt should make the group inward-facing
+  and name reciprocal gaze/body/hand direction between the protagonist and the
+  classmate(s).
 - **Scene-first, single-block person** (rule 1 / rule 10 "split reference") — the
   panel opens with the scene anchor (no person inside it), then introduces each
   person **once** in a contiguous position+action+expression block. A

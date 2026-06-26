@@ -108,6 +108,22 @@ _GREETING_ROW_RE = re.compile(
     r"(?=[^.]{0,140}\b(say(?:ing)? hello|greeting|wave(?:s|d|ing)? back)\b)",
     re.I,
 )
+# Generic, reusable interaction templates that reference the cast without naming
+# them (e.g. "each person faces the other person or the shared object, with hands
+# and gaze directed to one connected action"). A line that points at "each person",
+# "the other person", "both people", "the shared object", etc. instead of the
+# actual role nouns + the specific prop tells the model there are unspecified extra
+# people, and it invents duplicates. Always replace with the exact people and the
+# exact shared object/action of the panel (rule 4). FAIL: these templates are never
+# correct, regardless of context.
+_GENERIC_INTERACTION_RES = (
+    re.compile(r"\beach person\b", re.I),
+    re.compile(r"\bthe other person\b", re.I),
+    re.compile(r"\bboth people\b", re.I),
+    re.compile(r"\beach character\b", re.I),
+    re.compile(r"\bfaces the others\b", re.I),
+    re.compile(r"\bthe shared object\b", re.I),
+)
 
 # A supporting-character placeholder (workflow.py's contract): GENDER_/AGE_ with
 # an OPTIONAL _RACE_<r> segment and/or a trailing disambiguator suffix.
@@ -317,6 +333,18 @@ def lint_story(stem: str, f: Findings) -> dict:
                 "interaction",
                 "greeting/hello beats should avoid a front-facing row; cue an inward-facing pair or small semicircle with reciprocal gaze/body/wave direction",
             )
+        for rx in _GENERIC_INTERACTION_RES:
+            if rx.search(prompt):
+                f.add(
+                    "FAIL",
+                    p,
+                    "interaction",
+                    f"generic interaction template {rx.pattern!r} — name the exact "
+                    "people (role nouns) and the exact shared object/action of this "
+                    "panel instead; a generic cast reference ('each person', 'the "
+                    "other person', 'the shared object', …) makes the model add "
+                    "unspecified extra people (rule 4)",
+                )
 
         anchors.setdefault(_norm_anchor(_leading_anchor(prompt)), []).append(p)
 

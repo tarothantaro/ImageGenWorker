@@ -105,11 +105,29 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    supporting `{TOKEN}`, should include the expression that fits this specific
    beat (`with an anxious expression`, `smiling proudly`, `looking relieved`,
    etc.); do not rely on a character feature like "smile" to supply it.
-4. **Make interactions physically connected.** When the gist is about people
-   playing, helping, offering, receiving, teaching, comforting, or approaching,
-   don't leave the people as parallel isolated figures. Give the interaction a
-   visible physical link: each person's gaze, hands, and body angle should point
-   toward the other person or the shared object.
+4. **Make interactions physically connected — by naming the exact people and the
+   exact shared thing.** When the gist is about people playing, helping, offering,
+   receiving, teaching, comforting, or approaching, don't leave the people as
+   parallel isolated figures: give the interaction a visible physical link where
+   each person's gaze, hands, and body angle point to the one concrete thing that
+   connects them. **Name who and what.** Write the connection from *this* panel's
+   cast and prop — `the mother's pointing hand and the child's gaze both aim at
+   the food bowl`, `the child's and the girl's hands both set blocks onto the one
+   growing tower between them`. Never use a generic, reusable interaction
+   sentence such as *"each person faces the other person or the shared object,
+   with hands and gaze directed to one connected action."* A line that says
+   **"each person", "the other person", "both people", "each character", "the
+   others", or "the shared object"** without naming the actual people and object
+   tells the model there are unspecified extra people to render, and it invents
+   them (an extra child, a duplicate parent). Always substitute the role nouns of
+   the people actually in this panel (the child, the mother, the boy, the two
+   friends — refer to a supporting character by a role noun here, not a second
+   `{TOKEN}`, per rule 5) and the specific object/action of this beat (the one
+   red ball, the one clay pot, the joined hands, the single shared hug). Write
+   each panel's connection line fresh; do not paste one canned sentence across
+   panels. For a posed row or group (a celebratory line-up, a circle holding
+   hands), describe the literal physical link of that pose (arms linked along the
+   row, hands clasped into one ring) rather than a generic "facing each other".
    For greetings, introductions, and "saying hello" beats, avoid a front-facing
    row of people waving; it often reads as everyone waving at the camera instead
    of at each other. Compose them as an inward-facing pair or small semicircle,
@@ -213,6 +231,12 @@ For every prompt in the array, confirm:
       object between the people, handoffs/games name both sides of the action,
       and approach/invitation beats name the target person directly rather than
       only a bench, doorway, or general area.
+- [ ] **The connection line names the exact people and the exact shared
+      thing** — role nouns of the people in this panel plus the specific
+      object/action of this beat. No generic, reusable template ("each person",
+      "the other person", "both people", "each character", "the others", "the
+      shared object"); a generic cast reference makes the model add unspecified
+      extra people (rule 4).
 - [ ] Supporting cast referenced **only** by `{TOKEN}` — placement/action/
       expression only, no appearance, no re-described clothing. Add the
       expression in the prompt for the current scene; never expect the

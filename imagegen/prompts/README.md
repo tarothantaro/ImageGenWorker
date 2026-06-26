@@ -125,11 +125,16 @@ and downward-glancing poses are all welcome. The only floor is identity: avoid a
 pure back-of-head shot where no face is visible, or the edit can't carry the
 input face.
 
-For interactive beats, make the physical connection explicit. Shared games and
-handoffs should describe one shared prop between the people, with both sets of
-hands/gaze/body direction aimed at that prop. Approach or invitation beats should
-name the target person directly, not only the bench, doorway, toy, or area they
-are near.
+For interactive beats, make the physical connection explicit, and **name the
+exact people and the exact shared thing**. Shared games and handoffs should
+describe one shared prop between the named people (the child, the mother, the
+boy), with each person's hands/gaze/body direction aimed at that prop. Approach
+or invitation beats should name the target person directly, not only the bench,
+doorway, toy, or area they are near. Never use a generic, reusable connection
+sentence ("each person faces the other person or the shared object"): a line that
+references the cast as "each person", "the other person", "both people", or "the
+shared object" without naming who and what makes the model invent unspecified
+extra people.
 
 ## Runtime placeholder substitution
 
