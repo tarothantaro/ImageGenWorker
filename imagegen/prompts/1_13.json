@@ -10,7 +10,7 @@
     "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image stands in the mid-ground, holding a small clay pot and a seed packet, with a curious smile. In the foreground, {GENDER_F_AGE_70} kneels by a garden bed, gesturing toward the soil with an encouraging, patient expression. Make the interaction read physically: each person faces the other person or the shared object, with hands and gaze directed to one connected action. {INPUT_IMAGE_IDENTITY}",
     "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image kneels alone pressing a tiny seed into the soil of the clay pot, with a focused, gentle expression. A small gardening trowel beside them. Eye-level medium shot, photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}",
     "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image peers closely into the clay pot of bare brown soil with no sprout yet, with a disappointed, impatient expression. Eye-level medium shot, photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}",
-    "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image stands in the mid-ground, holding a small watering can, with a listening expression. In the foreground, {GENDER_F_AGE_70} smiles warmly and points gently to the clay pot and the sky, as if explaining that plants need time. Make the interaction read physically: each person faces the other person or the shared object, with hands and gaze directed to one connected action. {INPUT_IMAGE_IDENTITY}",
+    "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image stands in the mid-ground, holding a small watering can, with a listening expression. In the foreground, {GENDER_F_AGE_70} smiles warmly and points gently to the clay pot, as if explaining that plants need time. Make the interaction read physically: the child and grandmother both look toward that one clay pot, with the grandmother's pointing hand aimed at the pot. {INPUT_IMAGE_IDENTITY}",
     "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image kneels by the clay pot where a tiny green sprout has just appeared, eyes wide with delight. A small watering can tips a gentle stream of water. Eye-level medium shot, photorealistic, cinematic photography style. {INPUT_IMAGE_IDENTITY}",
     "In a sunny backyard garden, warm morning light, the {INPUT_1_AGE} person from the input image stands holding up the clay pot now with a blooming yellow flower, with a proud, joyful smile. Nearby, {GENDER_F_AGE_70} claps and beams with pride. Make the interaction read physically: each person faces the other person or the shared object, with hands and gaze directed to one connected action. {INPUT_IMAGE_IDENTITY}"
   ],
@@ -18,7 +18,7 @@
     "In a sunny backyard garden, the child holds a small clay pot and a seed packet, curious, while the grandmother kneels by a garden bed gesturing toward the soil — time to plant.",
     "In the garden, the child kneels alone pressing a tiny seed into the soil of the clay pot, focused and gentle.",
     "In the garden, the child peers alone into the clay pot of bare soil with no sprout yet, disappointed and impatient.",
-    "In the garden, the child holds a small watering can, listening, while the grandmother points to the pot and the sky, explaining plants need time.",
+    "In the garden, the child holds a small watering can, listening, while the grandmother points to the clay pot, explaining plants need time.",
     "In the garden, the child kneels alone by the clay pot where a tiny green sprout has appeared, eyes wide with delight, a watering can tipping a stream of water.",
     "In the garden, the child holds up the clay pot now with a blooming yellow flower, proud and joyful, while the grandmother claps with pride — good things took time."
   ],
@@ -26,7 +26,7 @@
     "One sunny morning in the garden, Grandma gave {NAME} a little pot and some seeds. \"Let's plant them!\" she said. \"Yes!\" said {NAME}.",
     "{NAME} pressed a tiny seed into the soft brown soil, careful and gentle. \"There — all planted!\" said {NAME} proudly.",
     "{NAME} peeked into the pot, but nothing had grown. \"Where's my flower?\" said {NAME}, a little sad.",
-    "\"Plants need time and care,\" said Grandma, pointing to the sky. \"How long?\" asked {NAME}. \"You'll see,\" she smiled. So {NAME} gave it water and waited.",
+    "\"Plants need time and care,\" said Grandma, pointing to the pot. \"How long?\" asked {NAME}. \"You'll see,\" she smiled. So {NAME} gave it water and waited.",
     "Then one day — a tiny green sprout! {NAME}'s eyes went wide. \"It's growing! It's really growing!\" cheered {NAME}.",
     "At last a bright yellow flower bloomed. {NAME} held the pot up high. \"I grew it!\" said {NAME}. \"Good things take time,\" said Grandma, clapping."
   ],

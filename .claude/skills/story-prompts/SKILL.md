@@ -92,7 +92,14 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    action, never instead of it. Even a solo panel with no prop or partner must
    give the hands/body a job rather than just being present. A bare verb of being
    present (`stands`, `sits`, `is in the frame`) does not count; physical actions,
-   gestures, and prop handling do.
+   gestures, and prop handling do. Keep each gesture physically drawable in one
+   still image: one pointing or indicating hand can aim at **one concrete target**
+   only, not two separated places or objects (`points to the pot and the sky`,
+   `points to the food bowl and the water bowl`). If the beat needs multiple
+   things, choose the primary visible target for the gesture and mention the other
+   object as nearby context, or give different people different single actions.
+   Do not ask one person to perform two incompatible hand actions at once (`claps
+   and points`).
    Because `character.json` is appearance-only, facial expression and mood must
    be authored here in the panel prompt. Every person block, including each
    supporting `{TOKEN}`, should include the expression that fits this specific
@@ -187,6 +194,9 @@ For every prompt in the array, confirm:
       each person is given an action and the model composes the placement.
 - [ ] **Every person** (protagonist + each supporting character) is given a
       **concrete action/gesture**, not just a placement and an expression.
+- [ ] Every gesture has one drawable physical target/action: no pointing to two
+      separated places or objects, and no simultaneous incompatible hand actions
+      such as clapping and pointing by the same person.
 - [ ] Every person block includes a scene-specific expression or mood cue; any
       supporting `{TOKEN}` gets only position/action/expression in this prompt,
       while fixed appearance stays in `character.json`.
