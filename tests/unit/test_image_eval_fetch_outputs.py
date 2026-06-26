@@ -16,6 +16,15 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _MODULE_PATH = _REPO_ROOT / ".claude" / "skills" / "image-eval" / "fetch_outputs.py"
 
 
+class _FakeBlob:
+    def __init__(self, name: str, content: bytes) -> None:
+        self.name = name
+        self._content = content
+
+    def download_to_filename(self, dest: str) -> None:
+        Path(dest).write_bytes(self._content)
+
+
 def _load() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "image_eval_fetch_outputs", _MODULE_PATH
@@ -79,12 +88,16 @@ def test_omitted_story_args_build_manifests_for_every_generated_story(
     assert manifest_1["story_id"] == "1_1"
     assert manifest_1["user_id"] == "liam"
     assert manifest_1["images"][0]["panel_dialog"] == "Dialog for one."
+    assert manifest_1["uses_local_output_refs"] is True
+    assert manifest_1["images"][0]["file"] == str(
+        outputs / "liam" / "1_1" / "outputs" / "0.png"
+    )
     assert manifest_2["story"] == "1_2"
     assert manifest_2["story_id"] == "1_2"
     assert manifest_2["images"][0]["panel_dialog"] == "Dialog for two."
 
 
-def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
+def test_local_download_references_outputs_and_marks_reports_outdated(
     tmp_path: Path, monkeypatch
 ) -> None:
     mod = _load()
@@ -127,12 +140,17 @@ def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
     )
 
     assert result == 0
-    assert (out_dir / "00_panel1.png").read_bytes() == b"png bytes"
-    assert (latest_dir / "00_panel1.png").read_bytes() == b"png bytes"
+    source_png = tmp_path / "outputs" / "liam" / "app-story" / "outputs" / "0.png"
+    assert not (out_dir / "00_panel1.png").exists()
+    assert not (latest_dir / "00_panel1.png").exists()
     assert not (out_dir / "stale.png").exists()
     assert not (latest_dir / "stale.png").exists()
+    custom_manifest = json.loads((out_dir / "manifest.json").read_text())
     latest_manifest = json.loads((latest_dir / "manifest.json").read_text())
-    assert latest_manifest["images"][0]["file"] == str(latest_dir / "00_panel1.png")
+    assert custom_manifest["uses_local_output_refs"] is True
+    assert custom_manifest["images"][0]["file"] == str(source_png)
+    assert latest_manifest["uses_local_output_refs"] is True
+    assert latest_manifest["images"][0]["file"] == str(source_png)
     assert latest_manifest["images"][0]["raw_prompt"] == "Prompt for 1_1"
     assert latest_manifest["images"][0]["gist"] == "Gist for 1_1"
     assert latest_manifest["images"][0]["panel_dialog"] == "Dialog for one."
@@ -146,6 +164,55 @@ def test_download_mirrors_latest_review_artifacts_and_marks_reports_outdated(
         "> WARNING: This eval report is outdated."
         in (latest_dir / "report.md").read_text()
     )
+
+
+def test_gcs_download_still_copies_images_into_eval_dirs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mod = _load()
+    prompts_dir = tmp_path / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "character.json").write_text(json.dumps({"characters": {}}))
+    _write_story(prompts_dir, "1_1", "Dialog for one.")
+    out_dir = tmp_path / "custom-eval"
+    latest_root = tmp_path / "latest" / "eval"
+    latest_dir = latest_root / "1_1__app-story"
+
+    monkeypatch.setattr(mod, "_PROMPTS_DIR", prompts_dir)
+    monkeypatch.setattr(mod, "_DEFAULT_EVAL_DIR", latest_root)
+    monkeypatch.setattr(mod, "_variants_for_live_template", lambda: 1)
+    monkeypatch.setattr(
+        mod,
+        "_source_blobs",
+        lambda args, prefix="": [
+            _FakeBlob("liam/app-story/outputs/0.png", b"png bytes")
+        ],
+    )
+
+    result = mod.main(
+        [
+            "--log-dir",
+            str(tmp_path / "prompt_logs"),
+            "--out",
+            str(out_dir),
+            "--story",
+            "1_1",
+            "--story-id",
+            "app-story",
+            "--user-id",
+            "liam",
+        ]
+    )
+
+    assert result == 0
+    assert (out_dir / "00_panel1.png").read_bytes() == b"png bytes"
+    assert (latest_dir / "00_panel1.png").read_bytes() == b"png bytes"
+    custom_manifest = json.loads((out_dir / "manifest.json").read_text())
+    latest_manifest = json.loads((latest_dir / "manifest.json").read_text())
+    assert custom_manifest["uses_local_output_refs"] is False
+    assert custom_manifest["images"][0]["file"] == str(out_dir / "00_panel1.png")
+    assert latest_manifest["uses_local_output_refs"] is False
+    assert latest_manifest["images"][0]["file"] == str(latest_dir / "00_panel1.png")
 
 
 def test_mark_reports_outdated_can_mark_all_reports(tmp_path: Path) -> None:

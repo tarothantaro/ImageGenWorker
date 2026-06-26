@@ -86,10 +86,12 @@ output `story_id` is also the prompt stem, and writes one manifest per story. Us
 otherwise results land under `eval_runs/latest/eval/`, with each manifest at
 `eval_runs/latest/eval/<story>__<story>/manifest.json`.
 
-This downloads the PNGs to
+This writes `manifest.json` to
 `eval_runs/latest/eval/<story>__<story_id>/` by default (override with `--out`;
-in batch mode `--out` is a root directory) and writes `manifest.json` there. The
-manifest joins each downloaded file to the panel prompt that produced it. For
+in batch mode `--out` is a root directory). In GCS mode it also downloads the
+PNGs there. In local mode, it leaves the PNGs under `--local-root` and the
+manifest's image `file` fields reference those canonical output files directly.
+The manifest joins each image file to the panel prompt that produced it. For
 `resolved_prompt` it prefers the
 **actual prompt the worker logged** for this run — the dev worker writes one
 record per panel of the exact prompt + workflow it submitted to ComfyUI under

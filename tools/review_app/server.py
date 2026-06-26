@@ -18,10 +18,10 @@ It reads a run dir produced by ``.claude/skills/local-batch-eval/generate_storie
     <run-dir>/
     ├── run.json                       # batch metadata
     ├── input.<ext>                    # the input photo
+    ├── outputs/<user>/<story_id>/outputs/<i>.png
     └── eval/<story>__<story_id>/      # one per story
-        ├── manifest.json
-        ├── report.md
-        └── *.png
+        ├── manifest.json              # image entries reference outputs/ PNGs
+        └── report.md
 
 Uses only the Python standard library (``http.server``) — no Flask, no build
 step. Start it and open the printed URL::
@@ -522,8 +522,8 @@ def _render_story(run: dict, story: dict, run_dir_name: str) -> bytes:
             src = (
                 "/img?dir="
                 + quote(story["dir"])
-                + "&name="
-                + quote(Path(img["file"]).name)
+                + "&index="
+                + quote(str(img.get("index", "")))
             )
             if multi:
                 tag = (
@@ -604,11 +604,9 @@ def _make_handler(run_dir: Path):
 
         def _serve_img(self, qs: dict) -> None:
             eval_dir = (qs.get("dir") or [""])[0]
-            name = (qs.get("name") or [""])[0]
-            # Confine to <run>/eval/<dir>/<name> — no traversal outside the run.
-            path = (run_dir / "eval" / eval_dir / name).resolve()
-            base = (run_dir / "eval").resolve()
-            if base in path.parents and path.exists():
+            index = (qs.get("index") or [""])[0]
+            path = _manifest_image_path(run_dir, eval_dir, index)
+            if path is not None and path.exists():
                 self._serve_file(path)
             else:
                 self._send(404, b"image not found", "text/plain")
@@ -631,6 +629,37 @@ def _make_handler(run_dir: Path):
             pass
 
     return Handler
+
+
+def _manifest_image_path(run_dir: Path, eval_dir: str, index: str) -> Path | None:
+    """Resolve an image path from a story manifest, confined to ``run_dir``."""
+    if not index.isdigit():
+        return None
+    eval_root = (run_dir / "eval").resolve()
+    manifest_path = (eval_root / eval_dir / "manifest.json").resolve()
+    if eval_root not in manifest_path.parents:
+        return None
+    manifest = _read_json(manifest_path)
+    if not manifest:
+        return None
+    wanted = int(index)
+    entry = next(
+        (img for img in manifest.get("images", []) if img.get("index") == wanted),
+        None,
+    )
+    if not entry or not entry.get("file"):
+        return None
+    path = Path(str(entry["file"])).expanduser()
+    if not path.is_absolute():
+        cwd_relative = path.resolve()
+        run_relative = (run_dir / path).resolve()
+        path = cwd_relative if cwd_relative.exists() else run_relative
+    else:
+        path = path.resolve()
+    base = run_dir.resolve()
+    if path == base or base not in path.parents:
+        return None
+    return path
 
 
 def main(argv: list[str] | None = None) -> int:

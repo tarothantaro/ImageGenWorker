@@ -139,13 +139,12 @@ sent to ComfyUI, the **output image** for that panel, and the judge's
 **eval notes** for that panel, plus the summary and recommended fixes. Stdlib-only
 — no install step. Leave it running (backgrounded) and give the user the URL.
 
-> **Re-evaluating an existing run?** The `eval/<story>__<sid>/` dirs hold *copies*
-> of the PNGs (made by `fetch_outputs.py`) plus the `manifest.json` and `report.md`.
-> If the outputs were re-generated since the last eval, those copies and reports are
-> **stale** — re-run step 2 (`fetch_outputs.py`) for every story to refresh the copied
-> PNGs + manifests against the latest outputs, then re-judge (step 3) before serving.
-> Compare PNG mtimes under `outputs/<user>/<story>/outputs/` against the `eval/` copies
-> if unsure which is newer.
+> **Re-evaluating an existing run?** The `eval/<story>__<sid>/` dirs hold the
+> `manifest.json` and `report.md`; in local mode the manifest points directly at
+> the PNGs under `outputs/<user>/<story>/outputs/`.
+> If the outputs were re-generated since the last eval, the manifest and report are
+> **stale** — re-run step 2 (`fetch_outputs.py`) for every story to refresh the
+> manifest against the latest outputs, then re-judge (step 3) before serving.
 
 ### 5. Report back
 

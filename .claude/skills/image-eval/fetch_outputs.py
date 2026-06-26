@@ -9,8 +9,8 @@ server and worker share — DESIGN.md §5.1):
     gs://$GCS_BUCKET/<user_id>/<story_id>/outputs/<index>.png
 
 This script does the I/O half of the `image-eval` skill: it lists / downloads
-those PNGs from the local emulator and writes ``manifest.json`` joining each
-downloaded file to the panel prompt it was generated from — with ``{TOKEN}``
+GCS PNGs from the local emulator, or references local PNGs in place, and writes
+``manifest.json`` joining each file to the panel prompt it was generated from — with ``{TOKEN}``
 characters resolved from ``character.json`` and ``{INPUT_n_AGE}`` dropped, so the
 vision judge reads the *effective* prompt the model actually rendered. The judging
 itself is done by the agent reading each PNG; this script never calls an LLM.
@@ -31,7 +31,7 @@ fake-gcs is published on :4443):
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
         .claude/skills/image-eval/fetch_outputs.py --list
 
-    # download one set + build the manifest for prompt set 1_1
+    # build the manifest for prompt set 1_1
     PYTHONPATH=. ~/python_env/torch-env/bin/python \
         .claude/skills/image-eval/fetch_outputs.py \
         --story 1_1 --user-id <uid> --story-id <sid>
@@ -42,10 +42,12 @@ fake-gcs is published on :4443):
     --log-dir eval_runs/latest/prompt_logs --story 1_1 --user-id leo --story-id 1_1 \
     --out eval_runs/latest/eval/1_1__1_1    
 
-Without ``--out``, fetched images, ``manifest.json``, and ``report.md`` are
-written under ``eval_runs/latest/eval/`` so the review app sees them by default.
-When ``--out`` points elsewhere, the same PNGs plus a path-adjusted
-``manifest.json`` are also mirrored under that latest eval directory for review.
+Without ``--out``, ``manifest.json`` and ``report.md`` are written under
+``eval_runs/latest/eval/`` so the review app sees them by default. In GCS mode,
+the fetched images are downloaded there too. In local mode, the manifest
+references the canonical PNGs under ``--local-root`` instead of copying them into
+``eval/``. When ``--out`` points elsewhere, the manifest is also mirrored under
+the latest eval directory for review.
 
 ``--story`` is the prompt-file stem (the worker ``type_id``, e.g. ``1_1``) — used
 to load ``imagegen/prompts/1_1.json`` for panel prompts/gists/texts. ``--story-id``
@@ -155,11 +157,6 @@ def _manifest_for_dir(manifest: dict, out_dir: Path) -> dict:
     mirrored = dict(manifest)
     mirrored["out_dir"] = str(out_dir)
     mirrored["report_path"] = str(out_dir / "report.md")
-    mirrored["images"] = []
-    for entry in manifest["images"]:
-        image_entry = dict(entry)
-        image_entry["file"] = str(out_dir / Path(str(entry["file"])).name)
-        mirrored["images"].append(image_entry)
     return mirrored
 
 
@@ -170,10 +167,19 @@ def _mirror_to_latest(out_dir: Path, manifest: dict) -> Path | None:
 
     latest_dir.mkdir(parents=True, exist_ok=True)
     _clear_pngs(latest_dir)
-    for entry in manifest["images"]:
-        image = Path(str(entry["file"]))
-        shutil.copyfile(image, latest_dir / image.name)
-    _write_manifest(latest_dir, _manifest_for_dir(manifest, latest_dir))
+    if not manifest.get("uses_local_output_refs"):
+        for entry in manifest["images"]:
+            image = Path(str(entry["file"]))
+            shutil.copyfile(image, latest_dir / image.name)
+        mirrored = _manifest_for_dir(manifest, latest_dir)
+        mirrored["images"] = []
+        for entry in manifest["images"]:
+            image_entry = dict(entry)
+            image_entry["file"] = str(latest_dir / Path(str(entry["file"])).name)
+            mirrored["images"].append(image_entry)
+    else:
+        mirrored = _manifest_for_dir(manifest, latest_dir)
+    _write_manifest(latest_dir, mirrored)
     return latest_dir
 
 
@@ -288,8 +294,9 @@ def _variants_for_live_template() -> int:
 #
 # Both modes expose the same blob-like surface — ``.name`` (the
 # ``<user>/<story>/outputs/<i>.png`` object key) and ``.download_to_filename`` —
-# so the listing / download / manifest code below is source-agnostic. GCS is the
-# default (Application local stack); ``--local-root`` switches to disk.
+# so the listing / manifest code below is mostly source-agnostic. GCS is the
+# default (Application local stack); ``--local-root`` switches to in-place disk
+# references.
 
 
 class _LocalBlob:
@@ -297,10 +304,10 @@ class _LocalBlob:
 
     def __init__(self, name: str, path: Path) -> None:
         self.name = name
-        self._path = path
+        self.path = path
 
     def download_to_filename(self, dest: str) -> None:
-        shutil.copyfile(self._path, dest)
+        shutil.copyfile(self.path, dest)
 
 
 def _client(project: str):
@@ -432,6 +439,7 @@ def _download(args: argparse.Namespace) -> int:
     ).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
     _clear_pngs(out_dir)
+    use_local_refs = bool(args.local_root)
 
     prefix = f"{args.user_id}/{args.story_id}/outputs/"
     blobs = sorted(
@@ -454,8 +462,12 @@ def _download(args: argparse.Namespace) -> int:
         # One image per panel on the live template -> no variant suffix; keep a
         # generic _vN only if a template is ever changed to emit several.
         suffix = f"_v{variant + 1}" if variants > 1 else ""
-        local = out_dir / f"{index:02d}_panel{panel_index + 1}{suffix}.png"
-        blob.download_to_filename(str(local))
+        eval_file = out_dir / f"{index:02d}_panel{panel_index + 1}{suffix}.png"
+        if use_local_refs:
+            local = (Path(args.local_root).expanduser() / blob.name).resolve()
+        else:
+            local = eval_file
+            blob.download_to_filename(str(local))
         raw = prompts[panel_index] if panel_index < len(prompts) else None
         reconstructed = _resolve_prompt(raw, characters) if raw else None
         # Prefer the prompt the worker actually logged for this panel; only fall
@@ -509,6 +521,7 @@ def _download(args: argparse.Namespace) -> int:
         "prompt_source": _manifest_prompt_source(entries),
         "out_dir": str(out_dir),
         "report_path": str(out_dir / "report.md"),
+        "uses_local_output_refs": use_local_refs,
         "images": entries,
     }
     _write_manifest(out_dir, manifest)
@@ -518,9 +531,10 @@ def _download(args: argparse.Namespace) -> int:
         _mark_report_outdated(mirror_dir / "report.md")
 
     print(f"[eval] story {args.story!r}: {spec.get('title')!r}")
+    verb = "referenced" if use_local_refs else "downloaded"
     print(
-        f"[eval] downloaded {len(entries)} image(s) "
-        f"({len(prompts)} panels x {variants} image(s)/panel) -> {out_dir}"
+        f"[eval] {verb} {len(entries)} image(s) "
+        f"({len(prompts)} panels x {variants} image(s)/panel); eval artifacts -> {out_dir}"
     )
     print(f"[eval] manifest -> {out_dir / 'manifest.json'}")
     if mirror_dir is not None:
@@ -555,14 +569,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="list <user>/<story> output sets in the bucket and exit",
     )
-    parser.add_argument("--story", help="prompt-file stem / worker type_id, e.g. 1_1 (loads imagegen/prompts/<story>.json)")
+    parser.add_argument(
+        "--story",
+        help="prompt-file stem / worker type_id, e.g. 1_1 (loads imagegen/prompts/<story>.json)",
+    )
     parser.add_argument("--user-id", help="GCS path user_id component")
-    parser.add_argument("--story-id", help="GCS path story_id (Application job id; equals --story in local-batch-eval, differs in the Application stack)")
+    parser.add_argument(
+        "--story-id",
+        help="GCS path story_id (Application job id; equals --story in local-batch-eval, differs in the Application stack)",
+    )
     parser.add_argument(
         "--out",
         help=(
-            "download dir (default "
-            "eval_runs/latest/eval/<story>__<story_id>)"
+            "eval artifact dir (default " "eval_runs/latest/eval/<story>__<story_id>)"
         ),
     )
     parser.add_argument(
@@ -601,7 +620,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "single-story download mode needs --"
             + ", --".join(m.replace("_", "-") for m in missing)
-            + "; omit all three selector args to build every generated story"
+            + "; omit all three selector args to build every generated story manifest"
         )
     return _download(args)
 

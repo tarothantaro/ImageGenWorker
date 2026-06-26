@@ -29,15 +29,16 @@ For each story it shows, on one scrollable page:
 <run-dir>/
 ├── run.json                       # batch metadata (optional)
 ├── input.<ext>                    # the input photo
+├── outputs/<user>/<story>/outputs/<i>.png
 └── eval/<story>__<story_id>/      # one per story
     ├── manifest.json              # from image-eval/fetch_outputs.py
     ├── report.md                  # from the image-eval rubric (vision judge)
-    └── *.png                      # the downloaded panel images (one per panel)
 ```
 
 It re-reads the run dir on every request, so regenerating or re-judging shows up
 on refresh — no restart needed. It only serves files under `<run-dir>` (the
-input photo and the per-story `eval/` PNGs); path traversal is rejected.
+input photo and the image paths listed in each story manifest); path traversal
+is rejected.
 
 See the `local-batch-eval` skill for the end-to-end generate → eval → review
 flow.

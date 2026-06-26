@@ -3,8 +3,9 @@
 
 By default this generates every story. Pass one story id, such as ``1_8``, to
 generate only that prompt set. After generation, this refreshes the review-app
-manifests and copied PNGs under ``eval_runs/latest/eval`` but preserves any
-existing eval reports with an outdated warning.
+manifests under ``eval_runs/latest/eval`` so they reference the latest PNGs under
+``eval_runs/latest/outputs`` while preserving any existing eval reports with an
+outdated warning.
 """
 
 from __future__ import annotations

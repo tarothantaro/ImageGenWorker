@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
 
@@ -77,8 +78,9 @@ def test_render_story_shows_panel_gist_without_eval_notes() -> None:
             "images": [
                 {
                     "panel_number": 1,
+                    "index": 0,
                     "variant": 0,
-                    "file": "eval_runs/latest/eval/1_14__1_14/00_panel1.png",
+                    "file": "eval_runs/latest/outputs/liam/1_14/outputs/0.png",
                     "resolved_prompt": "A child waves from a playground.",
                     "gist": "The child notices someone playing alone.",
                 }
@@ -99,4 +101,54 @@ def test_render_story_shows_panel_gist_without_eval_notes() -> None:
 
     assert '<div class="gist"><strong>Gist</strong>' in html
     assert "The child notices someone playing alone." in html
+    assert "/img?dir=1_14__1_14&index=0" in html
     assert "No eval notes for this panel." in html
+
+
+def test_manifest_image_path_resolves_output_file_inside_run_dir(
+    tmp_path: Path,
+) -> None:
+    mod = _load()
+    run_dir = tmp_path / "latest"
+    output = run_dir / "outputs" / "liam" / "1_14" / "outputs" / "0.png"
+    eval_dir = run_dir / "eval" / "1_14__1_14"
+    output.parent.mkdir(parents=True)
+    eval_dir.mkdir(parents=True)
+    output.write_bytes(b"png bytes")
+    (eval_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "images": [
+                    {
+                        "index": 0,
+                        "file": str(output),
+                    }
+                ]
+            }
+        )
+    )
+
+    assert mod._manifest_image_path(run_dir, "1_14__1_14", "0") == output.resolve()
+
+
+def test_manifest_image_path_rejects_file_outside_run_dir(tmp_path: Path) -> None:
+    mod = _load()
+    run_dir = tmp_path / "latest"
+    eval_dir = run_dir / "eval" / "1_14__1_14"
+    outside = tmp_path / "outside.png"
+    eval_dir.mkdir(parents=True)
+    outside.write_bytes(b"png bytes")
+    (eval_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "images": [
+                    {
+                        "index": 0,
+                        "file": str(outside),
+                    }
+                ]
+            }
+        )
+    )
+
+    assert mod._manifest_image_path(run_dir, "1_14__1_14", "0") is None
