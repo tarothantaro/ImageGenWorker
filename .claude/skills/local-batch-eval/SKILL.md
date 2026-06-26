@@ -62,6 +62,18 @@ natural before the word "person", e.g. `"4-year-old"` or `"23-month-old"`).
 > cp -r eval_runs/1_18_identity_fix/prompt_logs/*  eval_runs/latest/prompt_logs/
 > cp -r eval_runs/1_18_identity_fix/eval/*         eval_runs/latest/eval/
 > ```
+>
+> **Caveat — the copied eval manifest's image paths must be rewritten.** The
+> review server confines every served image to *under its `--run-dir`* (see
+> `_manifest_image_path` in `tools/review_app/server.py`). A manifest built in a
+> named run dir carries `file` paths like `eval_runs/1_18_identity_fix/eval/…`,
+> which resolve outside `eval_runs/latest/` — so after the `cp` those panels
+> render blank. Rewrite each `images[].file` (and `report_path`) in the copied
+> `eval_runs/latest/eval/<story>__<story>/manifest.json` to an **absolute path
+> under `eval_runs/latest/`** (matching the basenames you just copied). The plain
+> `cp` is enough for `outputs/` and `prompt_logs/`; only the eval manifest needs
+> this fixup. Re-running `fetch_outputs.py` (step 2) directly against
+> `eval_runs/latest` instead of copying sidesteps it.
 
 This writes (run dir layout):
 
