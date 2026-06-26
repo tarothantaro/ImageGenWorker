@@ -7,6 +7,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P0"}
         ],
@@ -14,6 +15,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P1"}
         ],
@@ -21,6 +23,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P2"}
         ],
@@ -28,6 +31,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P3"}
         ],
@@ -35,6 +39,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P4"}
         ],
@@ -42,6 +47,7 @@
             {"image": "USER_ID_STORY_ID_INPUT_1.png"},
             {"prompt": "{PROMPT}"},
             {"prompt": "{NEGATIVE_PROMPT}"},
+            {"value": 4},
             {"seed": 771062815410683},
             {"filename_prefix": "USER_ID_STORY_ID_P5"}
         ]

@@ -261,6 +261,10 @@ def test_generate_uses_twelve_panel_template_for_adventure_story() -> None:
     assert len(fake.submitted) == 12
     assert [panel.panel_index for panel in panels] == list(range(12))
     assert all(panel.total == 12 for panel in panels)
+    assert all(
+        submitted.prompt["170:165"]["inputs"]["value"] == 6
+        for submitted in fake.submitted
+    )
 
 
 def test_generate_substitutes_image_style_placeholder() -> None:

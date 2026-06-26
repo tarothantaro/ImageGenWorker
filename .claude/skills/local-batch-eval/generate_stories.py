@@ -53,7 +53,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from imagegen.comfyui_client import HttpComfyUIClient
-from imagegen.model import _RENDER_TEMPLATE_ID, ComfyUIModel
+from imagegen.model import ComfyUIModel, _render_template_id
 
 # This script lives at .claude/skills/local-batch-eval/generate_stories.py, so
 # the repo root is four parents up.
@@ -85,6 +85,13 @@ def _story_sort_key(stem: str) -> tuple[int, int, str]:
         return (int(t), int(i), stem)
     except ValueError:
         return (1 << 30, 1 << 30, stem)
+
+
+def _render_template_ids_for_stories(stories: list[str]) -> dict[str, str]:
+    """Return the render template id each story type will use."""
+    return {
+        story: _render_template_id(int(story.split("_", 1)[0])) for story in stories
+    }
 
 
 def _parse_story(stem: str) -> tuple[int, int]:
@@ -268,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:
         "user_id": user_id,
         "comfyui_url": args.url,
         "model_version": args.model_version,
-        "render_template_id": _RENDER_TEMPLATE_ID,
+        "render_template_ids": _render_template_ids_for_stories(stories),
         "outputs_root": str(outputs_root),
         "prompt_logs": str(prompt_logs),
         "seconds": round(time.monotonic() - batch_started, 1),

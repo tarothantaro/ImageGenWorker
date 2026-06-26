@@ -6,11 +6,12 @@ the subgraph flatten, fails fast without a running ComfyUI. They exercise the
 same generic :class:`WorkflowBuilder` path the worker uses, against the real
 copied JSON under ``imagegen/``.
 
-Template 2 is the worker's active render (``_RENDER_TEMPLATE_ID = "2"`` in
+Template 2 is the worker's default render (``_RENDER_TEMPLATE_ID = "2"`` in
 ``imagegen/model.py``): 6 story-bound panels, **one output image each** (the
-Qwen edit — no ReActor face-swap, no V1/V2 variants). It also pins the
-field-name-agnostic prompt injection: template 2's prompt input is ``prompt``
-(not ``text``), and the ``{PROMPT}`` sentinel still receives the story prompt.
+Qwen edit — no ReActor face-swap, no V1/V2 variants). Template 3 is the
+12-panel adventure render. These tests also pin the field-name-agnostic prompt
+injection: the prompt input is ``prompt`` (not ``text``), and the ``{PROMPT}``
+sentinel still receives the story prompt.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ _TEMPLATE_ROOT = _PKG / "templates"
 _NODE_EDIT_TARGET = "41"
 _NODE_PROMPT = "170:151"
 _NODE_NEGATIVE_PROMPT = "170:149"
+_NODE_LORA_STEPS = "170:165"
 _NODE_KSAMPLER = "170:169"
 _NODE_SAVE = "9"
 # The flattened subgraph's VAEDecode — the image the SaveImage node persists.
@@ -110,8 +112,48 @@ def test_render_substitutes_panel_values_and_placeholders(
     # No story bound → the prompt field still holds the sentinel.
     assert workflow[_NODE_PROMPT]["inputs"]["prompt"] == "{PROMPT}"
     assert workflow[_NODE_NEGATIVE_PROMPT]["inputs"]["prompt"] == "{NEGATIVE_PROMPT}"
+    assert workflow[_NODE_LORA_STEPS]["inputs"]["value"] == 4
     assert workflow[_NODE_KSAMPLER]["inputs"]["seed"] == 771062815410683
     assert workflow[_NODE_SAVE]["inputs"]["filename_prefix"] == "u1_s1_P0"
+
+
+def test_render_leaves_template_2_lora_steps_at_four(
+    builder: WorkflowBuilder,
+) -> None:
+    prepared = builder.prepare("2", "1_1")
+
+    workflows = [
+        builder.render(
+            prepared,
+            panel,
+            placeholders={"USER_ID": "u", "STORY_ID": "s"},
+        )
+        for panel in prepared.panels
+    ]
+
+    assert [w[_NODE_LORA_STEPS]["inputs"]["value"] for w in workflows] == [4] * 6
+
+
+def test_render_sets_template_3_lora_steps_to_six_for_adventures(
+    builder: WorkflowBuilder,
+) -> None:
+    prepared = builder.prepare("3", "2_1")
+
+    workflows = [
+        builder.render(
+            prepared,
+            panel,
+            placeholders={
+                "USER_ID": "u",
+                "STORY_ID": "s",
+                "{IMAGE_STYLE}": "soft storybook illustration style",
+            },
+        )
+        for panel in prepared.panels
+    ]
+
+    assert prepared.panel_count == 12
+    assert [w[_NODE_LORA_STEPS]["inputs"]["value"] for w in workflows] == [6] * 12
 
 
 def test_single_output_persists_the_qwen_edit(builder: WorkflowBuilder) -> None:

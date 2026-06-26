@@ -47,3 +47,11 @@ def test_discover_stories_preserves_explicit_subset():
     stories = mod._discover_stories("2_1, 1_10")
 
     assert stories == ["2_1", "1_10"]
+
+
+def test_render_template_ids_for_stories_reflects_story_type():
+    mod = _load()
+
+    ids = mod._render_template_ids_for_stories(["1_10", "2_1"])
+
+    assert ids == {"1_10": "2", "2_1": "3"}
