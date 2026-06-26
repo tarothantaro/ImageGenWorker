@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import shutil
 import sys
 import time
@@ -58,6 +59,7 @@ from imagegen.model import _RENDER_TEMPLATE_ID, ComfyUIModel
 # the repo root is four parents up.
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
+_STORY_STEM_RE = re.compile(r"\d+_\d+\Z")
 
 log = logging.getLogger("generate_stories")
 
@@ -72,9 +74,7 @@ def _discover_stories(arg: str | None) -> list[str]:
     if arg:
         return [s for s in arg.replace(",", " ").split() if s]
     stems = [
-        p.stem
-        for p in _PROMPTS_DIR.glob("*.json")
-        if p.stem != "character" and "_" in p.stem
+        p.stem for p in _PROMPTS_DIR.glob("*.json") if _STORY_STEM_RE.fullmatch(p.stem)
     ]
     return sorted(stems, key=_story_sort_key)
 
