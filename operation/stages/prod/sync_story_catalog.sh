@@ -24,12 +24,26 @@ if [ -n "${FIRESTORE_EMULATOR_HOST:-}" ]; then
 fi
 
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-$GCP_PROJECT_ID}"
+# Catalog example panels (the client's `example_image_urls`, served no-auth via
+# Image.network on the create detail page) upload to a DEDICATED PUBLIC bucket —
+# never the private user-images bucket. GCP forbids scoping an `allUsers` grant
+# by IAM condition, so a public *prefix* on the images bucket is impossible;
+# these sample (non-PII, Liam) panels instead live in their own public bucket
+# `<project>-catalog`. Without an examples bucket the sync writes
+# `example_image_urls: []` and the detail page shows blank placeholder plates.
+# Provision it once: gcloud storage buckets create gs://<project>-catalog
+# --location=<region> --uniform-bucket-level-access --no-public-access-prevention
+# then grant allUsers roles/storage.objectViewer. Override with EXAMPLES_BUCKET=.
+export EXAMPLES_BUCKET="${EXAMPLES_BUCKET:-${GCP_PROJECT_ID}-catalog}"
 # Auth runs as the OPERATOR, not the worker. The worker SA deliberately has no
 # Firestore access (DESIGN.md §4.3), so writing the catalog uses operator ADC —
 # the same identity + permission the Application's seed_catalog.sh needs
-# (`gcloud auth application-default login`, Firestore admin). Set
+# (`gcloud auth application-default login`, Firestore admin). The operator also
+# needs objectAdmin on EXAMPLES_BUCKET to upload the panels. Set
 # GOOGLE_APPLICATION_CREDENTIALS to override with a key.
-echo "[$STAGE_NAME/sync] project=$GOOGLE_CLOUD_PROJECT creds=${GOOGLE_APPLICATION_CREDENTIALS:-operator ADC}" >&2
+echo "[$STAGE_NAME/sync] project=$GOOGLE_CLOUD_PROJECT examples_bucket=$EXAMPLES_BUCKET creds=${GOOGLE_APPLICATION_CREDENTIALS:-operator ADC}" >&2
 # `python` = the interpreter with the catalog extra (google-cloud-firestore);
-# override with PYTHON=... (install: pip install -e .[catalog]).
-exec "${PYTHON:-python}" "$HERE/../../sync_story_catalog.py" "$@"
+# override with PYTHON=... (install: pip install -e .[catalog]). The wrapper's
+# --examples-bucket comes first so an explicit one in "$@" still wins.
+exec "${PYTHON:-python}" "$HERE/../../sync_story_catalog.py" \
+  --examples-bucket "$EXAMPLES_BUCKET" "$@"
