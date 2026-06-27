@@ -32,8 +32,12 @@ export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-$GCP_PROJECT_ID}"
 # `<project>-catalog`. Without an examples bucket the sync writes
 # `example_image_urls: []` and the detail page shows blank placeholder plates.
 # Provision it once: gcloud storage buckets create gs://<project>-catalog
-# --location=<region> --uniform-bucket-level-access --no-public-access-prevention
-# then grant allUsers roles/storage.objectViewer. Override with EXAMPLES_BUCKET=.
+# --location=<region> --uniform-bucket-level-access --no-public-access-prevention;
+# grant allUsers roles/storage.objectViewer; AND set a CORS policy allowing GET
+# from any origin (Flutter web fetches images via XMLHttpRequest, so a bucket
+# without Access-Control-Allow-Origin is blocked even though the object is
+# public) — gcloud storage buckets update gs://<project>-catalog --cors-file=
+# <json with origin ["*"], method ["GET","HEAD"]>. Override with EXAMPLES_BUCKET=.
 export EXAMPLES_BUCKET="${EXAMPLES_BUCKET:-${GCP_PROJECT_ID}-catalog}"
 # Auth runs as the OPERATOR, not the worker. The worker SA deliberately has no
 # Firestore access (DESIGN.md §4.3), so writing the catalog uses operator ADC —
