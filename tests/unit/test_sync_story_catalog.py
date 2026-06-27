@@ -47,6 +47,7 @@ def test_story_doc_maps_prompt_fields() -> None:
         "story_version": 3,  # prompt "version" -> "story_version"
         # prompt "texts" (per-panel storybook narration) -> "story_text"
         "story_text": ["You sat at the table.", '"Please?" you asked.'],
+        "example_image_urls": [],
     }
 
 
@@ -57,6 +58,34 @@ def test_story_doc_tolerates_missing_optional_fields() -> None:
     assert doc["story_type_name"] == ""
     assert doc["story_version"] is None
     assert doc["story_text"] == []  # missing "texts" -> empty list, not absent
+    assert doc["example_image_urls"] == []
+
+
+def test_bindings_include_sorted_example_urls(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("STORAGE_EMULATOR_HOST", raising=False)
+    mod = _load()
+    outputs = tmp_path / "1_1" / "outputs"
+    outputs.mkdir(parents=True)
+    for name in ("10.png", "2.png", "0.png"):
+        (outputs / name).write_bytes(b"png")
+
+    bindings = dict(
+        mod._bindings(
+            "1_1",
+            example_root=tmp_path,
+            bucket_name="catalog-bucket",
+            dry_run=True,
+        )
+    )
+
+    assert bindings["1_1"]["example_image_urls"] == [
+        "https://storage.googleapis.com/catalog-bucket/"
+        "catalog/examples/liam/1_1/0.png",
+        "https://storage.googleapis.com/catalog-bucket/"
+        "catalog/examples/liam/1_1/2.png",
+        "https://storage.googleapis.com/catalog-bucket/"
+        "catalog/examples/liam/1_1/10.png",
+    ]
 
 
 def test_bindings_resolve_real_prompts() -> None:
