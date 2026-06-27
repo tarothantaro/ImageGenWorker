@@ -19,6 +19,13 @@ export GCP_PROJECT_ID="${GCP_PROJECT_ID:-tarostory-preprod}"
 export JOBS_SUBSCRIPTION="${JOBS_SUBSCRIPTION:-projects/${GCP_PROJECT_ID}/subscriptions/image-gen-jobs-worker-sub}"
 export COMPLETION_TOPIC="${COMPLETION_TOPIC:-projects/${GCP_PROJECT_ID}/topics/job-completed}"
 
+# Single bucket the worker reads inputs from and writes outputs to. The job
+# message carries no gcs_uri/output_prefix (DESIGN.md §5.1) — the worker derives
+# both paths from this bucket + the message ids (config.py WorkerConfig.gcs_bucket,
+# a required var). Must match the bucket the API server uploads inputs to
+# (Application server preprod service.yaml GCS_BUCKET=tarostory-preprod-images).
+export GCS_BUCKET="${GCS_BUCKET:-tarostory-preprod-images}"
+
 # Worker knobs (DESIGN.md §10.4). MAX_PROCESSING_SECONDS is the total lease
 # extension window for one full story job; the client library renews the lease
 # in smaller increments under Pub/Sub's per-extension 600s ceiling.
