@@ -25,6 +25,14 @@ STAGE_NAME="$(basename "$HERE")"
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-$GCP_PROJECT_ID}"
 export FIRESTORE_EMULATOR_HOST="${FIRESTORE_EMULATOR_HOST:-localhost:8200}"
 
+# This operation script runs on the host, while deploy/stages/dev/env.sh also
+# configures container runtime values. The container-only fake-gcs-server DNS
+# name is not resolvable from the host; use the Application stack's published
+# localhost port for catalog example uploads.
+if [ "${STORAGE_EMULATOR_HOST:-}" = "http://fake-gcs-server:4443" ]; then
+  export STORAGE_EMULATOR_HOST="http://localhost:4443"
+fi
+
 echo "[dev/sync] project=$GOOGLE_CLOUD_PROJECT firestore=$FIRESTORE_EMULATOR_HOST" >&2
 # `python` = the interpreter with the catalog extra (google-cloud-firestore);
 # override with PYTHON=... (install: pip install -e .[catalog]).
