@@ -45,7 +45,10 @@ prints, per panel, the prompt, its gist, and any findings:
 
 - **FAIL** (load-bearing, unambiguous) — wrong prompt/gist counts; a panel missing
   the preserve-identity ending (`{INPUT_IMAGE_IDENTITY}` or the expanded
-  sentence); no `"person from the input image"` reference; a
+  sentence); a panel missing the **exact person-count guard** (`Exactly … in the
+  frame, and no other people.`) as the last sentence before the identity pin, or
+  whose stated headcount ≠ **one protagonist + one per distinct `{TOKEN}`** named
+  in the panel (rule 12); no `"person from the input image"` reference; a
   `{TOKEN}` that doesn't resolve in `character.json`; **the same character
   `{TOKEN}` used more than once in one prompt** (it expands to the full appearance
   description, so a repeat injects the whole description twice and risks a

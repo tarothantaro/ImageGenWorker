@@ -5,7 +5,8 @@ The cheap half of prompt iteration: catch the mechanical defects in
 ``imagegen/prompts/<type>_<id>.json`` **before** spending a ComfyUI run on it.
 This checks only what can be decided from the prompt/gist *text* — the structural
 invariants and the deterministic `story-prompts` rules (shot/framing cue,
-identity-preserve ending, banned cross-panel reference words, `{TOKEN}` validity,
+identity-preserve ending, the exact person-count guard, banned cross-panel
+reference words, `{TOKEN}` validity,
 gist↔prompt parity). It does **not** judge
 the semantic prompt↔gist alignment or whether every person has a concrete action
 — that is the agent's job in the `story-prompts-eval` skill, reading the prompts + gists
@@ -44,6 +45,18 @@ _IDENTITY_TAIL = (
 _IDENTITY_PLACEHOLDER = "{INPUT_IMAGE_IDENTITY}"
 # How the protagonist must be referenced (rule 5).
 _PROTAGONIST_REF = "person from the input image"
+# Non-person placeholders: everything else in a prompt names a person — the
+# protagonist (always +1) and the supporting cast (one per distinct {TOKEN}).
+# Used to verify the rule-12 person-count guard.
+_NON_PERSON_PLACEHOLDERS = {"INPUT_1_AGE", "INPUT_IMAGE_IDENTITY", "IMAGE_STYLE"}
+# Mandatory rule-12 guard: "Exactly <headcount> in the frame, and no other people."
+# The headcount list is a single clause (no sentence break), so [^.] keeps the
+# match from spanning across an earlier targeted anti-twin guard (rule 11) into
+# this canonical one.
+_COUNT_GUARD_RE = re.compile(
+    r"Exactly\s+(?P<list>[^.]+?)\s+in the frame, and no other people\.", re.I
+)
+_NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
 # Camera / shot cue that controls framing (rule 3) — any one suffices.
 _CAMERA_CUES = (
     "medium shot",
@@ -253,6 +266,50 @@ def lint_story(stem: str, f: Findings) -> dict:
 
         if not _has_identity_tail(prompt):
             f.add("FAIL", p, "identity-tail", "missing the preserve-identity ending")
+
+        # rule 12 — mandatory exact person-count guard before the identity pin.
+        person_tokens = {
+            t
+            for t in _PLACEHOLDER_RE.findall(prompt)
+            if t not in _NON_PERSON_PLACEHOLDERS
+        }
+        expected_total = 1 + len(person_tokens)  # protagonist + 1 per distinct {TOKEN}
+        guard = _COUNT_GUARD_RE.search(prompt)
+        if guard is None:
+            f.add(
+                "FAIL",
+                p,
+                "count-guard",
+                "missing the exact person-count guard before the identity pin "
+                "(rule 12) — end with 'Exactly <headcount> in the frame, and no "
+                "other people.'",
+            )
+        else:
+            if prompt[guard.end() :].strip() not in (
+                _IDENTITY_PLACEHOLDER,
+                _IDENTITY_TAIL,
+            ):
+                f.add(
+                    "FAIL",
+                    p,
+                    "count-guard",
+                    "the person-count guard must be the last sentence before the "
+                    "identity pin (rule 12)",
+                )
+            stated = sum(
+                _NUM_WORDS.get(w, 0)
+                for w in re.findall(r"[a-z]+", guard["list"].lower())
+            )
+            if stated != expected_total:
+                f.add(
+                    "FAIL",
+                    p,
+                    "count-guard",
+                    f"person-count guard states {stated} people but the prompt "
+                    f"names {expected_total} (1 protagonist + {len(person_tokens)} "
+                    "distinct {TOKEN}) — rule 12",
+                )
+
         if _PROTAGONIST_REF not in prompt:
             f.add("FAIL", p, "protagonist-ref", f"no '{_PROTAGONIST_REF}'")
         if not any(c in low for c in _CAMERA_CUES):

@@ -52,7 +52,8 @@ def test_lint_story_accepts_twelve_panel_adventure(tmp_path, monkeypatch) -> Non
         (
             "In a test adventure scene, the {INPUT_1_AGE} person from the input "
             "image points at a map, smiling bravely. Eye-level medium shot, "
-            "{IMAGE_STYLE}. {INPUT_IMAGE_IDENTITY}"
+            "{IMAGE_STYLE}. Exactly one child in the frame, and no other people. "
+            "{INPUT_IMAGE_IDENTITY}"
         )
         for _ in range(12)
     ]
@@ -84,6 +85,7 @@ def test_lint_story_rejects_twelve_panel_standard_story(tmp_path, monkeypatch) -
         (
             "In a standard story scene, the {INPUT_1_AGE} person from the input "
             "image waves hello, smiling. Eye-level medium shot, {IMAGE_STYLE}. "
+            "Exactly one child in the frame, and no other people. "
             "{INPUT_IMAGE_IDENTITY}"
         )
         for _ in range(12)
@@ -117,6 +119,7 @@ def test_lint_story_accepts_image_style_placeholder(tmp_path, monkeypatch) -> No
     prompt = (
         "In a story scene, the {INPUT_1_AGE} person from the input image stacks "
         "blocks, smiling. Eye-level medium shot, {IMAGE_STYLE}. "
+        "Exactly one child in the frame, and no other people. "
         "{INPUT_IMAGE_IDENTITY}"
     )
     (tmp_path / "1_99.json").write_text(
@@ -135,3 +138,87 @@ def test_lint_story_accepts_image_style_placeholder(tmp_path, monkeypatch) -> No
     linter.lint_story("1_99", findings)
 
     assert not [item for item in findings.items if item[2] == "style"]
+
+
+def _count_guard_findings(
+    linter: ModuleType, tmp_path, monkeypatch, prompt: str, characters=None
+) -> list[tuple]:
+    """Lint a 6-panel story whose every panel is ``prompt``; return count-guard findings."""
+    monkeypatch.setattr(linter, "_PROMPTS_DIR", tmp_path)
+    (tmp_path / "1_99.json").write_text(
+        json.dumps(
+            {
+                "title": "Count Guard",
+                "characters": characters or [],
+                "gists": [f"Beat {i}" for i in range(6)],
+                "prompts": [prompt for _ in range(6)],
+            }
+        )
+    )
+    (tmp_path / "character.json").write_text(json.dumps({"characters": {}}))
+    findings = linter.Findings()
+    linter.lint_story("1_99", findings)
+    return [item for item in findings.items if item[2] == "count-guard"]
+
+
+def test_count_guard_accepts_matching_headcount(tmp_path, monkeypatch) -> None:
+    linter = _load_linter()
+    prompt = (
+        "In a scene, the {INPUT_1_AGE} person from the input image greets "
+        "{GENDER_M_AGE_25}, smiling. Eye-level medium shot. Exactly one child and "
+        "one man in the frame, and no other people. {INPUT_IMAGE_IDENTITY}"
+    )
+
+    assert not _count_guard_findings(linter, tmp_path, monkeypatch, prompt)
+
+
+def test_count_guard_flags_missing(tmp_path, monkeypatch) -> None:
+    linter = _load_linter()
+    prompt = (
+        "In a scene, the {INPUT_1_AGE} person from the input image waves, smiling. "
+        "Eye-level medium shot. {INPUT_IMAGE_IDENTITY}"
+    )
+
+    findings = _count_guard_findings(linter, tmp_path, monkeypatch, prompt)
+
+    assert findings and all("missing" in item[3] for item in findings)
+
+
+def test_count_guard_flags_misplaced(tmp_path, monkeypatch) -> None:
+    linter = _load_linter()
+    prompt = (
+        "In a scene. Exactly one child in the frame, and no other people. The "
+        "{INPUT_1_AGE} person from the input image waves. {INPUT_IMAGE_IDENTITY}"
+    )
+
+    findings = _count_guard_findings(linter, tmp_path, monkeypatch, prompt)
+
+    assert findings and all("last sentence" in item[3] for item in findings)
+
+
+def test_count_guard_flags_wrong_count(tmp_path, monkeypatch) -> None:
+    linter = _load_linter()
+    prompt = (
+        "In a scene, the {INPUT_1_AGE} person from the input image greets "
+        "{GENDER_M_AGE_25}, smiling. Eye-level medium shot. Exactly one child in "
+        "the frame, and no other people. {INPUT_IMAGE_IDENTITY}"
+    )
+
+    findings = _count_guard_findings(linter, tmp_path, monkeypatch, prompt)
+
+    assert findings and all(
+        "states 1 people but the prompt names 2" in item[3] for item in findings
+    )
+
+
+def test_count_guard_counts_named_cast_token(tmp_path, monkeypatch) -> None:
+    linter = _load_linter()
+    # A non-GENDER named token (adventure cast) still counts as one person.
+    prompt = (
+        "In a scene, the {INPUT_1_AGE} person from the input image bows to "
+        "{ADVENTURE_ELDER_MARA}, smiling. Eye-level medium shot. Exactly one child "
+        "and one elderly woman in the frame, and no other people. "
+        "{INPUT_IMAGE_IDENTITY}"
+    )
+
+    assert not _count_guard_findings(linter, tmp_path, monkeypatch, prompt)

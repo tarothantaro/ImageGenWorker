@@ -87,6 +87,12 @@ For every prompt, in addition to the parent per-panel checklist:
 - [ ] **Every** prompt ends its camera/style clause with **`{IMAGE_STYLE}`**
       (identical token everywhere) before `{INPUT_IMAGE_IDENTITY}` — no literal
       style phrase anywhere in the story.
+- [ ] The parent's exact person-count guard (rule 12) is the **last sentence
+      before `{INPUT_IMAGE_IDENTITY}`**, placed **after** the `{IMAGE_STYLE}.`
+      clause — `… {IMAGE_STYLE}. Exactly one child and one man in the frame, and no
+      other people. {INPUT_IMAGE_IDENTITY}` — and its headcount counts the named
+      adventure cast (each `{ADVENTURE_*}` token is one person); the glowing
+      helper creatures (e.g. a light fox) are not people and are not counted.
 
 ## Validate before done (adds to the parent gate)
 

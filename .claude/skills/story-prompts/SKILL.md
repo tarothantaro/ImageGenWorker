@@ -48,7 +48,7 @@ photo** through a Qwen-Image-Edit-2511 image-edit graph, once per panel:
 ## Composition & position
 
 Let the model compose unless the beat needs placement: a specific exchange,
-front/back depth, or a left-to-right row to prevent child duplication (rule 12).
+front/back depth, or a left-to-right row to prevent child duplication (rule 11).
 Otherwise give each person a concrete action and expression and leave placement
 open. When placement matters, use direct spatial words (`to the left`, `beside
 them`, `in the foreground`, `in a single row`) and restate them in every panel
@@ -205,6 +205,24 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      children. Pose them in an **explicit left-to-right row**, naming each child
      once in order, with a total-count and no-duplicate guard, instead of an
      overlapping hug. See Example 3.
+12. **End every prompt with an exact person-count guard.** Immediately before the
+   closing `{INPUT_IMAGE_IDENTITY}` pin — and, for adventure stories, **after**
+   the `{IMAGE_STYLE}.` clause — add one sentence stating the exact number of
+   people in the panel, by category noun: the protagonist is always **one
+   child**, plus each supporting `{TOKEN}` present mapped to its category noun
+   (`boy`/`girl` for a child token, `man`/`woman` for an adult token, `elderly
+   woman`/`elderly man` for an age-70 token, and a named cast member by their
+   role's noun). Aggregate repeats (`two girls`). Write it verbatim as **`Exactly
+   <list> in the frame, and no other people.`** — e.g. `Exactly one child and one
+   man in the frame, and no other people.`, or for a solo panel `Exactly one
+   child in the frame, and no other people.` The stated headcount must equal the
+   cast the prompt actually names: **one protagonist + one per distinct `{TOKEN}`**
+   (each token is counted once — rule 5 already forbids a repeated token). Animals
+   and magical creatures (a glowing fox, a talking bird) are **not** people, are
+   **not** counted, and the `no other people` clause does not remove them. This
+   standing count guard is **mandatory on every panel**, on top of any targeted
+   anti-twin guard from rule 11. `story-prompts-eval`'s linter FAILs a panel whose
+   guard is missing, misplaced, or whose headcount disagrees with the named cast.
 
 ## Per-panel checklist
 
@@ -256,6 +274,10 @@ For every prompt in the array, confirm:
       cross-panel reference word ("the same", "again", "back at", continuity
       "now"), no bare "same room" back-reference, no "Transform the scene" opener.
 - [ ] Same style phrase as the rest of the story.
+- [ ] **Ends with the exact person-count guard** (rule 12): the last sentence
+      before `{INPUT_IMAGE_IDENTITY}` is `Exactly <list> in the frame, and no other
+      people.`, with the headcount = one protagonist + one per distinct `{TOKEN}`
+      named in the panel.
 - [ ] Ends with the preserve-identity sentence.
 
 ## Writing a story
@@ -324,7 +346,10 @@ the open grass toward a boy seated by the wooden bench, body angled toward
 him, with a friendly, encouraging smile and one hand raised in a clear
 open-palm wave at shoulder height, elbow bent, the other hand relaxed at their
 side. {GENDER_M_AGE_06} sits on the wooden bench facing the approaching child,
-looking up hopefully, with both hands resting in his lap."*
+looking up hopefully, with both hands resting in his lap. Exactly one child and
+one boy in the frame, and no other people. {INPUT_IMAGE_IDENTITY}"*
+Note the two mandatory endings (rule 12 then rule 6): the exact person-count
+guard, then the identity pin.
 Do **not** write `{GENDER_M_AGE_06}` in both the protagonist's block and the
 supporting character's block — the token expands to the full appearance string, so
 a second copy injects the whole description twice and risks a duplicate child.
@@ -347,15 +372,20 @@ or `now` for continuity.
 
 **Example 3: duplication guards.**
 For a solo close-up that risks a duplicate child, use an asymmetric pose plus a
-targeted guard: *"the {INPUT_1_AGE} person from the input image stands upright,
+targeted guard, then the canonical rule-12 count guard and the identity pin:
+*"the {INPUT_1_AGE} person from the input image stands upright,
 turned slightly to one side, holding the soap bottle off to their right with a
 focused expression; only this one child is in the frame, alone, with no second
-child, twin, sibling, or reflection."*
+child, twin, sibling, or reflection. Exactly one child in the frame, and no other
+people. {INPUT_IMAGE_IDENTITY}"*
 For three or more children, avoid overlapping hugs. Use a left-to-right row and
-name each child once in order: *"From left to right: first the {INPUT_1_AGE}
+name each child once in order, and still close with the rule-12 count guard:
+*"From left to right: first the {INPUT_1_AGE}
 person from the input image, then {GENDER_F_AGE_06}, then {GENDER_M_AGE_06}.
-Exactly three children in total, each a single distinct child — no fourth child,
-no duplicate or extra child, no twin."*
+Each a single distinct child — no fourth child, no duplicate or extra child, no
+twin. Exactly one child, one girl, and one boy in the frame, and no other people.
+{INPUT_IMAGE_IDENTITY}"*
+The targeted rule-11 guard and the standing rule-12 count guard stack: keep both.
 
 ## Validate before done
 
@@ -372,6 +402,10 @@ no duplicate or extra child, no twin."*
       rule compliance before generating any images.
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
+- [ ] Every prompt ends with the exact person-count guard (rule 12) right before
+      `{INPUT_IMAGE_IDENTITY}`, and its headcount matches the named cast (one
+      protagonist + one per distinct `{TOKEN}`). `story-prompts-eval`'s linter
+      enforces this.
 - [ ] Re-run the per-panel checklist on each prompt.
 
 ## Settings reference (informational)
