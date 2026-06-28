@@ -213,7 +213,7 @@ Write markdown to the `report_path` from the manifest
 ```
 
 Tie each recommended fix to a `story-prompts` rule (e.g. "name a 'medium shot,
-photorealistic' to push realism", "the cast age/clothes drift means the panel
+eye-level' camera cue to fix the framing", "the cast age/clothes drift means the panel
 re-describes appearance — remove it, the `{TOKEN}` carries it", "add a placement
 cue only if the beat needs a specific arrangement"). Keep fixes concrete enough
 to paste into the prompt.

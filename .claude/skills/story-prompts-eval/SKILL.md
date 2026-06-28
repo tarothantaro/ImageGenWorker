@@ -58,7 +58,7 @@ prints, per panel, the prompt, its gist, and any findings:
   it tells the model there are unspecified extra people and it invents duplicates
   (rule 4).
 - **WARN** (review) — no named camera/shot cue (medium shot, eye-level, … — the
-  lever for framing, rule 3); a missing/inconsistent style phrase (rule 9); a `{TOKEN}`
+  lever for framing, rule 3); a `{TOKEN}`
   used but not listed in `characters` (or listed but unused); a `\bagain\b` /
   `once more` that *might* be a cross-panel reference; **anchor drift** — panels
   that share a scene but whose setting-anchor wording isn't verbatim (rule 10);

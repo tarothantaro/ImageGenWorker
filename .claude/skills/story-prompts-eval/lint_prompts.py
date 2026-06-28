@@ -59,9 +59,6 @@ _CAMERA_CUES = (
     "full shot",
     "long shot",
 )
-# Shared visual register that should appear in every panel (rule 8).
-_STYLE_PHRASE = "cinematic photography style"
-_STYLE_PLACEHOLDER = "{IMAGE_STYLE}"
 
 # Standard lesson stories are 6 panels. Adventure stories may be the original
 # 6-panel shape or the expanded 12-panel quest shape.
@@ -151,11 +148,6 @@ def _format_expected_counts(counts: set[int]) -> str:
     if len(ordered) == 1:
         return str(ordered[0])
     return " or ".join(str(count) for count in ordered)
-
-
-def _has_style_placeholder(prompt: str) -> bool:
-    """True when runtime style substitution satisfies the style contract."""
-    return _STYLE_PLACEHOLDER in prompt
 
 
 def _token_resolvable(token: str, char_data: dict) -> bool:
@@ -271,12 +263,6 @@ def lint_story(stem: str, f: Findings) -> dict:
                 "no named camera/shot cue (medium shot, eye-level, …) — rule 3's "
                 "lever for framing",
             )
-        has_style_placeholder = _has_style_placeholder(prompt)
-        if not has_style_placeholder and "photorealistic" not in low:
-            f.add("WARN", p, "style", "no 'photorealistic' style word (rule 8)")
-        if not has_style_placeholder and _STYLE_PHRASE not in low:
-            f.add("WARN", p, "style", f"no '{_STYLE_PHRASE}' (rule 8 consistency)")
-
         tokens = [t for t in _PLACEHOLDER_RE.findall(prompt) if _CHAR_TOKEN_RE.match(t)]
         used_tokens.update(tokens)
         for tok, count in Counter(tokens).items():
