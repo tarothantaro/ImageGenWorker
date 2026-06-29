@@ -219,13 +219,17 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    sentence of the prompt** — after the protagonist's `{INPUT_IMAGE_IDENTITY}`
    pin, the supporting cast, the connection line, and (for adventure stories) the
    `{IMAGE_STYLE}.` clause — add one sentence stating the exact number of
-   people in the panel, by category noun: the protagonist is always **one
-   child**, plus each supporting `{TOKEN}` present mapped to its category noun
-   (`boy`/`girl` for a child token, `man`/`woman` for an adult token, `elderly
-   woman`/`elderly man` for an age-70 token, and a named cast member by their
-   role's noun). Aggregate repeats (`two girls`). Write it verbatim as **`Exactly
-   <list> in the frame, and no other people.`** — e.g. `Exactly one child and one
-   man in the frame, and no other people.`, or for a solo panel `Exactly one
+   people in the panel, **aggregated into just two categories — children and
+   adults**. Do **not** list gendered or age-specific nouns here (`girl`, `boy`,
+   `man`, `woman`, `elderly woman`): the `{TOKEN}` already fixes each person's
+   gender/age in the cast block, so the guard only needs the headcount. The
+   protagonist is always **one child**; add each supporting `{TOKEN}` to the
+   matching tally — a child token (`boy`/`girl`) into the **children** count, an
+   adult token (`man`/`woman`/`elderly`) into the **adults** count — and write
+   each total once as `<n> child[ren]` / `<n> adult[s]`. Write it verbatim as
+   **`Exactly <list> in the frame, and no other people.`** — e.g. `Exactly two
+   children and one adult in the frame, and no other people.`, `Exactly three
+   children in the frame, and no other people.`, or for a solo panel `Exactly one
    child in the frame, and no other people.` The stated headcount must equal the
    cast the prompt actually names: **one protagonist + one per distinct `{TOKEN}`**
    (each token is counted once — rule 5 already forbids a repeated token). Animals
@@ -359,7 +363,7 @@ him, with a friendly, encouraging smile and one hand raised in a clear
 open-palm wave at shoulder height, elbow bent, the other hand relaxed at their
 side. {INPUT_IMAGE_IDENTITY} {GENDER_M_AGE_06} sits on the wooden bench facing
 the approaching child, looking up hopefully, with both hands resting in his lap.
-Exactly one child and one boy in the frame, and no other people."*
+Exactly two children in the frame, and no other people."*
 Note the placement (rule 6 then rule 12): the `{INPUT_IMAGE_IDENTITY}` pin sits
 **right after the protagonist's block**, before the supporting character; the
 exact person-count guard is the **final sentence**. `{GENDER_M_AGE_06}` resolves
@@ -399,8 +403,8 @@ the final sentence:
 *"From left to right: first {GENDER_F_AGE_06}, then the {INPUT_1_AGE}
 person from the input image in the middle, then {GENDER_M_AGE_06}.
 {INPUT_IMAGE_IDENTITY} Each a single distinct child — no fourth child, no
-duplicate or extra child, no twin. Exactly one child, one girl, and one boy in
-the frame, and no other people."*
+duplicate or extra child, no twin. Exactly three children in the frame, and no
+other people."*
 The targeted rule-11 guard and the standing rule-12 count guard stack: keep both.
 
 ## Validate before done

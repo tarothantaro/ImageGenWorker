@@ -93,7 +93,7 @@ For every prompt, in addition to the parent per-panel checklist:
       no literal style phrase anywhere in the story.
 - [ ] The parent's exact person-count guard (rule 12) is the **final sentence of
       the prompt**, placed **after** the `{IMAGE_STYLE}.` clause — `… {INPUT_IMAGE_IDENTITY}
-      … {IMAGE_STYLE}. Exactly one child and one man in the frame, and no other
+      … {IMAGE_STYLE}. Exactly one child and one adult in the frame, and no other
       people.` — and its headcount counts the named adventure cast (each
       `{ADVENTURE_*}` token is one person); the glowing helper creatures (e.g. a
       light fox) are not people and are not counted.
