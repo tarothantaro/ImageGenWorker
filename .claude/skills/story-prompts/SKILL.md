@@ -148,12 +148,22 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
    own contiguous block — and refer to them elsewhere with a short role noun or
    pronoun (`a girl`, `the boy`, `a waiting parent`, `him`, `her`), never a second
    `{TOKEN}`. See Example 1.
-6. **Pin identity at the end of every prompt with `{INPUT_IMAGE_IDENTITY}`.**
-   This placeholder resolves through `character.json` to the shared instruction
-   "Preserve the facial features, skin tone and hairstyle of the person from the
-   input image." The edit + swap will otherwise drift the protagonist's look.
-   Keep the prompt-ending text centralized in that placeholder; do not paste the
-   literal sentence into story prompts.
+   Each `{TOKEN}` resolves to a description that **begins with "another"** (e.g.
+   *"another 6-year-old girl …"*) — signalling a person who is **new and distinct
+   from the input-photo protagonist** — so **never prepend your own article**
+   (`a`/`an`/`another`) before a `{TOKEN}`; the placeholder supplies its own.
+6. **Pin identity right after the protagonist's intro block with
+   `{INPUT_IMAGE_IDENTITY}`.** Place the placeholder as its own clause
+   **immediately after the sentence that introduces the protagonist and gives
+   them their action** — *before* the supporting cast, the connection line, and
+   the closing count guard. The prompt therefore **ends with the rule-12 count
+   guard, not the identity pin.** This placeholder resolves through
+   `character.json` to the shared instruction "Preserve the clothes, facial
+   features, skin tone and hairstyle of the person from the input image."; sitting
+   it next to the protagonist's own description ties the preserve-identity
+   instruction to the right person (the edit + swap will otherwise drift the
+   protagonist's look). Keep the text centralized in that placeholder; do not
+   paste the literal sentence into story prompts. See Example 1.
 7. **Never describe a generated character's fixed appearance.** Their age,
    ethnicity, build, hair and clothing live in `character.json` and arrive via
    the placeholder. In the prompt, give them only **position, action, and
@@ -205,9 +215,10 @@ Derived from the model's prompt guidance — instruction-style, specific, spatia
      children. Pose them in an **explicit left-to-right row**, naming each child
      once in order, with a total-count and no-duplicate guard, instead of an
      overlapping hug. See Example 3.
-12. **End every prompt with an exact person-count guard.** Immediately before the
-   closing `{INPUT_IMAGE_IDENTITY}` pin — and, for adventure stories, **after**
-   the `{IMAGE_STYLE}.` clause — add one sentence stating the exact number of
+12. **End every prompt with an exact person-count guard.** As the **final
+   sentence of the prompt** — after the protagonist's `{INPUT_IMAGE_IDENTITY}`
+   pin, the supporting cast, the connection line, and (for adventure stories) the
+   `{IMAGE_STYLE}.` clause — add one sentence stating the exact number of
    people in the panel, by category noun: the protagonist is always **one
    child**, plus each supporting `{TOKEN}` present mapped to its category noun
    (`boy`/`girl` for a child token, `man`/`woman` for an adult token, `elderly
@@ -274,11 +285,12 @@ For every prompt in the array, confirm:
       cross-panel reference word ("the same", "again", "back at", continuity
       "now"), no bare "same room" back-reference, no "Transform the scene" opener.
 - [ ] Same style phrase as the rest of the story.
-- [ ] **Ends with the exact person-count guard** (rule 12): the last sentence
-      before `{INPUT_IMAGE_IDENTITY}` is `Exactly <list> in the frame, and no other
-      people.`, with the headcount = one protagonist + one per distinct `{TOKEN}`
-      named in the panel.
-- [ ] Ends with the preserve-identity sentence.
+- [ ] **The `{INPUT_IMAGE_IDENTITY}` pin sits right after the protagonist's intro
+      block** (rule 6) — as its own clause before the supporting cast and the
+      count guard, **not** at the prompt tail.
+- [ ] **Ends with the exact person-count guard** (rule 12) as the **final
+      sentence**: `Exactly <list> in the frame, and no other people.`, with the
+      headcount = one protagonist + one per distinct `{TOKEN}` named in the panel.
 
 ## Writing a story
 
@@ -345,11 +357,13 @@ warm sunlight — the {INPUT_1_AGE} person from the input image walks directly f
 the open grass toward a boy seated by the wooden bench, body angled toward
 him, with a friendly, encouraging smile and one hand raised in a clear
 open-palm wave at shoulder height, elbow bent, the other hand relaxed at their
-side. {GENDER_M_AGE_06} sits on the wooden bench facing the approaching child,
-looking up hopefully, with both hands resting in his lap. Exactly one child and
-one boy in the frame, and no other people. {INPUT_IMAGE_IDENTITY}"*
-Note the two mandatory endings (rule 12 then rule 6): the exact person-count
-guard, then the identity pin.
+side. {INPUT_IMAGE_IDENTITY} {GENDER_M_AGE_06} sits on the wooden bench facing
+the approaching child, looking up hopefully, with both hands resting in his lap.
+Exactly one child and one boy in the frame, and no other people."*
+Note the placement (rule 6 then rule 12): the `{INPUT_IMAGE_IDENTITY}` pin sits
+**right after the protagonist's block**, before the supporting character; the
+exact person-count guard is the **final sentence**. `{GENDER_M_AGE_06}` resolves
+to *"another 6-year-old boy …"* on its own, so no article precedes the token.
 Do **not** write `{GENDER_M_AGE_06}` in both the protagonist's block and the
 supporting character's block — the token expands to the full appearance string, so
 a second copy injects the whole description twice and risks a duplicate child.
@@ -372,19 +386,21 @@ or `now` for continuity.
 
 **Example 3: duplication guards.**
 For a solo close-up that risks a duplicate child, use an asymmetric pose plus a
-targeted guard, then the canonical rule-12 count guard and the identity pin:
+targeted guard. The identity pin sits right after the protagonist's action
+sentence and the rule-12 count guard is the final sentence:
 *"the {INPUT_1_AGE} person from the input image stands upright,
 turned slightly to one side, holding the soap bottle off to their right with a
-focused expression; only this one child is in the frame, alone, with no second
-child, twin, sibling, or reflection. Exactly one child in the frame, and no other
-people. {INPUT_IMAGE_IDENTITY}"*
+focused expression. {INPUT_IMAGE_IDENTITY} Only this one child is in the frame,
+alone, with no second child, twin, sibling, or reflection. Exactly one child in
+the frame, and no other people."*
 For three or more children, avoid overlapping hugs. Use a left-to-right row and
-name each child once in order, and still close with the rule-12 count guard:
-*"From left to right: first the {INPUT_1_AGE}
-person from the input image, then {GENDER_F_AGE_06}, then {GENDER_M_AGE_06}.
-Each a single distinct child — no fourth child, no duplicate or extra child, no
-twin. Exactly one child, one girl, and one boy in the frame, and no other people.
-{INPUT_IMAGE_IDENTITY}"*
+name each child once in order, and still close with the rule-12 count guard as
+the final sentence:
+*"From left to right: first {GENDER_F_AGE_06}, then the {INPUT_1_AGE}
+person from the input image in the middle, then {GENDER_M_AGE_06}.
+{INPUT_IMAGE_IDENTITY} Each a single distinct child — no fourth child, no
+duplicate or extra child, no twin. Exactly one child, one girl, and one boy in
+the frame, and no other people."*
 The targeted rule-11 guard and the standing rule-12 count guard stack: keep both.
 
 ## Validate before done
@@ -402,10 +418,11 @@ The targeted rule-11 guard and the standing rule-12 count guard stack: keep both
       rule compliance before generating any images.
 - [ ] Every `{TOKEN}` used exists in `character.json` and is listed in
       `characters` (`python3 -c "import json …"` or grep to confirm).
-- [ ] Every prompt ends with the exact person-count guard (rule 12) right before
-      `{INPUT_IMAGE_IDENTITY}`, and its headcount matches the named cast (one
-      protagonist + one per distinct `{TOKEN}`). `story-prompts-eval`'s linter
-      enforces this.
+- [ ] The `{INPUT_IMAGE_IDENTITY}` pin sits right after the protagonist's intro
+      block (rule 6), and every prompt **ends with** the exact person-count guard
+      (rule 12) — `Exactly <list> in the frame, and no other people.` — whose
+      headcount matches the named cast (one protagonist + one per distinct
+      `{TOKEN}`). `story-prompts-eval`'s linter enforces both.
 - [ ] Re-run the per-panel checklist on each prompt.
 
 ## Settings reference (informational)

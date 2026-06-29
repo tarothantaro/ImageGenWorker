@@ -15,7 +15,7 @@
     "template": "{age} {ethnicity} {gender_noun} with {hair}, {build}, wearing {wardrobe}, with {features}",
     "rules": [
       "gender_noun: use dimensions.gender[g].noun_child when dimensions.age[a].child is true, otherwise dimensions.gender[g].noun.",
-      "Articles are baked into dimensions.age[a].phrase (e.g. 'an 8-year-old', 'a 30-year-old', 'an elderly').",
+      "Articles are baked into dimensions.age[a].phrase as 'another' (e.g. 'another 8-year-old', 'another 30-year-old', 'another elderly') -- every supporting character is a NEW person distinct from the input-photo protagonist, so the description opens with 'another', never a bare 'a'/'an'. Story prompts must NOT prepend their own article before a {TOKEN}.",
       "The trailing ', with {features}' segment is omitted entirely when the character has no `features` ref.",
       "Keep descriptions appearance-only (age, ethnicity, build, hair, clothing, fixed features). Never bake in actions, expressions, poses or positions -- those belong in the per-panel story prompt."
     ]
@@ -28,16 +28,16 @@
       "NB": {"noun": "person", "noun_child": "child", "pronoun": "they", "avoid": ["masc_only", "fem_only"]}
     },
     "age": {
-      "06": {"phrase": "a 6-year-old",  "child": true,  "avoid": ["adult_only", "elderly_only"]},
-      "08": {"phrase": "an 8-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
-      "12": {"phrase": "a 12-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
-      "16": {"phrase": "a 16-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
-      "25": {"phrase": "a 25-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
-      "30": {"phrase": "a 30-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
-      "35": {"phrase": "a 35-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
-      "45": {"phrase": "a 45-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
-      "60": {"phrase": "a 60-year-old", "child": false, "avoid": ["child_only"]},
-      "70": {"phrase": "an elderly",    "child": false, "avoid": ["child_only"]}
+      "06": {"phrase": "another 6-year-old",  "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "08": {"phrase": "another 8-year-old",  "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "12": {"phrase": "another 12-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "16": {"phrase": "another 16-year-old", "child": true,  "avoid": ["adult_only", "elderly_only"]},
+      "25": {"phrase": "another 25-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "30": {"phrase": "another 30-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "35": {"phrase": "another 35-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "45": {"phrase": "another 45-year-old", "child": false, "avoid": ["child_only", "elderly_only"]},
+      "60": {"phrase": "another 60-year-old", "child": false, "avoid": ["child_only"]},
+      "70": {"phrase": "another elderly",     "child": false, "avoid": ["child_only"]}
     },
     "race": {
       "ASIAN":          {"adj": "East Asian"},
@@ -190,7 +190,7 @@
   "characters": {
     "_comment": "Enumerated, fixed-look characters (TOKEN -> { refs, description }). Most stories rely on the RANDOM fallback for generated supporting characters (see runtime.fallback), so each job rolls a fresh race + look that stays consistent across that job's panels. Add an entry here only when you need text that stays byte-for-byte identical across every panel AND every job; an enumerated description wins over the random composition for that exact token.",
     "INPUT_IMAGE_IDENTITY": {
-      "description": "Preserve the facial features, skin tone and hairstyle of the person from the input image."
+      "description": "Preserve the clothes, facial features, skin tone and hairstyle of the person from the input image."
     }
   }
 }

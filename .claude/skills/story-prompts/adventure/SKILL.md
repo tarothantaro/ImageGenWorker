@@ -11,7 +11,8 @@ A specialization of the parent **`story-prompts`** skill for **adventure (type
 **Inherit the parent first.** Read `../SKILL.md` (the `story-prompts` skill) and
 apply **every** rule it states — scene-first prompts, one contiguous block per
 person, concrete action per person, `{TOKEN}`-only supporting cast,
-`{INPUT_IMAGE_IDENTITY}` at the end, verbatim per-scene setting anchors, the
+`{INPUT_IMAGE_IDENTITY}` pinned right after the protagonist block, verbatim
+per-scene setting anchors, the
 duplication guards, the per-panel checklist, and the validate-before-done gate.
 Nothing here replaces those rules; this file only **adds** the adventure arc and
 **overrides one rule** (the style phrase → a runtime placeholder, see below).
@@ -60,9 +61,11 @@ runtime to decide.
 
 - Use the placeholder **`{IMAGE_STYLE}`** wherever the parent would put the
   literal style phrase (e.g. instead of `soft storybook illustration style`).
-- Put it in the **same camera/style clause**, right before the closing
-  `{INPUT_IMAGE_IDENTITY}` pin, and keep the **camera/shot cue** literal (rule 3
-  still applies — `Eye-level medium-wide shot, {IMAGE_STYLE}. {INPUT_IMAGE_IDENTITY}`).
+- Put it in the **camera/style clause near the end of the prompt** — after the
+  protagonist's `{INPUT_IMAGE_IDENTITY}` pin and just **before the final count
+  guard** — and keep the **camera/shot cue** literal (rule 3 still applies —
+  `… {INPUT_IMAGE_IDENTITY} … Eye-level medium-wide shot, {IMAGE_STYLE}. Exactly
+  one child in the frame, and no other people.`).
 - Use the **identical** `{IMAGE_STYLE}` token in **every** panel — that is how the
   whole book stays one consistent register once the runtime fills it. Never mix a
   literal style phrase and the placeholder within a story.
@@ -84,15 +87,16 @@ For every prompt, in addition to the parent per-panel checklist:
       explicit (they react to / accept the call), not a generic "adventure starts".
 - [ ] The **last** panel returns to panel 1's world (anchor reused verbatim) and
       ties the **outcome back to this person's life** (changed, rewarded, home).
-- [ ] **Every** prompt ends its camera/style clause with **`{IMAGE_STYLE}`**
-      (identical token everywhere) before `{INPUT_IMAGE_IDENTITY}` — no literal
-      style phrase anywhere in the story.
-- [ ] The parent's exact person-count guard (rule 12) is the **last sentence
-      before `{INPUT_IMAGE_IDENTITY}`**, placed **after** the `{IMAGE_STYLE}.`
-      clause — `… {IMAGE_STYLE}. Exactly one child and one man in the frame, and no
-      other people. {INPUT_IMAGE_IDENTITY}` — and its headcount counts the named
-      adventure cast (each `{ADVENTURE_*}` token is one person); the glowing
-      helper creatures (e.g. a light fox) are not people and are not counted.
+- [ ] **Every** prompt carries the **`{IMAGE_STYLE}`** token (identical
+      everywhere) in its camera/style clause — placed **after** the
+      `{INPUT_IMAGE_IDENTITY}` pin and just **before** the final count guard — with
+      no literal style phrase anywhere in the story.
+- [ ] The parent's exact person-count guard (rule 12) is the **final sentence of
+      the prompt**, placed **after** the `{IMAGE_STYLE}.` clause — `… {INPUT_IMAGE_IDENTITY}
+      … {IMAGE_STYLE}. Exactly one child and one man in the frame, and no other
+      people.` — and its headcount counts the named adventure cast (each
+      `{ADVENTURE_*}` token is one person); the glowing helper creatures (e.g. a
+      light fox) are not people and are not counted.
 
 ## Validate before done (adds to the parent gate)
 

@@ -21,8 +21,8 @@ the **look and dress stay byte-for-byte identical across every panel** of a stor
 (panels are independent edits — see the `story-prompts` skill — so a shared,
 centralized description is the *only* thing keeping a character consistent).
 The special `{INPUT_IMAGE_IDENTITY}` placeholder is not a character; it resolves
-to the shared identity-preservation instruction that belongs at the end of every
-story prompt.
+to the shared identity-preservation instruction that belongs **right after the
+protagonist's intro block** in every story prompt.
 
 **Runtime contract:** strip the `{}`, look up `characters[<TOKEN>].description`,
 string-replace it into the prompt — the same mechanism `workflow.py` uses for
@@ -114,8 +114,12 @@ prefix is a human-readable convention, not a parser requirement.
 Rules:
 - `gender_noun` = `dimensions.gender[g].noun_child` when `dimensions.age[a].child`
   is true, else `.noun`.
-- Articles are baked into `dimensions.age[a].phrase` (`"an 8-year-old"`,
-  `"a 30-year-old"`, `"an elderly"`).
+- Articles are baked into `dimensions.age[a].phrase` as **`"another"`**
+  (`"another 8-year-old"`, `"another 30-year-old"`, `"another elderly"`) — every
+  supporting character is a **new person distinct from the input-photo
+  protagonist**, so each composed/enumerated `description` opens with `another`,
+  never a bare `a`/`an`. Enumerated descriptions you hand-write here follow the
+  same rule (`"another tall village gate guard with …"`).
 - Omit the trailing `, with {features}` entirely when there is no `features` ref.
 - **Appearance-only.** Never bake actions, expressions, poses, or positions into
   a `description` — those belong in the per-panel story prompt. The description is

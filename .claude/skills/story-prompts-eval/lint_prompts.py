@@ -5,7 +5,8 @@ The cheap half of prompt iteration: catch the mechanical defects in
 ``imagegen/prompts/<type>_<id>.json`` **before** spending a ComfyUI run on it.
 This checks only what can be decided from the prompt/gist *text* — the structural
 invariants and the deterministic `story-prompts` rules (shot/framing cue,
-identity-preserve ending, the exact person-count guard, banned cross-panel
+identity-preserve pin right after the protagonist block, the exact person-count
+guard as the final sentence, banned cross-panel
 reference words, `{TOKEN}` validity,
 gist↔prompt parity). It does **not** judge
 the semantic prompt↔gist alignment or whether every person has a concrete action
@@ -37,10 +38,17 @@ _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SKILL_DIR.parents[2]  # .claude/skills/story-prompts-eval -> repo root
 _PROMPTS_DIR = _REPO_ROOT / "imagegen" / "prompts"
 
-# Identity-preserve instruction every prompt must end with (story-prompts rule 7).
-_IDENTITY_TAIL = (
+# Identity-preserve instruction (story-prompts rule 6). It pins the
+# protagonist's look and must sit right AFTER the protagonist's intro block —
+# no longer at the prompt tail; the prompt now ENDS with the rule-12 count
+# guard. Recognised either as the {INPUT_IMAGE_IDENTITY} placeholder or its
+# expanded sentence (the live character.json wording includes "clothes"; the
+# older wording omits it).
+_IDENTITY_TAILS = (
+    "Preserve the clothes, facial features, skin tone and hairstyle of the "
+    "person from the input image.",
     "Preserve the facial features, skin tone and hairstyle of the person "
-    "from the input image."
+    "from the input image.",
 )
 _IDENTITY_PLACEHOLDER = "{INPUT_IMAGE_IDENTITY}"
 # How the protagonist must be referenced (rule 5).
@@ -141,10 +149,20 @@ _CHAR_TOKEN_RE = re.compile(r"^GENDER_[A-Z]+_AGE_[A-Z0-9]+(_[A-Z0-9_]+)?$")
 _PLACEHOLDER_RE = re.compile(r"\{([A-Z0-9_]+)\}")
 
 
-def _has_identity_tail(prompt: str) -> bool:
-    """True when a prompt ends with the identity instruction or its token."""
-    prompt = prompt.strip()
-    return prompt.endswith(_IDENTITY_TAIL) or prompt.endswith(_IDENTITY_PLACEHOLDER)
+def _identity_pos(prompt: str) -> int:
+    """Char index of the identity pin (placeholder or expanded sentence), or -1.
+
+    The pin belongs right after the protagonist's intro block (rule 6); callers
+    compare this against the count-guard position to confirm it isn't trailing.
+    """
+    pos = prompt.find(_IDENTITY_PLACEHOLDER)
+    if pos != -1:
+        return pos
+    for tail in _IDENTITY_TAILS:
+        pos = prompt.find(tail)
+        if pos != -1:
+            return pos
+    return -1
 
 
 def _expected_panel_counts(stem: str) -> set[int]:
@@ -264,10 +282,18 @@ def lint_story(stem: str, f: Findings) -> dict:
         p = i + 1
         low = prompt.lower()
 
-        if not _has_identity_tail(prompt):
-            f.add("FAIL", p, "identity-tail", "missing the preserve-identity ending")
+        # rule 6 — identity pin sits right after the protagonist's intro block,
+        # never at the prompt tail (the prompt ends with the count guard).
+        id_pos = _identity_pos(prompt)
+        if id_pos == -1:
+            f.add(
+                "FAIL",
+                p,
+                "identity-pin",
+                "missing the preserve-identity pin {INPUT_IMAGE_IDENTITY} (rule 6)",
+            )
 
-        # rule 12 — mandatory exact person-count guard before the identity pin.
+        # rule 12 — mandatory exact person-count guard, as the FINAL sentence.
         person_tokens = {
             t
             for t in _PLACEHOLDER_RE.findall(prompt)
@@ -280,21 +306,28 @@ def lint_story(stem: str, f: Findings) -> dict:
                 "FAIL",
                 p,
                 "count-guard",
-                "missing the exact person-count guard before the identity pin "
-                "(rule 12) — end with 'Exactly <headcount> in the frame, and no "
-                "other people.'",
+                "missing the exact person-count guard (rule 12) — the prompt must "
+                "end with 'Exactly <headcount> in the frame, and no other people.'",
             )
         else:
-            if prompt[guard.end() :].strip() not in (
-                _IDENTITY_PLACEHOLDER,
-                _IDENTITY_TAIL,
-            ):
+            if prompt[guard.end() :].strip() != "":
                 f.add(
                     "FAIL",
                     p,
                     "count-guard",
-                    "the person-count guard must be the last sentence before the "
-                    "identity pin (rule 12)",
+                    "the person-count guard must be the last sentence of the "
+                    "prompt (rule 12)",
+                )
+            # The identity pin must precede the count guard — i.e. it sits right
+            # after the protagonist block, not trailing the prompt (rule 6).
+            if id_pos != -1 and id_pos > guard.start():
+                f.add(
+                    "FAIL",
+                    p,
+                    "identity-pin",
+                    "the {INPUT_IMAGE_IDENTITY} pin must sit right after the "
+                    "protagonist's intro block, before the count guard — not at "
+                    "the prompt tail (rule 6)",
                 )
             stated = sum(
                 _NUM_WORDS.get(w, 0)
