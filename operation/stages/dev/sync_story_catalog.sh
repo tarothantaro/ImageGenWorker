@@ -33,7 +33,18 @@ if [ "${STORAGE_EMULATOR_HOST:-}" = "http://fake-gcs-server:4443" ]; then
   export STORAGE_EMULATOR_HOST="http://localhost:4443"
 fi
 
-echo "[dev/sync] project=$GOOGLE_CLOUD_PROJECT firestore=$FIRESTORE_EMULATOR_HOST" >&2
+# Catalog example panels upload to the LOCAL stack's fake-gcs bucket (the only
+# bucket it creates is "$GOOGLE_CLOUD_PROJECT-images"). Pass it as an explicit
+# --examples-bucket flag — which wins in sync_story_catalog.py over the
+# GCS_BUCKET/GCS_INPUT_BUCKET fallback — so a GCS_BUCKET left over in the shell
+# from a sourced preprod/prod env.sh can't redirect uploads at a cloud bucket
+# that doesn't exist in fake-gcs (a 404 that aborts the whole sync). Mirrors the
+# preprod/prod wrappers' --examples-bucket pin.
+export EXAMPLES_BUCKET="${EXAMPLES_BUCKET:-${GOOGLE_CLOUD_PROJECT}-images}"
+
+echo "[dev/sync] project=$GOOGLE_CLOUD_PROJECT firestore=$FIRESTORE_EMULATOR_HOST examples_bucket=$EXAMPLES_BUCKET" >&2
 # `python` = the interpreter with the catalog extra (google-cloud-firestore);
-# override with PYTHON=... (install: pip install -e .[catalog]).
-exec "${PYTHON:-python}" "$HERE/../../sync_story_catalog.py" "$@"
+# override with PYTHON=... (install: pip install -e .[catalog]). The wrapper's
+# --examples-bucket comes first so an explicit one in "$@" still wins.
+exec "${PYTHON:-python}" "$HERE/../../sync_story_catalog.py" \
+  --examples-bucket "$EXAMPLES_BUCKET" "$@"
