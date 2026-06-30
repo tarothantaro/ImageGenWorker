@@ -318,17 +318,6 @@ def lint_story(stem: str, f: Findings) -> dict:
                     "the person-count guard must be the last sentence of the "
                     "prompt (rule 12)",
                 )
-            # The identity pin must precede the count guard — i.e. it sits right
-            # after the protagonist block, not trailing the prompt (rule 6).
-            if id_pos != -1 and id_pos > guard.start():
-                f.add(
-                    "FAIL",
-                    p,
-                    "identity-pin",
-                    "the {INPUT_IMAGE_IDENTITY} pin must sit right after the "
-                    "protagonist's intro block, before the count guard — not at "
-                    "the prompt tail (rule 6)",
-                )
             stated = sum(
                 _NUM_WORDS.get(w, 0)
                 for w in re.findall(r"[a-z]+", guard["list"].lower())
@@ -343,8 +332,19 @@ def lint_story(stem: str, f: Findings) -> dict:
                     "distinct {TOKEN}) — rule 12",
                 )
 
-        if _PROTAGONIST_REF not in prompt:
+        protagonist_pos = prompt.find(_PROTAGONIST_REF)
+        if protagonist_pos == -1:
             f.add("FAIL", p, "protagonist-ref", f"no '{_PROTAGONIST_REF}'")
+        elif id_pos != -1:
+            expected_id_pos = protagonist_pos + len(_PROTAGONIST_REF) + 1
+            if id_pos != expected_id_pos:
+                f.add(
+                    "FAIL",
+                    p,
+                    "identity-pin",
+                    "the {INPUT_IMAGE_IDENTITY} pin must sit immediately after "
+                    "'person from the input image' (rule 6)",
+                )
         if not any(c in low for c in _CAMERA_CUES):
             f.add(
                 "WARN",

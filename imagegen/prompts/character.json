@@ -190,7 +190,7 @@
   "characters": {
     "_comment": "Enumerated, fixed-look characters (TOKEN -> { refs, description }). Most stories rely on the RANDOM fallback for generated supporting characters (see runtime.fallback), so each job rolls a fresh race + look that stays consistent across that job's panels. Add an entry here only when you need text that stays byte-for-byte identical across every panel AND every job; an enumerated description wins over the random composition for that exact token.",
     "INPUT_IMAGE_IDENTITY": {
-      "description": "Preserve the clothes, facial features, skin tone and hairstyle of the person from the input image."
+      "description": "(preserve the clothes, facial features, skin tone and hairstyle of the person)"
     }
   }
 }

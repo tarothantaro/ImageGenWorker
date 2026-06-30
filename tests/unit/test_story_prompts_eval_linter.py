@@ -227,11 +227,14 @@ def test_count_guard_counts_named_cast_token(tmp_path, monkeypatch) -> None:
     assert not _findings_for(linter, tmp_path, monkeypatch, prompt, "count-guard")
 
 
-def test_identity_pin_accepts_after_protagonist_block(tmp_path, monkeypatch) -> None:
+def test_identity_pin_accepts_immediately_after_input_image_ref(
+    tmp_path, monkeypatch
+) -> None:
     linter = _load_linter()
     prompt = (
-        "In a scene, the {INPUT_1_AGE} person from the input image waves, smiling. "
-        "{INPUT_IMAGE_IDENTITY} Eye-level medium shot. Exactly one child in the "
+        "In a scene, the {INPUT_1_AGE} person from the input image "
+        "{INPUT_IMAGE_IDENTITY} waves, smiling. Eye-level medium shot. "
+        "Exactly one child in the "
         "frame, and no other people."
     )
 
@@ -249,7 +252,8 @@ def test_identity_pin_flags_trailing(tmp_path, monkeypatch) -> None:
     findings = _findings_for(linter, tmp_path, monkeypatch, prompt, "identity-pin")
 
     assert findings and all(
-        "right after the protagonist" in item[3] for item in findings
+        "immediately after 'person from the input image'" in item[3]
+        for item in findings
     )
 
 
